@@ -1,14 +1,16 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
-import { LogOut, Menu, Printer, Bell } from "lucide-react";
+import { LogOut, Menu, Printer, Bell, Store, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Outlet, useNavigate } from "react-router-dom";
 import { clearSession } from "@/services/auth.service";
 import { isSuperAdmin } from "@/lib/auth";
 import { apiFetch } from "@/services/api";
+import { useSettings } from "@/hooks/useSettings";
+import { getStoreUrl } from "@/utils/store-url";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -16,9 +18,20 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const superAdmin = isSuperAdmin();
+  const { data: settings } = useSettings();
+  const [subdomain, setSubdomain] = useState<string>("");
 
   useEffect(() => {
     if (superAdmin) return;
+
+    if (settings && (settings as any).storeId) {
+      apiFetch(`/stores/${(settings as any).storeId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.subdomain) setSubdomain(data.subdomain);
+        })
+        .catch(() => {});
+    }
 
     const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
     const socket = io(socketUrl);
@@ -30,7 +43,7 @@ export function AdminLayout() {
     return () => {
       socket.disconnect();
     };
-  }, [queryClient, navigate, superAdmin]);
+  }, [queryClient, navigate, superAdmin, settings]);
 
   const handleLogout = () => {
     clearSession();
@@ -62,10 +75,24 @@ export function AdminLayout() {
             <div className="flex items-center gap-3">
               {!superAdmin && (
                 <>
+                  {subdomain && (
+                    <a
+                      href={getStoreUrl(subdomain)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
+                      title="Abrir a vitrine da sua loja em nova aba"
+                    >
+                      <Store className="h-4 w-4 text-indigo-600" />
+                      <span className="hidden sm:inline">Acessar Loja</span>
+                      <ExternalLink className="h-3 w-3 opacity-75" />
+                    </a>
+                  )}
                   <a
                     href="https://drive.google.com/uc?export=download&id=1FZySVH-F01SAdsSsa0mmHEZMhRk-IM_8"
                     target="_blank"
                     className="hidden text-sm font-medium text-blue-500 hover:text-blue-600 sm:flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-md transition-colors"
+                    title="Baixar Agente de Impressão"
                   >
                     <Printer className="h-4 w-4" />
                   </a>

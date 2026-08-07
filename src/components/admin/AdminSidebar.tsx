@@ -55,7 +55,7 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className="px-4 py-6 flex items-center gap-3">
+        <div className="px-4 py-5 flex flex-col gap-2 border-b">
           {settings?.whiteLogoUrl || settings?.logoUrl ? (
             <div className={cn("flex items-center", collapsed ? "justify-center w-full" : "gap-3")}>
               <img 
@@ -64,22 +64,24 @@ export function AdminSidebar() {
                 className={cn("object-contain", collapsed ? "w-9 h-9 shrink-0" : "w-10 h-10 shrink-0")} 
               />
               {!collapsed && (
-                <span className="text-sidebar-foreground font-bold text-lg tracking-tight truncate">
-                  {settings.storeName || "Admin"}
-                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sidebar-foreground font-bold text-base tracking-tight truncate">
+                    {settings.storeName || "Admin"}
+                  </span>
+                </div>
               )}
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-white font-bold text-sm">
                 LP
               </div>
               {!collapsed && (
-                <span className="text-sidebar-foreground font-bold text-lg tracking-tight">
+                <span className="text-sidebar-foreground font-bold text-base tracking-tight">
                   {superAdmin ? "Super Admin" : "Loja Pod"}
                 </span>
               )}
-            </>
+            </div>
           )}
         </div>
 
