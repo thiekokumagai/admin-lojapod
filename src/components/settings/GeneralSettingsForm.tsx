@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
+import { apiFetch } from "@/services/api";
 import { uploadSettingsMedia } from "@/services/settings.service";
 import { buildImageUrl } from "@/utils/image-url";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
-import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon } from "lucide-react";
+import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key } from "lucide-react";
 
 export function GeneralSettingsForm() {
   const { data: settings, isLoading } = useSettings();
@@ -23,6 +24,8 @@ export function GeneralSettingsForm() {
   const [phone, setPhone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [pixelId, setPixelId] = useState("");
+  const [printToken, setPrintToken] = useState("");
+  const [copiedToken, setCopiedToken] = useState(false);
 
   // Endereço
   const [cep, setCep] = useState("");
@@ -58,6 +61,15 @@ export function GeneralSettingsForm() {
       setPhone(cleanVal(settings.phone, ["(67) 99999-9999", "67999999999", "6799999-9999"]));
       setInstagram(settings.instagram || "");
       setPixelId(settings.pixelId || "");
+
+      if ((settings as any).storeId) {
+        apiFetch(`/stores/${(settings as any).storeId}/print-token`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data?.printToken) setPrintToken(data.printToken);
+          })
+          .catch(() => {});
+      }
 
       // Endereço
       setCep(cleanVal(settings.cep, ["79002-075", "79002075"]));
@@ -513,6 +525,43 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               />
             </div>
           </div>
+
+          {/* Token da Impressora */}
+          {printToken && (
+            <div className="p-4 bg-slate-50 border rounded-xl space-y-2 mt-4">
+              <div className="flex items-center gap-2 text-indigo-700 font-semibold text-sm">
+                <Printer className="h-4 w-4" />
+                <span>Impressora Térmica (Token de Ativação)</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Insira este token no aplicativo da impressora (<strong>print-agent-setup.exe</strong>) instalado no computador da sua loja para conectar o balcão ao sistema.
+              </p>
+              <div className="flex items-center gap-2 max-w-md pt-1">
+                <div className="relative flex-1">
+                  <Key className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    readOnly
+                    value={printToken}
+                    className="pl-9 font-mono text-sm bg-white font-bold text-slate-800"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(printToken);
+                    setCopiedToken(true);
+                    toast({ title: "Token copiado!", description: "Cole o token no aplicativo de impressão do computador." });
+                    setTimeout(() => setCopiedToken(false), 2000);
+                  }}
+                  className="flex items-center gap-2 shrink-0 bg-white"
+                >
+                  {copiedToken ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  {copiedToken ? "Copiado!" : "Copiar Token"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Endereço Físico */}

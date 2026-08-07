@@ -1,9 +1,10 @@
-import { getAuthSession, signIn, signOut, type AuthSession } from "@/lib/auth";
+import { getAuthSession, signIn, signOut, type AuthSession, type AuthUser } from "@/lib/auth";
 import { clearAccessToken, setAccessToken } from "./api";
 
 export type AuthResponse = {
   accessToken: string;
   refreshToken: string;
+  user?: AuthUser;
 };
 
 export type LoginPayload = {

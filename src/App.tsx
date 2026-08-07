@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { isSuperAdmin } from "@/lib/auth";
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const SuperAdminDashboardPage = lazy(() => import("@/pages/SuperAdminDashboardPage"));
 const OrdersPage = lazy(() => import("@/pages/OrdersPage"));
 const CreateOrderPage = lazy(() => import("@/pages/CreateOrderPage"));
 const EditOrderPage = lazy(() => import("@/pages/EditOrderPage"));
@@ -20,7 +22,6 @@ const CustomerDetailsPage = lazy(() => import("@/pages/CustomerDetailsPage"));
 const ProductDetailsPage = lazy(() => import("@/pages/ProductDetailsPage"));
 const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
 const CouponsPage = lazy(() => import("@/pages/CouponsPage"));
-// DeliveriesPage and PaymentsPage removed — content merged into /configuracoes
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const LinksManagerPage = lazy(() => import("@/pages/LinksManagerPage"));
 const CashRegistersPage = lazy(() => import("@/pages/CashRegistersPage"));
@@ -28,7 +29,7 @@ const CashRegisterDetailsPage = lazy(() => import("@/pages/CashRegisterDetailsPa
 const CurrentCashRegisterPage = lazy(() => import("@/pages/CurrentCashRegisterPage"));
 const CustosFixosPage = lazy(() => import("@/pages/CustosFixosPage"));
 const InvestmentsPage = lazy(() => import("@/pages/InvestmentsPage"));
-const PurchaseAnalysisPage = lazy(() => import("@/pages/PurchaseAnalysisPage")); // trigger hmr
+const PurchaseAnalysisPage = lazy(() => import("@/pages/PurchaseAnalysisPage"));
 const VariationPage = lazy(() => import("@/pages/VariationPage"));
 const VariationDetailsPage = lazy(() => import("@/pages/VariationDetailsPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -43,6 +44,13 @@ function RouteFallback() {
       <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
     </div>
   );
+}
+
+function RootDashboard() {
+  if (isSuperAdmin()) {
+    return <SuperAdminDashboardPage />;
+  }
+  return <DashboardPage />;
 }
 
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
@@ -71,7 +79,9 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/pedidos/:id/imprimir" element={<OrderPrintPage />} />
               <Route element={<AdminLayout />}>
-                <Route path="/" element={<DashboardPage />} />
+                <Route path="/" element={<RootDashboard />} />
+                <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
+                <Route path="/super-admin/lojas" element={<SuperAdminStoresPage />} />
                 <Route path="/pedidos" element={<OrdersPage />} />
                 <Route path="/pedidos/novo" element={<CreateOrderPage />} />
                 <Route path="/pedidos/:id/editar" element={<EditOrderPage />} />
@@ -94,7 +104,6 @@ const App = () => (
                 <Route path="/caixa/:id" element={<CashRegisterDetailsPage />} />
                 <Route path="/financeiro/atual" element={<CurrentCashRegisterPage />} />
                 <Route path="/financeiro/custos-fixos" element={<CustosFixosPage />} />
-                <Route path="/super-admin/lojas" element={<SuperAdminStoresPage />} />
                 <Route path="/importacoes" element={<ImportsPage />} />
                 <Route path="/investimentos" element={<InvestmentsPage />} />
                 <Route path="/investimentos/simulacao" element={<PurchaseAnalysisPage />} />

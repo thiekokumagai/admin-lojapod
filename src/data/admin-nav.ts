@@ -16,6 +16,19 @@ import {
   Store as StoreIcon,
 } from "lucide-react";
 
+export const superAdminNavItems = [
+  {
+    title: "Dashboard Super Admin",
+    url: "/super-admin/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Lojas Cadastradas",
+    url: "/super-admin/lojas",
+    icon: StoreIcon,
+  },
+];
+
 export const dashboardNavItem = {
   title: "Dashboard",
   url: "/",
@@ -29,12 +42,6 @@ export const marketingLinkItem = {
 };
 
 export const navSections = [
-  {
-    label: "Super Admin",
-    items: [
-      { title: "Lojas Cadastradas", url: "/super-admin/lojas", icon: StoreIcon },
-    ],
-  },
   {
     label: "Catálogo",
     items: [

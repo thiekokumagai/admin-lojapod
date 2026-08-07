@@ -1,9 +1,9 @@
 import { forwardRef } from "react";
 import { NavLink as RouterNavLink, NavLinkProps } from "react-router-dom";
-import { Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/hooks/useSettings";
 import { buildImageUrl } from "@/utils/image-url";
+import { isSuperAdmin } from "@/lib/auth";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { dashboardNavItem, marketingLinkItem, navSections } from "@/data/admin-nav";
+import { superAdminNavItems, dashboardNavItem, marketingLinkItem, navSections } from "@/data/admin-nav";
 
 interface NavLinkCompatProps extends Omit<NavLinkProps, "className"> {
   className?: string;
@@ -44,6 +44,7 @@ export function AdminSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const { data: settings } = useSettings();
   const collapsed = state === "collapsed";
+  const superAdmin = isSuperAdmin();
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -70,61 +71,25 @@ export function AdminSidebar() {
             </div>
           ) : (
             <>
-              <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-                <span className="text-sidebar-primary-foreground font-bold text-sm">LP</span>
+              <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-white font-bold text-sm">
+                LP
               </div>
               {!collapsed && (
                 <span className="text-sidebar-foreground font-bold text-lg tracking-tight">
-                  Loja Pod
+                  {superAdmin ? "Super Admin" : "Loja Pod"}
                 </span>
               )}
             </>
           )}
         </div>
 
-        {/* Dashboard — item solto sem label de seção */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to={dashboardNavItem.url}
-                    end
-                    onClick={handleLinkClick}
-                    className="hover:bg-sidebar-accent/60 transition-colors"
-                    activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
-                  >
-                    <dashboardNavItem.icon className="mr-2 h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{dashboardNavItem.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to={marketingLinkItem.url}
-                    end
-                    onClick={handleLinkClick}
-                    className="hover:bg-sidebar-accent/60 transition-colors"
-                    activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
-                  >
-                    <marketingLinkItem.icon className="mr-2 h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{marketingLinkItem.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Seções agrupadas: Catálogo, Vendas, Configuração */}
-        {navSections.map((section) => (
-          <SidebarGroup key={section.label}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+        {/* MENU SUPER ADMIN EXCLUSIVO */}
+        {superAdmin ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Painel de Controle</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {section.items.map((item) => (
+                {superAdminNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink
@@ -142,8 +107,70 @@ export function AdminSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ))}
+        ) : (
+          /* MENU PADRÃO DA LOJA */
+          <>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={dashboardNavItem.url}
+                        end
+                        onClick={handleLinkClick}
+                        className="hover:bg-sidebar-accent/60 transition-colors"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
+                      >
+                        <dashboardNavItem.icon className="mr-2 h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{dashboardNavItem.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={marketingLinkItem.url}
+                        end
+                        onClick={handleLinkClick}
+                        className="hover:bg-sidebar-accent/60 transition-colors"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
+                      >
+                        <marketingLinkItem.icon className="mr-2 h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{marketingLinkItem.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
+            {navSections.map((section) => (
+              <SidebarGroup key={section.label}>
+                <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            onClick={handleLinkClick}
+                            className="hover:bg-sidebar-accent/60 transition-colors"
+                            activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
+                          >
+                            <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                            {!collapsed && <span>{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </>
+        )}
       </SidebarContent>
     </Sidebar>
   );
