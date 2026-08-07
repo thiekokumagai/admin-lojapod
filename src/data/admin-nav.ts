@@ -9,7 +9,6 @@ import {
   Settings,
   Receipt,
   Users,
-  Download,
   MapPin,
   Bike,
   Link as LinkIcon,
