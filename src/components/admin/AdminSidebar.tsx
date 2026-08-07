@@ -15,7 +15,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { superAdminNavItems, dashboardNavItem, marketingLinkItem, navSections } from "@/data/admin-nav";
+import {
+  superAdminNavItems,
+  dashboardNavItem,
+  marketingLinkItem,
+  navSections,
+} from "@/data/admin-nav";
 
 interface NavLinkCompatProps extends Omit<NavLinkProps, "className"> {
   className?: string;
@@ -30,7 +35,11 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
         ref={ref}
         to={to}
         className={({ isActive, isPending }) =>
-          cn(className, isActive && activeClassName, isPending && pendingClassName)
+          cn(
+            className,
+            isActive && activeClassName,
+            isPending && pendingClassName,
+          )
         }
         {...props}
       />
@@ -55,13 +64,21 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className="px-4 py-5 flex flex-col gap-2 border-b">
+        <div className="px-4 py-5 flex flex-col gap-2">
           {settings?.whiteLogoUrl || settings?.logoUrl ? (
-            <div className={cn("flex items-center", collapsed ? "justify-center w-full" : "gap-3")}>
-              <img 
-                src={buildImageUrl(settings.whiteLogoUrl || settings.logoUrl!)} 
-                alt={settings.storeName || "Logo"} 
-                className={cn("object-contain", collapsed ? "w-9 h-9 shrink-0" : "w-10 h-10 shrink-0")} 
+            <div
+              className={cn(
+                "flex items-center",
+                collapsed ? "justify-center w-full" : "gap-3",
+              )}
+            >
+              <img
+                src={buildImageUrl(settings.whiteLogoUrl || settings.logoUrl!)}
+                alt={settings.storeName || "Logo"}
+                className={cn(
+                  "object-contain",
+                  collapsed ? "w-9 h-9 shrink-0" : "w-10 h-10 shrink-0",
+                )}
               />
               {!collapsed && (
                 <div className="flex flex-col min-w-0">
