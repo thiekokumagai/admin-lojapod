@@ -352,21 +352,13 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
           </Card>
 
           <Card className="border-slate-100 bg-slate-50/30 rounded-2xl shadow-sm">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wider text-slate-500 font-bold">Saída Sócios</CardTitle>
-              <span className="text-xs font-bold text-slate-400">Total: {currencyFormatter.format(summary.partnersOutflows || 0)}</span>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 mt-1">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="font-semibold text-slate-600">Thieko</span>
-                  <span className="font-bold text-slate-800">{currencyFormatter.format(summary.thiekoOutflows || 0)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
-                  <span className="font-semibold text-slate-600">Murilo</span>
-                  <span className="font-bold text-slate-800">{currencyFormatter.format(summary.muriloOutflows || 0)}</span>
-                </div>
-              </div>
+              <p className="text-2xl font-bold text-slate-800">
+                {currencyFormatter.format(summary.partnersOutflows || 0)}
+              </p>
             </CardContent>
           </Card>
 
