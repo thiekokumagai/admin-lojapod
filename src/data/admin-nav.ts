@@ -13,6 +13,7 @@ import {
   MapPin,
   Bike,
   Link as LinkIcon,
+  Store as StoreIcon,
 } from "lucide-react";
 
 export const dashboardNavItem = {
@@ -28,6 +29,12 @@ export const marketingLinkItem = {
 };
 
 export const navSections = [
+  {
+    label: "Super Admin",
+    items: [
+      { title: "Lojas Cadastradas", url: "/super-admin/lojas", icon: StoreIcon },
+    ],
+  },
   {
     label: "Catálogo",
     items: [
@@ -58,8 +65,8 @@ export const navSections = [
   {
     label: "Configuração",
     items: [
-      { title: "Configuração", url: "/configuracoes", icon: Settings }/*,
-      { title: "Importações", url: "/importacoes", icon: Download },*/
+      { title: "Configuração", url: "/configuracoes", icon: Settings },
+      { title: "Importações", url: "/importacoes", icon: Download },
     ],
   },
 ];
