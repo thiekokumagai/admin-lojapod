@@ -66,7 +66,7 @@ export function AdminLayout() {
       <div className="flex min-h-screen w-full">
         <AdminSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4">
+          <header className="flex h-14 shrink-0 items-center justify-between bg-card px-4">
             <div className="flex items-center gap-2">
               <SidebarTrigger>
                 <Menu className="h-5 w-5" />
