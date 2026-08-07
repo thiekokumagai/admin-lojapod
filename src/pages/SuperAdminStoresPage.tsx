@@ -108,7 +108,7 @@ export default function SuperAdminStoresPage() {
                   <h2 className="font-bold text-lg text-slate-900">{store.title}</h2>
                   <div className="flex items-center gap-1.5 text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mt-1 w-fit">
                     <Globe className="h-3.5 w-3.5" />
-                    <span>{store.subdomain}.lojapod.store</span>
+                    <span>{store.subdomain}.lojapod.com</span>
                   </div>
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function SuperAdminStoresPage() {
                     onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                     className="w-full px-3 py-2 text-sm outline-none"
                   />
-                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">.lojapod.store</span>
+                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">.lojapod.com</span>
                 </div>
               </div>
 

@@ -132,7 +132,7 @@ export default function SuperAdminDashboardPage() {
                     <td className="py-3.5 px-4">
                       <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded font-mono">
                         <Globe className="h-3 w-3" />
-                        {store.subdomain}.lojapod.store
+                        {store.subdomain}.lojapod.com
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">{store.adminEmail}</td>
