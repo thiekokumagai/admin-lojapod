@@ -71,11 +71,11 @@ export function AdminSidebar() {
           ) : (
             <>
               <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-                <span className="text-sidebar-primary-foreground font-bold text-sm">P+</span>
+                <span className="text-sidebar-primary-foreground font-bold text-sm">LP</span>
               </div>
               {!collapsed && (
                 <span className="text-sidebar-foreground font-bold text-lg tracking-tight">
-                  Pod &amp; Mais
+                  Loja Pod
                 </span>
               )}
             </>

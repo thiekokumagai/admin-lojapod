@@ -1,4 +1,4 @@
-// ========== TYPES — baseados no projeto Pode Mais Clone / Vendizap ==========
+// ========== TYPES — baseados no projeto Pode Mais ==========
 
 export interface CategoryImage {
   id: string;
@@ -121,7 +121,7 @@ export interface Settings {
   enderecoOrigem: string;
 }
 
-// ========== MOCK DATA — baseados em dados reais do Pode Mais ==========
+// ========== MOCK DATA — baseados em dados reais do Loja Pod ==========
 
 export const mockCategories: CategoryImage[] = [
   { id: "cat1", title: "Pods Descartáveis", image: "https://images.unsplash.com/photo-1560913210-7d891e89ae67?w=200&h=200&fit=crop", produtosAtivos: 18, ordem: 1, status: true },

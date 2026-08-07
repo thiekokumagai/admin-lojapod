@@ -49,7 +49,7 @@ export function GeneralSettingsForm() {
         return defaults.some(d => d.toLowerCase() === trimmed.toLowerCase()) ? "" : val;
       };
 
-      setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Pode Mais"]));
+      setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod"]));
       setLogoUrl(settings.logoUrl || null);
       setWhiteLogoUrl(settings.whiteLogoUrl || null);
       setFaviconUrl(settings.faviconUrl || null);
@@ -479,7 +479,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               <Input
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Ex: Pode Mais"
+                placeholder="Ex: Loja Pod"
               />
             </div>
             <div>

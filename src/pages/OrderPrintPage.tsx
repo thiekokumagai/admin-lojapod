@@ -55,8 +55,8 @@ export default function OrderPrintPage() {
   return (
     <div className="p-4 sm:p-8 max-w-[80mm] mx-auto text-black bg-white min-h-screen text-[12px] print:p-0 print:m-0 print:w-full print:max-w-none" style={{ fontFamily: "monospace" }}>
       <div className="text-center mb-6">
-        <h1 className="font-bold text-base">{settings?.storeName || "Pod & Mais"}</h1>
-        <p className="text-xs">{(settings?.storeName || "podemais").toLowerCase().replace(/ /g, "")}.store</p>
+        <h1 className="font-bold text-base">{settings?.storeName || "Loja Pod"}</h1>
+        <p className="text-xs">{(settings?.storeName || "lojapod").toLowerCase().replace(/ /g, "")}.store</p>
       </div>
 
       <div className="mb-4 space-y-3">
