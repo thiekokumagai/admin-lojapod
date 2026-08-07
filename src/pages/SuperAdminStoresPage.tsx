@@ -1,16 +1,36 @@
 import { useEffect, useState } from 'react';
 import { storesService, Store } from '../services/stores.service';
-import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2 } from 'lucide-react';
+import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil } from 'lucide-react';
+
+function getStoreUrl(subdomain: string): string {
+  if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
+  const hostname = window.location.hostname;
+  const port = window.location.port ? `:${window.location.port}` : '';
+  const protocol = window.location.protocol;
+  if (hostname.includes('localhost')) {
+    return `${protocol}//${subdomain}.localhost${port}`;
+  }
+  return `${protocol}//${subdomain}.lojapod.com`;
+}
 
 export default function SuperAdminStoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const [form, setForm] = useState({
+    subdomain: '',
+    title: '',
+    adminEmail: '',
+    password: '',
+  });
+
+  const [editForm, setEditForm] = useState({
     subdomain: '',
     title: '',
     adminEmail: '',
@@ -52,6 +72,27 @@ export default function SuperAdminStoresPage() {
     }
   };
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStore) return;
+
+    setError('');
+    setSuccess('');
+    setSubmitting(true);
+
+    try {
+      await storesService.updateStore(editingStore.id, editForm);
+      setSuccess(`Loja "${editForm.title}" atualizada com sucesso!`);
+      setShowEditModal(false);
+      setEditingStore(null);
+      loadStores();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar loja');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -62,7 +103,7 @@ export default function SuperAdminStoresPage() {
             <h1 className="text-2xl font-bold text-slate-900">Gerenciamento de Lojas (Super Admin)</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Cadastre novas lojas, visualize subdomínios ativos e gerencie tenants do sistema.
+            Cadastre novas lojas, edite subdomínios ativos e gerencie tenants do sistema.
           </p>
         </div>
 
@@ -106,16 +147,41 @@ export default function SuperAdminStoresPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="font-bold text-lg text-slate-900">{store.title}</h2>
-                  <div className="flex items-center gap-1.5 text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mt-1 w-fit">
+                  <a
+                    href={getStoreUrl(store.subdomain)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mt-1 w-fit hover:bg-indigo-100 transition"
+                    title="Abrir vitrine da loja em nova aba"
+                  >
                     <Globe className="h-3.5 w-3.5" />
                     <span>{store.subdomain}.lojapod.com</span>
-                  </div>
+                    <ExternalLink className="h-3 w-3 ml-0.5 opacity-75" />
+                  </a>
                 </div>
+
+                <button
+                  onClick={() => {
+                    setError('');
+                    setEditingStore(store);
+                    setEditForm({
+                      title: store.title,
+                      subdomain: store.subdomain,
+                      adminEmail: store.adminEmail,
+                      password: '',
+                    });
+                    setShowEditModal(true);
+                  }}
+                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition"
+                  title="Editar Loja"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
               </div>
 
               <div className="space-y-2 text-sm text-slate-600 pt-2 border-t">
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-slate-400" />
+                  <Mail className="h-4 w-4 text-slate-400 shrink-0" />
                   <span className="truncate">{store.adminEmail}</span>
                 </div>
               </div>
@@ -209,6 +275,89 @@ export default function SuperAdminStoresPage() {
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {submitting ? 'Criando...' : 'Salvar Loja'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição */}
+      {showEditModal && editingStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 border-b pb-3">Editar Loja: {editingStore.title}</h2>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Título da Loja</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Vape Pod Brasil"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Subdomínio (URL)</label>
+                <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500">
+                  <input
+                    type="text"
+                    required
+                    placeholder="vapepod"
+                    value={editForm.subdomain}
+                    onChange={(e) => setEditForm({ ...editForm, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                    className="w-full px-3 py-2 text-sm outline-none"
+                  />
+                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">.lojapod.com</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">E-mail do Administrador</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="admin@vapepod.com"
+                  value={editForm.adminEmail}
+                  onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Redefinir Senha do Admin (Opcional)</label>
+                <input
+                  type="password"
+                  minLength={6}
+                  placeholder="Deixe em branco para não alterar"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingStore(null);
+                  }}
+                  className="px-4 py-2 border text-slate-700 rounded-lg text-sm hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {submitting ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </form>

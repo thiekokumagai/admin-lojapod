@@ -26,6 +26,8 @@ export function GeneralSettingsForm() {
   const [pixelId, setPixelId] = useState("");
   const [printToken, setPrintToken] = useState("");
   const [copiedToken, setCopiedToken] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [subdomain, setSubdomain] = useState("");
 
   // Endereço
   const [cep, setCep] = useState("");
@@ -62,8 +64,19 @@ export function GeneralSettingsForm() {
       setInstagram(settings.instagram || "");
       setPixelId(settings.pixelId || "");
 
-      if ((settings as any).storeId) {
-        apiFetch(`/stores/${(settings as any).storeId}/print-token`)
+      const storeId = (settings as any).storeId;
+      if (storeId) {
+        apiFetch(`/stores/${storeId}`)
+          .then((res) => res.json())
+          .then((storeData) => {
+            if (storeData) {
+              if (storeData.adminEmail) setAdminEmail(storeData.adminEmail);
+              if (storeData.subdomain) setSubdomain(storeData.subdomain);
+            }
+          })
+          .catch(() => {});
+
+        apiFetch(`/stores/${storeId}/print-token`)
           .then((res) => res.json())
           .then((data) => {
             if (data?.printToken) setPrintToken(data.printToken);
@@ -321,6 +334,18 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
     }
 
     try {
+      const storeId = (settings as any)?.storeId;
+      if (storeId) {
+        await apiFetch(`/stores/${storeId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: storeName,
+            subdomain,
+            adminEmail,
+          }),
+        });
+      }
+
       await updateSettingsMutation.mutateAsync({
         storeName,
         logoUrl,
@@ -343,13 +368,13 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
 
       toast({
         title: "Configurações atualizadas!",
-        description: "As informações da loja foram salvas no banco com sucesso.",
+        description: "As informações da loja, e-mail do admin e subdomínio foram salvos com sucesso.",
       });
-    } catch (err) {
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: "Ocorreu um erro ao atualizar as configurações gerais.",
+        description: err.message || "Ocorreu um erro ao atualizar as configurações gerais.",
       });
     }
   };
@@ -485,6 +510,29 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         {/* Contato & Redes Sociais */}
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Contato &amp; Redes Sociais</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="font-medium">Subdomínio da Loja (URL)</Label>
+              <div className="flex items-center border rounded-md overflow-hidden bg-white focus-within:ring-2 focus-within:ring-indigo-500">
+                <Input
+                  value={subdomain}
+                  onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  placeholder="loja1"
+                  className="border-0 shadow-none focus-visible:ring-0"
+                />
+                <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l shrink-0">.lojapod.com</span>
+              </div>
+            </div>
+            <div>
+              <Label className="font-medium">E-mail do Administrador (Login)</Label>
+              <Input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="admin@sualoja.com"
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="font-medium">Nome da Loja</Label>

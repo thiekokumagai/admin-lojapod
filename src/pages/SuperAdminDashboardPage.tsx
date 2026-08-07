@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { storesService, Store } from "../services/stores.service";
-import { Store as StoreIcon, Package, ShoppingBag, Users, Plus, ArrowRight, ShieldCheck, Globe, Loader2 } from "lucide-react";
+import { Store as StoreIcon, Package, ShoppingBag, Users, Plus, ArrowRight, ShieldCheck, Globe, Loader2, ExternalLink } from "lucide-react";
+
+function getStoreUrl(subdomain: string): string {
+  if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
+  const hostname = window.location.hostname;
+  const port = window.location.port ? `:${window.location.port}` : '';
+  const protocol = window.location.protocol;
+  if (hostname.includes('localhost')) {
+    return `${protocol}//${subdomain}.localhost${port}`;
+  }
+  return `${protocol}//${subdomain}.lojapod.com`;
+}
 
 export default function SuperAdminDashboardPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -130,10 +141,17 @@ export default function SuperAdminDashboardPage() {
                   <tr key={store.id} className="hover:bg-slate-50/80 transition">
                     <td className="py-3.5 px-4 font-semibold text-slate-900">{store.title}</td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded font-mono">
+                      <a
+                        href={getStoreUrl(store.subdomain)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded font-mono hover:bg-indigo-100 transition"
+                        title="Abrir vitrine da loja em nova aba"
+                      >
                         <Globe className="h-3 w-3" />
                         {store.subdomain}.lojapod.com
-                      </span>
+                        <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-75" />
+                      </a>
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">{store.adminEmail}</td>
                     <td className="py-3.5 px-4 text-center font-mono text-slate-800">{store._count?.products || 0}</td>

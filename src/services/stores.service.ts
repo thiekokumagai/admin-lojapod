@@ -33,4 +33,12 @@ export const storesService = {
     });
     return res.json();
   },
+
+  updateStore: async (id: string, payload: Partial<CreateStorePayload>): Promise<Store> => {
+    const res = await apiFetch(`/stores/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
 };
