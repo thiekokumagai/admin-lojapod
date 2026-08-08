@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Admin - Loja Pod
 
-TODO: Document your project here
+Painel Administrativo da Loja Pod
