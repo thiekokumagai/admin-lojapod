@@ -220,7 +220,7 @@ export default function CreateOrderPage() {
         street: selectedAddress?.street || "Local",
         number: selectedAddress?.number || "S/N",
         neighborhood: selectedAddress?.neighborhood || "Local",
-        city: selectedAddress?.city || "Campo Grande",
+        city: selectedAddress?.city || storeSettings?.searchCity || "Campo Grande",
         state: selectedAddress?.state || "MS",
         cep: selectedAddress?.cep || "00000-000",
         complement: selectedAddress?.complement || "",

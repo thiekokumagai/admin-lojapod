@@ -23,6 +23,8 @@ export interface StoreSettings {
   whiteLogoUrl: string | null;
   faviconUrl: string | null;
   topHeaderText: string | null;
+  searchSuffix?: string;
+  searchCity?: string;
   bannerUrls: string[];
   phone: string;
   instagram: string | null;

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SimpleAddressForm } from "@/components/orders/SimpleAddressForm";
 import { useToast } from "@/components/ui/use-toast";
 import { formatPhone } from "@/utils/formatters";
+import { useSettings } from "@/hooks/useSettings";
 
 interface CustomerSearchProps {
   onSelectCustomer: (customer: Customer | null) => void;
@@ -25,6 +26,7 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
   const [selectedCustomerData, setSelectedCustomerData] = useState<Customer | null>(initialCustomer || null);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(initialAddressId || null);
   const { toast } = useToast();
+  const { data: storeSettings } = useSettings();
   
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
@@ -428,7 +430,7 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
                                  street: street || "", 
                                  number: number || "", 
                                  neighborhood: neighborhood || "", 
-                                 city: city || "Campo Grande", 
+                                 city: city || storeSettings?.searchCity || "Campo Grande", 
                                  state: state || "MS", 
                                  cep: cep || "00000-000", 
                                  complement: complement || "" 

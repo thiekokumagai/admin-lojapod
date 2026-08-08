@@ -9,13 +9,13 @@ export interface AddressPrediction {
 interface Props {
     value: string;
     onSelect: (prediction: AddressPrediction) => void;
-    restrictToCampoGrande?: boolean;
+    searchSuffix?: string;
 }
 
 const useAddressAutocomplete = ({
     value,
     onSelect,
-    restrictToCampoGrande = false,
+    searchSuffix = "",
 }: Props) => {
     const [predictions, setPredictions] = useState<AddressPrediction[]>([]);
     const [loading, setLoading] = useState(false);
@@ -34,23 +34,10 @@ const useAddressAutocomplete = ({
 
             try {
                 const body: any = {
-                    input: value.trim(),
+                    input: value.trim() + (searchSuffix ? searchSuffix : ""),
                     includedRegionCodes: ["br"],
                     languageCode: "pt-BR",
                 };
-                if (restrictToCampoGrande) {
-                    body.locationRestriction = {
-                        circle: {
-                            center: {
-                                latitude: -20.4697,
-                                longitude: -54.6201,
-                            },
-                            radius: 30000,
-                        },
-                    };
-
-                    body.input = value.trim() + ", Campo Grande, MS, Brasil";
-                }
 
                 const res = await fetch(
                     "https://places.googleapis.com/v1/places:autocomplete",
@@ -93,7 +80,7 @@ const useAddressAutocomplete = ({
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [value, restrictToCampoGrande]);
+    }, [value, searchSuffix]);
 
     return {
         predictions,

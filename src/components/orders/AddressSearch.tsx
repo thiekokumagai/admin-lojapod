@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { MapPin, Search, Loader2, Check, ChevronLeft, X, Pencil, LocateFixed } from "lucide-react";
 import { toast } from "sonner";
 import useAddressAutocomplete from "@/hooks/use-address-autocomplete";
+import { useSettings } from "@/hooks/useSettings";
 type GeocoderAddressComponent = {
   long_name: string;
   types: string[];
@@ -85,6 +86,8 @@ const AddressSearch = ({ onSave, onCancel, initialAddress }: AddressSearchProps)
   const [phase, setPhase] = useState<"search" | "details">("search");
   const [query, setQuery] = useState(initialAddress?.fullText || "");
   const [isLocating, setIsLocating] = useState(false);
+  const { data: storeSettings } = useSettings();
+  
   const [selected, setSelected] = useState<AddressPrediction | null>(
     initialAddress
       ? {
@@ -97,7 +100,7 @@ const AddressSearch = ({ onSave, onCancel, initialAddress }: AddressSearchProps)
   );
   const [street, setStreet] = useState(initialAddress?.mainText || "");
   const [neighborhood, setNeighborhood] = useState(initialAddress?.secondaryText.split(",")[0]?.trim() || "");
-  const [city, setCity] = useState(initialAddress?.city || "Campo Grande");
+  const [city, setCity] = useState(initialAddress?.city || storeSettings?.searchCity || "Campo Grande");
   const [state, setState] = useState(initialAddress?.state || "MS");
   const [number, setNumber] = useState("");
   const [cep, setCep] = useState(initialAddress?.cep || "");
@@ -115,7 +118,7 @@ const AddressSearch = ({ onSave, onCancel, initialAddress }: AddressSearchProps)
   };
   const { predictions, loading: isLoading, handleSelect } = useAddressAutocomplete({
     value: query,
-    restrictToCampoGrande: true,
+    searchSuffix: storeSettings?.searchSuffix,
     onSelect: async (p) => {
       const extractedNumber = extractNumberFromQuery(query);
 
