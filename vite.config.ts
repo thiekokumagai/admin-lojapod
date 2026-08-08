@@ -20,27 +20,7 @@ export default defineConfig(({ mode }) => ({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       devOptions: { enabled: true },
-      manifest: {
-        name: 'Pod e Mais',
-        short_name: 'Pod e Mais',
-        description: 'Painel administrativo Pod e Mais',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          {
-            src: '/favicon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/favicon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      },
+      manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }

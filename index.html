@@ -12,8 +12,8 @@
     />
     <!-- TODO: Set the document title to the name of your application -->
     <title>Admin</title>
-    <meta name="description" content="Pod e Mais Generated Project">
-    <meta name="author" content="Pod e Mais" />
+    <meta name="description" id="meta-desc" content="Admin Dashboard">
+    <meta name="author" id="meta-author" content="Loja" />
 
     <!-- TODO: Update og:title to match your application name -->
     
@@ -22,14 +22,29 @@
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/10fbbc4f-62aa-431d-aca6-af27a6db31cf/id-preview-87e4e58b--396ab09a-c3a3-40d3-93bb-55c8fe9b5617.Pod e Mais.app-1774480688206.png">
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Pod e Mais" />
+    <meta name="twitter:site" content="@store" />
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/10fbbc4f-62aa-431d-aca6-af27a6db31cf/id-preview-87e4e58b--396ab09a-c3a3-40d3-93bb-55c8fe9b5617.Pod e Mais.app-1774480688206.png">
-    <meta property="og:title" content="Pod e Mais App">
-  <meta name="twitter:title" content="Pod e Mais App">
-  <meta property="og:description" content="Pod e Mais Generated Project">
-  <meta name="twitter:description" content="Pod e Mais Generated Project">
-  <link rel="icon" type="image/png" href="/favicon-192x192.png">
-  <link rel="apple-touch-icon" href="/favicon-192x192.png">
+    <meta property="og:title" id="og-title" content="App">
+    <meta name="twitter:title" id="twitter-title" content="App">
+    <meta property="og:description" id="og-desc" content="Admin Dashboard">
+    <meta name="twitter:description" id="twitter-desc" content="Admin Dashboard">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png">
+    <link rel="apple-touch-icon" href="/favicon-192x192.png">
+    
+    <script>
+      fetch('%VITE_ADMIN_API%/store/settings/manifest.json')
+        .then(res => res.json())
+        .then(data => {
+          document.title = data.name + ' - Admin';
+          document.getElementById('meta-author').content = data.name;
+          document.getElementById('meta-desc').content = data.description;
+          document.getElementById('og-title').content = data.name + ' App';
+          document.getElementById('twitter-title').content = data.name + ' App';
+          document.getElementById('og-desc').content = data.description;
+          document.getElementById('twitter-desc').content = data.description;
+        }).catch(e => console.error("Falha ao carregar titulo dinamico", e));
+    </script>
+  <link rel="manifest" href="%VITE_ADMIN_API%/store/settings/manifest.json" crossorigin="use-credentials">
 </head>
 
   <body>
