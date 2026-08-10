@@ -333,6 +333,17 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
       return;
     }
 
+    const RESERVED_SUBDOMAINS = ['app', 'admin', 'api', 'www', 'localhost', 'superadmin'];
+    const sub = subdomain.trim().toLowerCase();
+    if (sub && RESERVED_SUBDOMAINS.includes(sub)) {
+      toast({
+        variant: "destructive",
+        title: "Subdomínio reservado",
+        description: `O subdomínio "${sub}" é reservado pelo sistema (app, admin, api, etc.) e não pode ser utilizado.`,
+      });
+      return;
+    }
+
     try {
       const storeId = (settings as any)?.storeId;
       if (storeId) {

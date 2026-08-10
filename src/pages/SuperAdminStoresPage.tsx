@@ -53,10 +53,19 @@ export default function SuperAdminStoresPage() {
     loadStores();
   }, []);
 
+  const RESERVED_SUBDOMAINS = ['app', 'admin', 'api', 'www', 'localhost', 'superadmin'];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    const sub = form.subdomain.trim().toLowerCase();
+    if (RESERVED_SUBDOMAINS.includes(sub)) {
+      setError(`O subdomínio "${sub}" é reservado pelo sistema e não pode ser utilizado.`);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -78,6 +87,13 @@ export default function SuperAdminStoresPage() {
 
     setError('');
     setSuccess('');
+
+    const sub = editForm.subdomain.trim().toLowerCase();
+    if (RESERVED_SUBDOMAINS.includes(sub)) {
+      setError(`O subdomínio "${sub}" é reservado pelo sistema e não pode ser utilizado.`);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
