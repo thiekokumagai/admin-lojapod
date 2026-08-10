@@ -54,7 +54,6 @@ function RootDashboard() {
 
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
 import { DynamicFavicon } from "@/components/DynamicFavicon";
-import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,7 +67,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <GoogleMapsLoader />
     <DynamicFavicon />
-    <PWAUpdatePrompt />
     <TooltipProvider>
       <Toaster />
       <BrowserRouter>

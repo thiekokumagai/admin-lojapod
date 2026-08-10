@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { isAuthenticated } from "@/lib/auth";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 
 export function ProtectedRoute() {
   const location = useLocation();
@@ -8,5 +9,10 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <PWAUpdatePrompt />
+      <Outlet />
+    </>
+  );
 }
