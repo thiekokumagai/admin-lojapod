@@ -7,6 +7,8 @@ export interface FixedCost {
   repeats: boolean;
   type: string; // "ALWAYS" | "INSTALLMENTS"
   installmentsCount: number | null;
+  paidInstallments?: number;
+  currentInstallment?: number;
   createdAt: string;
   updatedAt: string;
 }

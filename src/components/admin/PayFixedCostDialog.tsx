@@ -40,15 +40,14 @@ export default function PayFixedCostDialog({
     enabled: isOpen,
   });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Campo_Grande",
+  }).format(new Date());
 
   const openRegister = registers?.find((r) => {
-    const start = new Date(r.startDate);
-    const end = new Date(r.endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return today >= start && today <= end;
+    const startStr = r.startDate ? r.startDate.split("T")[0] : "";
+    const endStr = r.endDate ? r.endDate.split("T")[0] : "";
+    return todayStr >= startStr && todayStr <= endStr;
   });
 
   // Initialize form values when dialog opens
@@ -82,7 +81,9 @@ export default function PayFixedCostDialog({
         title: "Sucesso!",
         description: "Pagamento registrado com sucesso no caixa ativo.",
       });
+      queryClient.invalidateQueries({ queryKey: ["fixed-costs"] });
       queryClient.invalidateQueries({ queryKey: ["cash-registers"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-register-summary"] });
       onClose();
     },
     onError: (error: any) => {

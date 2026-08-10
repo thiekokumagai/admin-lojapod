@@ -119,6 +119,8 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
         title: "Movimentação excluída",
         description: "A movimentação manual foi removida com sucesso.",
       });
+      queryClient.invalidateQueries({ queryKey: ["fixed-costs"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-registers"] });
       queryClient.invalidateQueries({ queryKey: ["cash-register-summary", id] });
     },
     onError: (err: any) => {

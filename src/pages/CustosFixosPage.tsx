@@ -267,7 +267,9 @@ export default function CustosFixosPage() {
                            ) : cost.type === "ALWAYS" ? (
                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800">Mensal</span>
                            ) : (
-                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800">Parcelado ({cost.installmentsCount}x)</span>
+                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800">
+                               Parcela {cost.currentInstallment || ((cost.paidInstallments || 0) + 1)} de {cost.installmentsCount} (1 por caixa)
+                             </span>
                            )}
                          </div>
                        </div>
@@ -320,7 +322,7 @@ export default function CustosFixosPage() {
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800">
-                            Parcelado ({cost.installmentsCount}x)
+                            Parcela {cost.currentInstallment || ((cost.paidInstallments || 0) + 1)} de {cost.installmentsCount} (1 por caixa)
                           </span>
                         )}
                       </TableCell>
