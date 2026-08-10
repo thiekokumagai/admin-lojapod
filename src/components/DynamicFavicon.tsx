@@ -1,11 +1,18 @@
 import { useEffect } from "react";
 import { useSettings } from "@/hooks/useSettings";
 import { buildImageUrl } from "@/utils/image-url";
+import { isSuperAdmin } from "@/lib/auth";
 
 export function DynamicFavicon() {
   const { data: settings } = useSettings();
+  const superAdmin = isSuperAdmin();
 
   useEffect(() => {
+    if (superAdmin) {
+      document.title = "Super Admin | Loja Pod";
+      return;
+    }
+
     if (settings) {
       if (settings.faviconUrl) {
         const href = buildImageUrl(settings.faviconUrl);
@@ -29,10 +36,12 @@ export function DynamicFavicon() {
         appleLink.href = href;
       }
       
-      const storeName = settings.storeName || "Lojapod";
-      document.title = `${storeName}`;
+      const storeName = (settings.storeName && settings.storeName !== "undefined")
+        ? settings.storeName
+        : "Loja Pod";
+      document.title = `${storeName} - Admin`;
     }
-  }, [settings]);
+  }, [settings, superAdmin]);
 
   return null;
 }

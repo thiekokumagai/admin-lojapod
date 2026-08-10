@@ -33,19 +33,28 @@
     
     <script>
       fetch('http://localhost:3000/api/store/settings/manifest.json')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error('Not OK');
+          return res.json();
+        })
         .then(data => {
-          document.title = data.name + ' - Admin';
-          document.getElementById('meta-author').content = data.name;
-          document.getElementById('meta-desc').content = data.description;
-          document.getElementById('og-title').content = data.name + ' App';
-          document.getElementById('twitter-title').content = data.name + ' App';
-          document.getElementById('og-desc').content = data.description;
-          document.getElementById('twitter-desc').content = data.description;
-        }).catch(e => console.error("Falha ao carregar titulo dinamico", e));
+          if (data && data.name && typeof data.name === 'string') {
+            document.title = data.name + ' - Admin';
+            const metaAuthor = document.getElementById('meta-author');
+            if (metaAuthor) metaAuthor.content = data.name;
+            const metaDesc = document.getElementById('meta-desc');
+            if (metaDesc) metaDesc.content = data.description || 'Admin Dashboard';
+            const ogTitle = document.getElementById('og-title');
+            if (ogTitle) ogTitle.content = data.name + ' App';
+            const twitterTitle = document.getElementById('twitter-title');
+            if (twitterTitle) twitterTitle.content = data.name + ' App';
+          }
+        }).catch(e => {
+          document.title = 'Loja Pod - Admin';
+        });
     </script>
   <link rel="manifest" href="http://localhost:3000/api/store/settings/manifest.json" crossorigin="anonymous">
-  <script type="module" crossorigin src="/assets/index-D-yhsZU8.js"></script>
+  <script type="module" crossorigin src="/assets/index-BNNkYyP1.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/lucide-icons-BJ1AtMKw.js">
   <link rel="modulepreload" crossorigin href="/assets/recharts-pDlamf9u.js">
   <link rel="stylesheet" crossorigin href="/assets/index-BfAdbXl0.css">
