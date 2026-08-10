@@ -22,7 +22,10 @@ export function AdminLayout() {
   const [subdomain, setSubdomain] = useState<string>("");
 
   useEffect(() => {
-    if (superAdmin) return;
+    if (superAdmin) {
+      document.title = "Super Admin | Loja Pod";
+      return;
+    }
 
     if (settings && (settings as any).storeId) {
       apiFetch(`/stores/${(settings as any).storeId}`)
