@@ -39,7 +39,7 @@ self.addEventListener('push', (event) => {
       data: data.data || {},
       vibrate: [100, 50, 100],
     };
-    event.waitUntil(self.registration.showNotification(data.title || 'Podemais', options));
+    event.waitUntil(self.registration.showNotification(data.title || 'Loja Pod', options));
   }
 });
 

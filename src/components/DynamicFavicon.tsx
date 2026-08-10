@@ -29,8 +29,8 @@ export function DynamicFavicon() {
         appleLink.href = href;
       }
       
-      const storeName = settings.storeName || "Podemais";
-      document.title = `${storeName} | Admin`;
+      const storeName = settings.storeName || "Lojapod";
+      document.title = `${storeName}`;
     }
   }, [settings]);
 
