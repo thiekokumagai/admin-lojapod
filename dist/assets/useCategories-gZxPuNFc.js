@@ -1,1 +1,0 @@
-import{r as t}from"./lucide-icons-BB0Oz5ZS.js";import{g as n}from"./category.service-DUdxMa4D.js";function f(){const[o,s]=t.useState([]),[r,e]=t.useState(!0),a=async()=>{e(!0);try{const i=await n();s(i)}finally{e(!1)}};return t.useEffect(()=>{a()},[]),{data:o,loading:r,reload:a}}export{f as u};

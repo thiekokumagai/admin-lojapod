@@ -49,3 +49,19 @@ export async function uploadSettingsMedia(file: File): Promise<{ url: string; fi
   });
   return response.json();
 }
+
+export async function uploadFavicon(file: File): Promise<{
+  url: string;
+  fileName: string;
+  icon192: string;
+  icon512: string;
+}> {
+  const body = new FormData();
+  body.append("file", file);
+
+  const response = await apiFetch("/settings/upload/favicon", {
+    method: "POST",
+    body,
+  });
+  return response.json();
+}

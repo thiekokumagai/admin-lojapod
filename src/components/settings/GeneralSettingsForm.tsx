@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { apiFetch } from "@/services/api";
-import { uploadSettingsMedia } from "@/services/settings.service";
+import { uploadFavicon, uploadSettingsMedia } from "@/services/settings.service";
 import { buildImageUrl } from "@/utils/image-url";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -204,7 +204,7 @@ export function GeneralSettingsForm() {
 
     try {
       setIsUploadingFavicon(true);
-      const res = await uploadSettingsMedia(file);
+      const res = await uploadFavicon(file);
       setFaviconUrl(res.url);
       toast({ title: "Favicon atualizado com sucesso!" });
     } catch (err) {
