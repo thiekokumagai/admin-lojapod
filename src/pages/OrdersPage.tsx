@@ -332,7 +332,7 @@ export default function OrdersPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-white" />
+                    <Calendar className="h-4 w-4 text-violet-600" />
                     Filtro de Data
                   </h4>
                   {(startDate || endDate) && (
