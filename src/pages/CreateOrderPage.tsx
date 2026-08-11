@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { buildImageUrl } from "@/utils/image-url";
 import { useSettings } from "@/hooks/useSettings";
 import { useFreight } from "@/hooks/useFreight";
+import { formatFreightDestinationAddress } from "@/utils/freight-address";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -63,7 +64,7 @@ export default function CreateOrderPage() {
 
   useEffect(() => {
     if (selectedAddress) {
-      const fullDest = [selectedAddress.street, selectedAddress.number, selectedAddress.neighborhood, selectedAddress.city, selectedAddress.state].filter(Boolean).join(", ");
+      const fullDest = formatFreightDestinationAddress(selectedAddress);
       calculate(fullDest).then(res => {
          if (res && !res.error && res.freightPrice !== null) {
             setDeliveryFee(res.freightPrice);
