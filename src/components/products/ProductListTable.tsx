@@ -336,37 +336,50 @@ export function ProductListTable({
     <div className="space-y-4">
       {/* Bulk action bar */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2.5">
-          <span className="text-sm font-medium">
-            {selectedIds.length} selecionado{selectedIds.length > 1 ? "s" : ""}
-          </span>
-          <div className="flex gap-2 ml-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border bg-muted/50 p-3 sm:px-4 sm:py-2.5">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <span className="text-sm font-medium">
+              {selectedIds.length} selecionado{selectedIds.length > 1 ? "s" : ""}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground sm:hidden px-2"
+              onClick={() => onSelectionChange([])}
+            >
+              Desmarcar
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               size="sm"
               variant="outline"
+              className="flex-1 sm:flex-initial gap-1.5 px-2.5 sm:px-3"
               onClick={() => onBulkEnable(selectedIds)}
               disabled={isBulkPending}
             >
-              <Eye className="h-3.5 w-3.5 mr-1" />
-              Ativar
+              <Eye className="h-3.5 w-3.5 shrink-0" />
+              <span>Ativar</span>
             </Button>
             <Button
               size="sm"
               variant="outline"
+              className="flex-1 sm:flex-initial gap-1.5 px-2.5 sm:px-3"
               onClick={() => onBulkDisable(selectedIds)}
               disabled={isBulkPending}
             >
-              <EyeOff className="h-3.5 w-3.5 mr-1" />
-              Desativar
+              <EyeOff className="h-3.5 w-3.5 shrink-0" />
+              <span>Desativar</span>
             </Button>
             <Button
               size="sm"
               variant="destructive"
+              className="flex-1 sm:flex-initial gap-1.5 px-2.5 sm:px-3"
               onClick={() => onBulkDelete(selectedIds)}
               disabled={isBulkPending}
             >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-              Excluir
+              <Trash2 className="h-3.5 w-3.5 shrink-0" />
+              <span>Excluir</span>
             </Button>
           </div>
         </div>
