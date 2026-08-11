@@ -315,16 +315,18 @@ export default function OrdersPage() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 text-slate-700 ${
-                  startDate || endDate ? "border-violet-300 bg-violet-50/80 text-violet-700 font-bold" : ""
+                className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 ${
+                  startDate || endDate 
+                    ? "border-emerald-600 bg-emerald-600 text-white font-bold hover:bg-emerald-700 hover:text-white" 
+                    : "text-slate-700"
                 }`}
               >
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <Calendar className={`h-4 w-4 shrink-0 ${startDate || endDate ? "text-violet-600" : "text-slate-400"}`} />
+                  <Calendar className={`h-4 w-4 shrink-0 ${startDate || endDate ? "text-white" : "text-slate-400"}`} />
                   <span className="truncate">{getMobileDateLabel()}</span>
                 </div>
                 {(startDate || endDate) && (
-                  <span className="flex h-2 w-2 rounded-full bg-violet-600 shrink-0 ml-2" />
+                  <span className="flex h-2 w-2 rounded-full bg-white shrink-0 ml-2" />
                 )}
               </Button>
             </PopoverTrigger>
@@ -332,7 +334,7 @@ export default function OrdersPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-violet-600" />
+                    <Calendar className="h-4 w-4 text-emerald-600" />
                     Filtro de Data
                   </h4>
                   {(startDate || endDate) && (
@@ -353,7 +355,7 @@ export default function OrdersPage() {
                     variant="secondary"
                     size="sm"
                     onClick={handlePresetToday}
-                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-violet-100 hover:text-violet-700 font-semibold shrink-0"
+                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
                   >
                     Hoje
                   </Button>
@@ -362,7 +364,7 @@ export default function OrdersPage() {
                     variant="secondary"
                     size="sm"
                     onClick={handlePreset7Days}
-                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-violet-100 hover:text-violet-700 font-semibold shrink-0"
+                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
                   >
                     Últimos 7 dias
                   </Button>
@@ -371,7 +373,7 @@ export default function OrdersPage() {
                     variant="secondary"
                     size="sm"
                     onClick={handlePresetMonth}
-                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-violet-100 hover:text-violet-700 font-semibold shrink-0"
+                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
                   >
                     Este Mês
                   </Button>
