@@ -328,7 +328,7 @@ export default function OrdersPage() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[calc(100vw-32px)] max-w-sm p-4 rounded-2xl shadow-xl border-slate-200" align="center">
+            <PopoverContent className="w-[calc(100vw-32px)] max-w-sm p-4 rounded-2xl shadow-xl border-slate-200 overflow-hidden box-border" align="center">
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -378,23 +378,23 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Date Inputs */}
-                <div className="space-y-3 pt-1">
-                  <div>
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="min-w-0">
                     <label className="text-xs font-semibold text-slate-500 block mb-1">Data Inicial</label>
                     <Input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="h-10 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-sm"
+                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="text-xs font-semibold text-slate-500 block mb-1">Data Final</label>
                     <Input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="h-10 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-sm"
+                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
                     />
                   </div>
                 </div>
