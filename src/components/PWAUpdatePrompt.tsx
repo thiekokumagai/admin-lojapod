@@ -1,89 +1,62 @@
-import { useEffect, useState, useRef } from "react";
-import { RefreshCw, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function PWAUpdatePrompt() {
-  const [needRefresh, setNeedRefresh] = useState(false);
-  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-
-    let refreshing = false;
-
-    // Trigger page reload when new controller takes over
-    const handleControllerChange = () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    };
-
-    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
-
-    // Register and check for waiting SW
-    navigator.serviceWorker.ready.then((reg) => {
-      registrationRef.current = reg;
-
-      if (reg.waiting) {
-        setNeedRefresh(true);
-      }
-
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-        if (newWorker) {
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              setNeedRefresh(true);
-            }
-          });
-        }
-      });
-    });
-
-    // Check for SW updates directly
-    const checkForUpdates = async () => {
-      try {
-        if (registrationRef.current) {
-          await registrationRef.current.update();
-        } else {
-          const reg = await navigator.serviceWorker.getRegistration();
-          if (reg) {
-            registrationRef.current = reg;
-            await reg.update();
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(swScriptUrl, registration) {
+      if (registration) {
+        // Checar por atualizações no servidor a cada 20s e ao focar/reabrir o app
+        const checkUpdate = async () => {
+          if (!navigator.onLine) return;
+          try {
+            // Bypass HTTP cache para garantir que pega o sw.js atualizado do servidor
+            await fetch(swScriptUrl, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
+            await registration.update();
+          } catch (e) {
+            console.debug('Erro na checagem de SW:', e);
           }
-        }
-      } catch (err) {
-        console.debug("PWA update check error:", err);
+        };
+
+        const interval = setInterval(checkUpdate, 20000);
+        window.addEventListener("focus", checkUpdate);
+        window.addEventListener("online", checkUpdate);
       }
-    };
+    },
+    onRegisterError(error) {
+      console.error("PWA SW Register Error:", error);
+    },
+  });
 
-    // Periodic check every 20 seconds
-    const intervalId = setInterval(checkForUpdates, 20000);
+  const handleReload = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
 
-    // Check on focus / visibilitychange (re-opening or switching tabs back to PWA)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        checkForUpdates();
+    try {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.addEventListener(
+          "controllerchange",
+          () => {
+            window.location.reload();
+          },
+          { once: true }
+        );
       }
-    };
 
-    window.addEventListener("focus", checkForUpdates);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+      await updateServiceWorker(true);
 
-    return () => {
-      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
-      clearInterval(intervalId);
-      window.removeEventListener("focus", checkForUpdates);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
-  const handleUpdate = () => {
-    const reg = registrationRef.current;
-    if (reg && reg.waiting) {
-      reg.waiting.postMessage({ type: "SKIP_WAITING" });
-    } else {
+      // Fallback de segurança caso controllerchange não dispare em até 600ms
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
+    } catch (e) {
+      console.error("Erro ao atualizar PWA:", e);
       window.location.reload();
     }
   };
@@ -91,19 +64,22 @@ export function PWAUpdatePrompt() {
   if (!needRefresh) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 z-[9999] flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-card/95 p-4 text-card-foreground shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-5">
-      <div className="flex items-center gap-3 text-sm">
-        <Sparkles className="h-5 w-5 text-amber-500 shrink-0" />
-        <div className="flex flex-col">
-          <span className="font-semibold text-foreground">Nova versão disponível! 🎉</span>
-          <span className="text-muted-foreground text-xs">Uma atualização do app foi encontrada.</span>
-        </div>
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-[9999] flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl border-primary/40 animate-in fade-in slide-in-from-bottom-5">
+      <div className="flex flex-col text-sm">
+        <span className="font-bold text-foreground">Nova versão disponível! 🎉</span>
+        <span className="text-muted-foreground text-xs">Uma atualização do app foi encontrada.</span>
       </div>
-      <Button size="sm" onClick={handleUpdate} className="gap-2 shrink-0 font-medium shadow-sm">
-        <RefreshCw className="h-3.5 w-3.5" />
-        Atualizar
+      <Button 
+        size="sm" 
+        onClick={handleReload} 
+        disabled={isUpdating}
+        className="gap-2 shrink-0 font-medium px-4"
+      >
+        <RefreshCw className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`} />
+        {isUpdating ? "Atualizando..." : "Atualizar"}
       </Button>
     </div>
   );
 }
+
 

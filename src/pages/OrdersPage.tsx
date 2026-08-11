@@ -18,6 +18,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Search, ArrowRight, Loader2, Calendar, ShoppingBag, X, Plus } from "lucide-react";
 import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { OrderStatus, PaymentStatus } from "@/types/order";
@@ -95,6 +96,54 @@ export default function OrdersPage() {
     setPaymentStatus("ALL");
     setStartDate("");
     setEndDate("");
+  };
+
+  const formatYMD = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    if (!year || !month || !day) return dateStr;
+    return `${day}/${month}/${year.slice(2)}`;
+  };
+
+  const getMobileDateLabel = () => {
+    if (startDate && endDate) {
+      return `${formatDateDisplay(startDate)} - ${formatDateDisplay(endDate)}`;
+    }
+    if (startDate) {
+      return `A partir de ${formatDateDisplay(startDate)}`;
+    }
+    if (endDate) {
+      return `Até ${formatDateDisplay(endDate)}`;
+    }
+    return "Filtrar por data";
+  };
+
+  const handlePresetToday = () => {
+    const todayStr = formatYMD(new Date());
+    setStartDate(todayStr);
+    setEndDate(todayStr);
+  };
+
+  const handlePreset7Days = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    setStartDate(formatYMD(start));
+    setEndDate(formatYMD(end));
+  };
+
+  const handlePresetMonth = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    setStartDate(formatYMD(start));
+    setEndDate(formatYMD(now));
   };
 
   const getValidDateString = (dateStr: string) => {
@@ -243,21 +292,115 @@ export default function OrdersPage() {
         </div>
 
         {/* Date Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+        {/* Desktop View (hidden sm:flex) */}
+        <div className="hidden sm:flex sm:items-center gap-2">
           <Input 
             type="date" 
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); }}
             className="h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-600 w-full"
           />
-          <span className="text-slate-400 font-medium hidden sm:inline">até</span>
-          <span className="text-slate-400 font-medium text-center sm:hidden text-xs uppercase">até</span>
+          <span className="text-slate-400 font-medium">até</span>
           <Input 
             type="date" 
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); }}
             className="h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-600 w-full"
           />
+        </div>
+
+        {/* Mobile View (sm:hidden flex w-full) */}
+        <div className="sm:hidden w-full">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 text-slate-700 ${
+                  startDate || endDate ? "border-violet-300 bg-violet-50/80 text-violet-700 font-bold" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <Calendar className={`h-4 w-4 shrink-0 ${startDate || endDate ? "text-violet-600" : "text-slate-400"}`} />
+                  <span className="truncate">{getMobileDateLabel()}</span>
+                </div>
+                {(startDate || endDate) && (
+                  <span className="flex h-2 w-2 rounded-full bg-violet-600 shrink-0 ml-2" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[calc(100vw-32px)] max-w-sm p-4 rounded-2xl shadow-xl border-slate-200" align="center">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-violet-600" />
+                    Filtro de Data
+                  </h4>
+                  {(startDate || endDate) && (
+                    <button
+                      type="button"
+                      onClick={() => { setStartDate(""); setEndDate(""); }}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                    >
+                      Limpar datas
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handlePresetToday}
+                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-violet-100 hover:text-violet-700 font-semibold shrink-0"
+                  >
+                    Hoje
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handlePreset7Days}
+                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-violet-100 hover:text-violet-700 font-semibold shrink-0"
+                  >
+                    Últimos 7 dias
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handlePresetMonth}
+                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-violet-100 hover:text-violet-700 font-semibold shrink-0"
+                  >
+                    Este Mês
+                  </Button>
+                </div>
+
+                {/* Date Inputs */}
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 block mb-1">Data Inicial</label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="h-10 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 block mb-1">Data Final</label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="h-10 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {hasFilters && (
