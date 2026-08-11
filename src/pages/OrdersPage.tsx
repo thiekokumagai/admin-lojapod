@@ -280,7 +280,7 @@ export default function OrdersPage() {
         {/* Payment Status Dropdown */}
         <div className="w-full sm:w-48">
           <Select value={paymentStatus} onValueChange={(val) => { setPaymentStatus(val); }}>
-            <SelectTrigger className="h-11 border-slate-200 focus:ring-violet-600 rounded-xl font-semibold text-slate-700">
+            <SelectTrigger className="h-11 border-slate-200 focus:ring-emerald-600 rounded-xl font-semibold text-slate-700">
               <SelectValue placeholder="Status de Pagamento" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -298,14 +298,14 @@ export default function OrdersPage() {
             type="date" 
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); }}
-            className="h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-600 w-full"
+            className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
           />
           <span className="text-slate-400 font-medium">até</span>
           <Input 
             type="date" 
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); }}
-            className="h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-600 w-full"
+            className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
           />
         </div>
 
@@ -315,10 +315,11 @@ export default function OrdersPage() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 ${
+                style={{ WebkitTapHighlightColor: "transparent" }}
+                className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 ${
                   startDate || endDate 
-                    ? "border-emerald-600 bg-emerald-600 text-white font-bold hover:bg-emerald-700 hover:text-white" 
-                    : "text-slate-700"
+                    ? "border-emerald-600 bg-emerald-600 text-white font-bold hover:bg-emerald-700 hover:text-white active:bg-emerald-700" 
+                    : "text-slate-700 hover:bg-slate-50 active:bg-slate-100"
                 }`}
               >
                 <div className="flex items-center gap-2 overflow-hidden">
@@ -387,7 +388,8 @@ export default function OrdersPage() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
+                      style={{ WebkitTapHighlightColor: "transparent" }}
+                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
                     />
                   </div>
                   <div className="min-w-0">
@@ -396,7 +398,8 @@ export default function OrdersPage() {
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
+                      style={{ WebkitTapHighlightColor: "transparent" }}
+                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
                     />
                   </div>
                 </div>
