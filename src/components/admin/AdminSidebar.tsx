@@ -65,7 +65,7 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="px-4 py-5 flex flex-col gap-2">
-          {settings?.whiteLogoUrl || settings?.logoUrl ? (
+          {!superAdmin && (settings?.whiteLogoUrl || settings?.logoUrl) ? (
             <div
               className={cn(
                 "flex items-center",

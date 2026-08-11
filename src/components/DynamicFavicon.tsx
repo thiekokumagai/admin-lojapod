@@ -10,6 +10,10 @@ export function DynamicFavicon() {
   useEffect(() => {
     if (superAdmin) {
       document.title = "Super Admin | Loja Pod";
+      const link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (link) {
+        link.href = "/favicon.ico";
+      }
       return;
     }
 

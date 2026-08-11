@@ -27,7 +27,7 @@ export function AdminLayout() {
       return;
     }
 
-    if (settings && (settings as any).storeId) {
+    if (!superAdmin && settings && (settings as any).storeId) {
       apiFetch(`/stores/${(settings as any).storeId}`)
         .then((res) => res.json())
         .then((data) => {
@@ -49,6 +49,7 @@ export function AdminLayout() {
   }, [queryClient, navigate, superAdmin, settings]);
 
   const handleLogout = () => {
+    queryClient.clear();
     clearSession();
     navigate("/login", { replace: true });
   };
