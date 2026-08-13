@@ -28,26 +28,42 @@ export default function InvestmentsPage() {
     queryFn: cashRegisterService.findAll,
   });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const timeZone = "America/Campo_Grande";
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone });
 
   const openRegister = registers?.find((r) => {
-    const start = new Date(r.startDate);
-    const end = new Date(r.endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return today >= start && today <= end;
+    const startStr = typeof r.startDate === "string" 
+      ? r.startDate.split("T")[0] 
+      : new Date(r.startDate).toISOString().split("T")[0];
+    const endStr = typeof r.endDate === "string" 
+      ? r.endDate.split("T")[0] 
+      : new Date(r.endDate).toISOString().split("T")[0];
+
+    return todayStr >= startStr && todayStr <= endStr;
   });
 
   const filteredTransactions = transactions?.filter(tx => {
     if (!openRegister) return false;
     const txDate = new Date(tx.createdAt);
-    const start = new Date(openRegister.startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(openRegister.endDate);
-    end.setHours(23, 59, 59, 999);
+    const startStr = typeof openRegister.startDate === "string" 
+      ? openRegister.startDate.split("T")[0] 
+      : new Date(openRegister.startDate).toISOString().split("T")[0];
+    const endStr = typeof openRegister.endDate === "string" 
+      ? openRegister.endDate.split("T")[0] 
+      : new Date(openRegister.endDate).toISOString().split("T")[0];
+
+    const start = new Date(startStr + "T00:00:00");
+    const end = new Date(endStr + "T23:59:59.999");
     return txDate >= start && txDate <= end;
   });
+
+  const currentRegisterEntries = filteredTransactions
+    ? filteredTransactions.filter((tx) => tx.type === "ENTRY").reduce((acc, tx) => acc + Number(tx.amount), 0)
+    : 0;
+
+  const currentRegisterOutflows = filteredTransactions
+    ? filteredTransactions.filter((tx) => tx.type === "OUTFLOW").reduce((acc, tx) => acc + Number(tx.amount), 0)
+    : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -81,7 +97,7 @@ export default function InvestmentsPage() {
         </div>
       </div>
 
-      {isLoadingSummary ? (
+      {isLoadingSummary || isLoadingRegisters || isLoadingTransactions ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
           <div className="h-32 bg-slate-200 rounded-xl"></div>
           <div className="h-32 bg-slate-200 rounded-xl"></div>
@@ -107,7 +123,7 @@ export default function InvestmentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800">
-                {summary ? formatCurrency(summary.totalEntries) : "R$ 0,00"}
+                {openRegister ? formatCurrency(currentRegisterEntries) : "R$ 0,00"}
               </div>
             </CardContent>
           </Card>
@@ -119,7 +135,7 @@ export default function InvestmentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800">
-                {summary ? formatCurrency(summary.totalOutflows) : "R$ 0,00"}
+                {openRegister ? formatCurrency(currentRegisterOutflows) : "R$ 0,00"}
               </div>
             </CardContent>
           </Card>
