@@ -16,12 +16,9 @@ export async function createCategory(
     body.append("file", form.file);
   }
   body.append("isVisible", form.isVisible ? "true" : "false");
-  if (form.excludeFromBestSeller !== undefined) {
-    body.append("excludeFromBestSeller", form.excludeFromBestSeller ? "true" : "false");
-  }
-  if (form.oldUrl) {
-    body.append("oldUrl", form.oldUrl);
-  }
+    if (form.excludeFromBestSeller !== undefined) {
+      body.append("excludeFromBestSeller", String(form.excludeFromBestSeller));
+    }
   await apiFetch("/categories", {
     method: "POST",
     body,

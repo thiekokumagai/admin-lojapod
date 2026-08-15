@@ -592,14 +592,6 @@ export default function CategoriesPage() {
               )}
             </div>
 
-            <div>
-              <Label>URL Antiga</Label>
-              <Input {...register("oldUrl")} placeholder="ex: vitrine/pod_mais_86c37d8a" />
-              <p className="text-xs text-muted-foreground mt-1">
-                Usado para redirecionar links antigos para esta categoria
-              </p>
-            </div>
-
             <Controller
               name="isVisible"
               control={control}
