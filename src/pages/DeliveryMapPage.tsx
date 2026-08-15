@@ -590,7 +590,7 @@ export default function DeliveryMapPage() {
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={mapCenter}
-          zoom={12}
+          zoom={14}
           options={{
             disableDefaultUI: false,
             zoomControl: true,
