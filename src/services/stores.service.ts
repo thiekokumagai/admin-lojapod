@@ -5,6 +5,7 @@ export interface Store {
   subdomain: string;
   title: string;
   adminEmail: string;
+  isActive: boolean;
   createdAt: string;
   _count?: {
     products: number;
@@ -38,6 +39,20 @@ export const storesService = {
     const res = await apiFetch(`/stores/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  toggleStoreActive: async (id: string): Promise<Store> => {
+    const res = await apiFetch(`/stores/${id}/toggle-active`, {
+      method: 'PATCH',
+    });
+    return res.json();
+  },
+
+  deleteStore: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiFetch(`/stores/${id}`, {
+      method: 'DELETE',
     });
     return res.json();
   },

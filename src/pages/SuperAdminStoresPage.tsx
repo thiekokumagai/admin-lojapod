@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { storesService, Store } from '../services/stores.service';
-import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil } from 'lucide-react';
+import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil, Trash2, Power } from 'lucide-react';
 
 function getStoreUrl(subdomain: string): string {
   if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
@@ -20,6 +20,7 @@ export default function SuperAdminStoresPage() {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [deletingStore, setDeletingStore] = useState<Store | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -109,6 +110,32 @@ export default function SuperAdminStoresPage() {
     }
   };
 
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await storesService.toggleStoreActive(id);
+      setSuccess(`Loja ${currentStatus ? 'desativada' : 'ativada'} com sucesso!`);
+      loadStores();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao alterar status da loja');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingStore) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await storesService.deleteStore(deletingStore.id);
+      setSuccess(`Loja "${deletingStore.title}" excluída permanentemente!`);
+      setDeletingStore(null);
+      loadStores();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao excluir loja');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -162,7 +189,12 @@ export default function SuperAdminStoresPage() {
             <div key={store.id} className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition space-y-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="font-bold text-lg text-slate-900">{store.title}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-lg text-slate-900">{store.title}</h2>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${store.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                      {store.isActive ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </div>
                   <a
                     href={getStoreUrl(store.subdomain)}
                     target="_blank"
@@ -176,23 +208,39 @@ export default function SuperAdminStoresPage() {
                   </a>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setError('');
-                    setEditingStore(store);
-                    setEditForm({
-                      title: store.title,
-                      subdomain: store.subdomain,
-                      adminEmail: store.adminEmail,
-                      password: '',
-                    });
-                    setShowEditModal(true);
-                  }}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition"
-                  title="Editar Loja"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleToggleActive(store.id, store.isActive)}
+                    className={`p-2 rounded-lg transition ${store.isActive ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-50'}`}
+                    title={store.isActive ? "Desativar Loja" : "Ativar Loja"}
+                  >
+                    <Power className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setError('');
+                      setEditingStore(store);
+                      setEditForm({
+                        title: store.title,
+                        subdomain: store.subdomain,
+                        adminEmail: store.adminEmail,
+                        password: '',
+                      });
+                      setShowEditModal(true);
+                    }}
+                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition"
+                    title="Editar Loja"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingStore(store)}
+                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                    title="Excluir Loja Permanentemente"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2 text-sm text-slate-600 pt-2 border-t">
@@ -377,6 +425,50 @@ export default function SuperAdminStoresPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Exclusão */}
+      {deletingStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center gap-3 text-red-600 border-b border-red-100 pb-3">
+              <div className="p-2 bg-red-100 rounded-full">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <h2 className="text-xl font-bold">Excluir Loja Permanentemente</h2>
+            </div>
+            
+            <div className="space-y-3 py-2">
+              <p className="text-slate-700 text-sm">
+                Tem certeza que deseja excluir a loja <strong>{deletingStore.title}</strong>?
+              </p>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-700 font-medium">
+                  ⚠️ AVISO: Esta ação é irreversível. Todos os dados associados a esta loja (produtos, pedidos, clientes, etc.) serão apagados para sempre.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+              <button
+                type="button"
+                onClick={() => setDeletingStore(null)}
+                className="px-4 py-2 border text-slate-700 rounded-lg text-sm hover:bg-slate-50"
+                disabled={submitting}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={submitting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {submitting ? 'Excluindo...' : 'Sim, Excluir Loja'}
+              </button>
+            </div>
           </div>
         </div>
       )}
