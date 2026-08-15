@@ -3,11 +3,12 @@ import { Loader2, QrCode, Copy, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/services/api";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { getAuthSession } from "@/lib/auth";
 import { Navigate } from "react-router-dom";
 
 export default function PaymentPage() {
-  const { user } = useAuth();
+  const session = getAuthSession();
+  const user = session?.user;
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
   const [copied, setCopied] = useState(false);
