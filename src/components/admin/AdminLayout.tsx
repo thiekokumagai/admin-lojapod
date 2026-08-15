@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 import { Key } from "lucide-react";
-  const navigate = useNavigate();
+
 export function AdminLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
