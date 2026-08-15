@@ -7,6 +7,8 @@ export interface Store {
   adminEmail: string;
   isActive: boolean;
   createdAt: string;
+  subscriptionExpiresAt?: string;
+  monthlyFee?: number;
   _count?: {
     products: number;
     orders: number;
@@ -19,6 +21,8 @@ export interface CreateStorePayload {
   title: string;
   adminEmail: string;
   password?: string;
+  subscriptionExpiresAt?: string;
+  monthlyFee?: number;
 }
 
 export const storesService = {

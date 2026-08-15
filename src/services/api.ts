@@ -64,6 +64,13 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     }
   }
 
+  if (response.status === 402) {
+    // 402 Payment Required -> Redireciona para a tela de pagamento
+    if (!window.location.pathname.includes('/payment')) {
+      window.location.href = '/payment';
+    }
+  }
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const message = Array.isArray(errorData.message)

@@ -29,6 +29,8 @@ export default function SuperAdminStoresPage() {
     title: '',
     adminEmail: '',
     password: '',
+    monthlyFee: 99.90,
+    subscriptionExpiresAt: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
   });
 
   const [editForm, setEditForm] = useState({
@@ -36,6 +38,8 @@ export default function SuperAdminStoresPage() {
     title: '',
     adminEmail: '',
     password: '',
+    monthlyFee: 99.90,
+    subscriptionExpiresAt: '',
   });
 
   const loadStores = async () => {
@@ -225,6 +229,8 @@ export default function SuperAdminStoresPage() {
                         subdomain: store.subdomain,
                         adminEmail: store.adminEmail,
                         password: '',
+                        monthlyFee: store.monthlyFee || 99.90,
+                        subscriptionExpiresAt: store.subscriptionExpiresAt ? new Date(store.subscriptionExpiresAt).toISOString().split('T')[0] : '',
                       });
                       setShowEditModal(true);
                     }}
@@ -259,6 +265,9 @@ export default function SuperAdminStoresPage() {
                   <ShoppingBag className="h-4 w-4 text-slate-400" />
                   <span><strong>{store._count?.orders || 0}</strong> pedidos</span>
                 </div>
+              </div>
+              <div className="pt-2 text-xs text-slate-500">
+                <span>Mensalidade: <strong>R$ {store.monthlyFee}</strong> | Vencimento: <strong>{store.subscriptionExpiresAt ? new Date(store.subscriptionExpiresAt).toLocaleDateString('pt-BR') : 'Sem validade'}</strong></span>
               </div>
             </div>
           ))}
@@ -322,6 +331,29 @@ export default function SuperAdminStoresPage() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Mensalidade (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={form.monthlyFee}
+                    onChange={(e) => setForm({ ...form, monthlyFee: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Vencimento Inicial</label>
+                  <input
+                    type="date"
+                    value={form.subscriptionExpiresAt}
+                    onChange={(e) => setForm({ ...form, subscriptionExpiresAt: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t">
@@ -402,6 +434,29 @@ export default function SuperAdminStoresPage() {
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Mensalidade (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={editForm.monthlyFee}
+                    onChange={(e) => setEditForm({ ...editForm, monthlyFee: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Vencimento (Deixe em branco para infinito)</label>
+                  <input
+                    type="date"
+                    value={editForm.subscriptionExpiresAt}
+                    onChange={(e) => setEditForm({ ...editForm, subscriptionExpiresAt: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t">
