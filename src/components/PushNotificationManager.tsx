@@ -71,20 +71,7 @@ export function PushNotificationManager() {
     }
   };
 
-  useEffect(() => {
-    if (needRefresh) {
-      toast.info('Nova versão disponível!', {
-        description: 'Clique em atualizar para carregar as últimas melhorias.',
-        duration: Infinity,
-        action: {
-          label: 'Atualizar agora',
-          onClick: () => {
-            updateServiceWorker(true);
-          },
-        },
-      });
-    }
-  }, [needRefresh, updateServiceWorker]);
+  // Removido aviso duplicado de PWA Update, pois já existe no PWAUpdatePrompt.tsx
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
