@@ -21,6 +21,8 @@ import {
   Loader2,
 } from "lucide-react";
 
+import { getStoreUrl } from "@/utils/store-url";
+
 interface MarketingLink {
   id: string;
   title: string;
@@ -36,11 +38,23 @@ export default function LinksManagerPage() {
 
   const [links, setLinks] = useState<MarketingLink[]>([]);
   const [isUploading, setIsUploading] = useState<string | null>(null);
+  const [subdomain, setSubdomain] = useState<string>("");
 
   useEffect(() => {
     if (settings && settings.marketingLinks) {
       const sortedLinks = [...settings.marketingLinks].sort((a, b) => (a.order || 0) - (b.order || 0));
       setLinks(sortedLinks);
+    }
+    
+    if (settings && (settings as any).storeId) {
+      import("@/lib/api").then(({ apiFetch }) => {
+        apiFetch(`/stores/${(settings as any).storeId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data?.subdomain) setSubdomain(data.subdomain);
+          })
+          .catch(() => {});
+      });
     }
   }, [settings]);
 
@@ -157,7 +171,7 @@ export default function LinksManagerPage() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-initial rounded-xl">
-            <a href={`${import.meta.env.VITE_STORE_URL}/links`} target="_blank" rel="noreferrer">
+            <a href={subdomain ? `${getStoreUrl(subdomain)}/links` : '#'} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1.5 h-4 w-4" />
               Ver Página
             </a>
