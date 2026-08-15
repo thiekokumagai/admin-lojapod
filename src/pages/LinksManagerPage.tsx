@@ -47,7 +47,7 @@ export default function LinksManagerPage() {
     }
     
     if (settings && (settings as any).storeId) {
-      import("@/lib/api").then(({ apiFetch }) => {
+      import("@/services/api").then(({ apiFetch }) => {
         apiFetch(`/stores/${(settings as any).storeId}`)
           .then((res) => res.json())
           .then((data) => {
