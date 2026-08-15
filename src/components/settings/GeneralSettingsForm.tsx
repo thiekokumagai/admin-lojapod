@@ -470,14 +470,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
 
         {/* Top Header Text e Banners */}
         <div className="space-y-4">
-          <div>
-            <Label className="font-medium">Texto de Destaque no Topo</Label>
-            <Input
-              value={topHeaderText}
-              onChange={(e) => setTopHeaderText(e.target.value)}
-              placeholder="Ex: Entrega Grátis acima de R$ 150!"
-            />
-          </div>
+
 
           <div className="space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
