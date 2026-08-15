@@ -13,13 +13,17 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
+import { Key } from "lucide-react";
+  const navigate = useNavigate();
 export function AdminLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const superAdmin = isSuperAdmin();
   const { data: settings } = useSettings();
   const [subdomain, setSubdomain] = useState<string>("");
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
   useEffect(() => {
     if (superAdmin) {
@@ -105,13 +109,24 @@ export function AdminLayout() {
                   </Button>
                 </>
               )}
-              <span className="hidden text-sm font-semibold text-slate-700 sm:inline ml-2 border-l pl-3">
-                {superAdmin ? "👑 Super Admin" : "Administrador"}
-              </span>
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-destructive">
-                <LogOut className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">Sair</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 pl-3 ml-2 border-l text-sm font-semibold text-slate-700 hover:text-foreground">
+                    {superAdmin ? "👑 Super Admin" : "Administrador"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsPasswordDialogOpen(true)} className="cursor-pointer gap-2">
+                    <Key className="h-4 w-4" />
+                    <span>Alterar Senha</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive gap-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <ChangePasswordDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
             </div>
           </header>
           <main className="flex-1 overflow-auto p-4 md:p-6">
