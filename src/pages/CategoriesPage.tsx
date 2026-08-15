@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { useCategories } from "@/hooks/useCategories";
+import { useSettings } from "@/hooks/useSettings";
 import {
   createCategory,
   updateCategory,
@@ -43,6 +44,7 @@ import {
 } from "@/services/category.service";
 
 import { buildImageUrl } from "@/utils/image-url";
+import { getStoreUrl } from "@/utils/store-url";
 import type { CategoryList } from "@/types/category";
 
 import {
@@ -52,11 +54,13 @@ import {
 
 export default function CategoriesPage() {
   const { data: categories, loading, reload } = useCategories();
+  const { data: settings } = useSettings();
 
   const [localCategories, setLocalCategories] = useState<CategoryList[]>([]);
   const [editingCategory, setEditingCategory] = useState<CategoryList | null>(
     null,
   );
+  const [subdomain, setSubdomain] = useState<string>("");
 
   const [open, setOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -106,6 +110,19 @@ export default function CategoriesPage() {
   useEffect(() => {
     if (categories) setLocalCategories(categories);
   }, [categories]);
+
+  useEffect(() => {
+    if (settings && (settings as any).storeId) {
+      import("@/services/api").then(({ apiFetch }) => {
+        apiFetch(`/stores/${(settings as any).storeId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data?.subdomain) setSubdomain(data.subdomain);
+          })
+          .catch(() => {});
+      });
+    }
+  }, [settings]);
 
   useEffect(() => {
     return () => {
@@ -326,8 +343,7 @@ export default function CategoriesPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleCopyLink = (category: CategoryList) => {
-    // Attempt to guess store URL: if admin is admin.domain.com, client is domain.com
-    const baseUrl = import.meta.env.VITE_STORE_URL || window.location.origin.replace("admin.", "");
+    const baseUrl = subdomain ? getStoreUrl(subdomain) : (import.meta.env.VITE_STORE_URL || window.location.origin.replace("admin.", ""));
     const slug = category.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
     const link = `${baseUrl}/${slug}`;
     navigator.clipboard.writeText(link);
