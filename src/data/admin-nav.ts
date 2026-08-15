@@ -72,7 +72,6 @@ export const navSections = [
     label: "Configuração",
     items: [
       { title: "Configuração", url: "/configuracoes", icon: Settings },
-      { title: "Faturamento", url: "/billing", icon: Receipt },
     ],
   },
 ];

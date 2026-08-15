@@ -23,8 +23,6 @@ const CustomerDetailsPage = lazy(() => import("@/pages/CustomerDetailsPage"));
 const ProductDetailsPage = lazy(() => import("@/pages/ProductDetailsPage"));
 const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
 const CouponsPage = lazy(() => import("@/pages/CouponsPage"));
-const PaymentPage = lazy(() => import("@/pages/PaymentPage"));
-const BillingPage = lazy(() => import("@/pages/BillingPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const LinksManagerPage = lazy(() => import("@/pages/LinksManagerPage"));
 const CashRegistersPage = lazy(() => import("@/pages/CashRegistersPage"));
@@ -77,7 +75,6 @@ const App = () => (
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/payment" element={<PaymentPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/pedidos/:id/imprimir" element={<OrderPrintPage />} />
               <Route element={<AdminLayout />}>
@@ -98,7 +95,6 @@ const App = () => (
                 <Route path="/produtos/:id" element={<ProductDetailsPage />} />
                 <Route path="/categorias" element={<CategoriesPage />} />
                 <Route path="/cupons" element={<CouponsPage />} />
-                <Route path="/billing" element={<BillingPage />} />
                 <Route path="/entregas" element={<Navigate to="/configuracoes" replace />} />
                 <Route path="/pagamentos" element={<Navigate to="/configuracoes" replace />} />
                 <Route path="/configuracoes" element={<SettingsPage />} />
