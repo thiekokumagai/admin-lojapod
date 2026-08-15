@@ -12,7 +12,6 @@ export const categorySchema = z.object({
     .optional(),  
     isVisible: z.boolean().optional(),
     excludeFromBestSeller: z.boolean().optional(),
-    oldUrl: z.string().optional(),
 });
 
 export type CategoryFormData = z.infer<typeof categorySchema>;

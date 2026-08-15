@@ -50,9 +50,6 @@ export async function updateCategory(
   if (form.excludeFromBestSeller !== undefined) {
     body.append("excludeFromBestSeller", form.excludeFromBestSeller ? "true" : "false");
   }
-  if (form.oldUrl !== undefined) {
-    body.append("oldUrl", form.oldUrl);
-  }
   await apiFetch(`/categories/${id}`, {
     method: "PATCH",
     body,
