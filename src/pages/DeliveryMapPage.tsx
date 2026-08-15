@@ -196,9 +196,21 @@ export default function DeliveryMapPage() {
   }, [activeOrders]); // purposefully excluded routes/selectedOrderIds to avoid refetch loops
 
   useEffect(() => {
-    if (!settings || !settings.street || !window.google?.maps) return;
-    const addressStr = `${settings.street}, ${settings.number || ""} - ${settings.neighborhood || ""}, ${settings.city || ""} - ${settings.state || ""}, ${settings.cep || ""}`;
+    if (!settings || !window.google?.maps) return;
     
+    let addressStr = "";
+    if (settings.street && settings.city) {
+      addressStr = `${settings.street}, ${settings.number || ""} - ${settings.neighborhood || ""}, ${settings.city} - ${settings.state || ""}, ${settings.cep || ""}`;
+    } else if (settings.deliveryOriginCep) {
+      addressStr = settings.deliveryOriginCep;
+    } else if (settings.cep) {
+      addressStr = settings.cep;
+    } else if (settings.city) {
+      addressStr = `${settings.city} - ${settings.state || "BR"}`;
+    } else {
+      return;
+    }
+
     if (geocodeCache[addressStr]) {
       setStoreLocation(geocodeCache[addressStr]);
       return;
