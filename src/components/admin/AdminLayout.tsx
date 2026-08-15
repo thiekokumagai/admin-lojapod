@@ -97,7 +97,7 @@ export function AdminLayout() {
                     </a>
                   )}
                   <a
-                    href="https://drive.google.com/uc?export=download&id=1FZySVH-F01SAdsSsa0mmHEZMhRk-IM_8"
+                    href="https://drive.google.com/file/d/1DB7OmKxWHq559FePfdJHOsLo3yk2LOZY/view?usp=sharing"
                     target="_blank"
                     className="hidden text-sm font-medium text-blue-500 hover:text-blue-600 sm:flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-md transition-colors"
                     title="Baixar Agente de Impressão"
