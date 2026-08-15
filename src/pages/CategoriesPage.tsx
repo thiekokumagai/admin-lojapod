@@ -30,6 +30,8 @@ import {
   X,
   Pencil,
   Link,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 import { useCategories } from "@/hooks/useCategories";
@@ -157,6 +159,50 @@ export default function CategoriesPage() {
 
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
 
+      saveTimeout.current = setTimeout(() => {
+        saveOrder(updated);
+      }, 300);
+
+      return updated;
+    });
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    setLocalCategories((prev) => {
+      const items = [...prev];
+      const temp = items[index - 1];
+      items[index - 1] = items[index];
+      items[index] = temp;
+
+      const updated = items.map((item, i) => ({
+        ...item,
+        order: i + 1,
+      }));
+
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => {
+        saveOrder(updated);
+      }, 300);
+
+      return updated;
+    });
+  };
+
+  const handleMoveDown = (index: number) => {
+    setLocalCategories((prev) => {
+      if (index === prev.length - 1) return prev;
+      const items = [...prev];
+      const temp = items[index + 1];
+      items[index + 1] = items[index];
+      items[index] = temp;
+
+      const updated = items.map((item, i) => ({
+        ...item,
+        order: i + 1,
+      }));
+
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
       saveTimeout.current = setTimeout(() => {
         saveOrder(updated);
       }, 300);
@@ -328,7 +374,7 @@ export default function CategoriesPage() {
 
       {/* Mobile Grid View */}
       <div className="grid md:hidden gap-3">
-        {localCategories.map((c) => (
+        {localCategories.map((c, index) => (
           <div
             key={c.id}
             draggable
@@ -339,39 +385,72 @@ export default function CategoriesPage() {
               setDraggingId(null);
             }}
             onDragEnd={() => setDraggingId(null)}
-            className={`bg-card border rounded-md p-4 flex items-center gap-3 shadow-sm ${draggingId === c.id ? "opacity-50" : ""}`}
+            className={`bg-card border rounded-md p-4 shadow-sm flex flex-col gap-3 ${draggingId === c.id ? "opacity-50" : ""}`}
           >
-            <GripVertical className="h-5 w-5 text-muted-foreground shrink-0 active:cursor-grabbing cursor-grab" />
-            
-            {c.image ? (
-              <img src={buildImageUrl(c.image)} className="h-12 w-12 rounded-full object-cover shrink-0 border" />
-            ) : (
-              <div className="h-12 w-12 rounded-full bg-muted shrink-0 border flex items-center justify-center text-xs text-muted-foreground">—</div>
-            )}
-            
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="font-bold text-foreground text-sm truncate">{c.title}</span>
-              <Badge variant={c.isVisible ? "default" : "secondary"} className="w-fit mt-1 py-0 text-[10px]">
-                {c.isVisible ? "Ativa" : "Inativa"}
-              </Badge>
+            {/* Top Bar for Reorder */}
+            <div className="flex items-center justify-between pb-2 border-b gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                  #{index + 1}
+                </span>
+                <span className="font-bold text-foreground text-sm truncate">{c.title}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8 rounded-lg"
+                  onClick={() => handleMoveUp(index)}
+                  disabled={index === 0}
+                  title="Mover para cima"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8 rounded-lg"
+                  onClick={() => handleMoveDown(index)}
+                  disabled={index === localCategories.length - 1}
+                  title="Mover para baixo"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            
-            <div className="flex flex-col gap-1 shrink-0">
-              <Button size="icon" variant="ghost" onClick={() => handleCopyLink(c)} className="h-8 w-8" title="Copiar link da categoria">
-                <Link className="h-4 w-4 text-primary" />
-              </Button>
-              <Button size="icon" variant="ghost" onClick={() => openEdit(c)} className="h-8 w-8">
-                <Pencil className="h-4 w-4 text-slate-600" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleDelete(c.id)}
-                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                disabled={loadingId === c.id}
-              >
-                {loadingId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              </Button>
+
+            <div className="flex items-center gap-3">
+              <GripVertical className="hidden h-5 w-5 text-muted-foreground shrink-0 active:cursor-grabbing cursor-grab" />
+              
+              {c.image ? (
+                <img src={buildImageUrl(c.image)} className="h-12 w-12 rounded-full object-cover shrink-0 border" />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-muted shrink-0 border flex items-center justify-center text-xs text-muted-foreground">—</div>
+              )}
+              
+              <div className="flex flex-col flex-1 min-w-0">
+                <Badge variant={c.isVisible ? "default" : "secondary"} className="w-fit mt-1 py-0 text-[10px]">
+                  {c.isVisible ? "Ativa" : "Inativa"}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-1 shrink-0">
+                <Button size="icon" variant="ghost" onClick={() => handleCopyLink(c)} className="h-8 w-8" title="Copiar link da categoria">
+                  <Link className="h-4 w-4 text-primary" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => openEdit(c)} className="h-8 w-8">
+                  <Pencil className="h-4 w-4 text-slate-600" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleDelete(c.id)}
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                  disabled={loadingId === c.id}
+                >
+                  {loadingId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
           </div>
         ))}
