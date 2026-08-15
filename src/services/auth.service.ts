@@ -63,6 +63,15 @@ export async function refreshTokens() {
   return data;
 }
 
+export async function updatePassword(payload: { currentPassword: string; newPassword: string }) {
+  const { apiFetch } = await import("./api");
+  const response = await apiFetch("/users/password", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+}
+
 export function restoreAuthSession() {
   const session = getAuthSession();
 
