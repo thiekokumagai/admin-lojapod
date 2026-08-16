@@ -48,6 +48,15 @@
             if (ogTitle) ogTitle.content = data.name + ' App';
             const twitterTitle = document.getElementById('twitter-title');
             if (twitterTitle) twitterTitle.content = data.name + ' App';
+            if (data.icons && data.icons.length > 0) {
+              const icon192 = data.icons.find(i => i.sizes === '192x192') || data.icons[0];
+              if (icon192 && icon192.src) {
+                const link = document.querySelector("link[rel~='icon']");
+                if (link) link.href = icon192.src;
+                const appleLink = document.querySelector("link[rel='apple-touch-icon']");
+                if (appleLink) appleLink.href = icon192.src;
+              }
+            }
           }
         }).catch(e => {
           document.title = 'Super Admin | Loja Pod';
