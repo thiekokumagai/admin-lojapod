@@ -62,6 +62,7 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return toast.error("Título é obrigatório");
+    if (/\s/.test(title)) return toast.error("O título não pode conter espaços");
 
     if (type !== "FREE_SHIPPING" && (value === "" || Number(value) <= 0)) {
       return toast.error("Informe um valor de desconto válido.");
@@ -136,7 +137,7 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                   id="title" 
                   placeholder="EX: BEMVINDO10" 
                   value={title}
-                  onChange={(e) => setTitle(e.target.value.toUpperCase())}
+                  onChange={(e) => setTitle(e.target.value.toUpperCase().replace(/\s/g, ''))}
                   className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium uppercase"
                 />
               </div>
