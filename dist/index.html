@@ -48,16 +48,25 @@
             if (ogTitle) ogTitle.content = data.name + ' App';
             const twitterTitle = document.getElementById('twitter-title');
             if (twitterTitle) twitterTitle.content = data.name + ' App';
+            if (data.icons && data.icons.length > 0) {
+              const icon192 = data.icons.find(i => i.sizes === '192x192') || data.icons[0];
+              if (icon192 && icon192.src) {
+                const link = document.querySelector("link[rel~='icon']");
+                if (link) link.href = icon192.src;
+                const appleLink = document.querySelector("link[rel='apple-touch-icon']");
+                if (appleLink) appleLink.href = icon192.src;
+              }
+            }
           }
         }).catch(e => {
           document.title = 'Super Admin | Loja Pod';
         });
     </script>
   <link rel="manifest" href="http://localhost:3000/api/store/settings/manifest.json" crossorigin="anonymous">
-  <script type="module" crossorigin src="/assets/index-Bm4_lTMn.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/lucide-icons-CWGKmjZG.js">
-  <link rel="modulepreload" crossorigin href="/assets/recharts-DjBJqbLv.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-B9wR7NDL.css">
+  <script type="module" crossorigin src="/assets/index-CH0PMmRo.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-icons-D2mLSAjb.js">
+  <link rel="modulepreload" crossorigin href="/assets/recharts-BrzpTIOC.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-FLXcDLXM.css">
 </head>
 
   <body>

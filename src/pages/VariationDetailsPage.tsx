@@ -86,7 +86,10 @@ export default function VariationDetailsPage() {
     mutationFn: async (values: VariationFormSchema) => {
       const payload: VariationFormValues = {
         title: values.title,
-        options: values.options.map((option) => option.value.trim()),
+        options: values.options.map((option) => ({
+          ...(option.id ? { id: option.id } : {}),
+          value: option.value.trim(),
+        })),
       };
 
       if (isNewVariation) {

@@ -9,7 +9,12 @@ export type Variation = {
   options: VariationOption[];
 };
 
+export type VariationOptionPayload = {
+  id?: string;
+  value: string;
+};
+
 export type VariationFormValues = {
   title: string;
-  options: string[];
+  options: (string | VariationOptionPayload)[];
 };
