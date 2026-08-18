@@ -13,6 +13,8 @@ vi.mock("react-router-dom", () => ({
 // Mock React Query
 vi.mock("@tanstack/react-query", () => ({
   useQuery: vi.fn(),
+  useMutation: vi.fn(() => ({ mutate: vi.fn() })),
+  useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })),
 }));
 
 // Mock Cash Register Service
@@ -97,8 +99,8 @@ describe("CashRegisterDetailsPage", () => {
     expect(screen.getAllByText(/484,50/).length).toBeGreaterThan(0);
 
     // Verify orders details
-    expect(screen.getByText("Alice Smith")).toBeInTheDocument();
-    expect(screen.getByText("Bob Jones")).toBeInTheDocument();
-    expect(screen.getByText("#1001")).toBeInTheDocument();
+    expect(screen.getAllByText("Alice Smith").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Bob Jones").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("#1001").length).toBeGreaterThan(0);
   });
 });

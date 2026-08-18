@@ -5,6 +5,11 @@ import React from "react";
 import { useOrderDetails } from "@/hooks/useOrders";
 import { useSettings } from "@/hooks/useSettings";
 
+// Mock React Router
+vi.mock("react-router-dom", () => ({
+  useNavigate: vi.fn(() => vi.fn()),
+}));
+
 // Mock hooks
 vi.mock("@/hooks/useOrders", () => ({
   useOrderDetails: vi.fn(() => ({ data: null, isLoading: false })),
@@ -12,6 +17,7 @@ vi.mock("@/hooks/useOrders", () => ({
   useReceiveOrder: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useRevertReceiveOrder: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useUpdateOrderStatus: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useReprintOrder: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
 }));
 
 vi.mock("@/hooks/useSettings", () => ({

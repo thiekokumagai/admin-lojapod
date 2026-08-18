@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Landmark, Plus, ArrowUpRight, ArrowDownRight, Trash2, ShoppingBag, TrendingUp, Calendar, Package, RefreshCw } from "lucide-react";
+import { ArrowLeft, Landmark, Plus, ArrowUpRight, ArrowDownRight, Trash2, ShoppingBag, TrendingUp, Calendar, Package, RefreshCw, FileDown } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { io } from "socket.io-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateCashRegisterPDF } from "@/utils/cash-register-pdf";
 import {
   Table,
   TableBody,
@@ -192,6 +193,23 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
     txMutation.mutate();
   };
 
+  const handleExportPDF = () => {
+    try {
+      generateCashRegisterPDF(data);
+      toast({
+        title: "PDF Gerado!",
+        description: "O relatório do caixa foi exportado com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast({
+        title: "Erro ao exportar PDF",
+        description: "Ocorreu um erro ao gerar o arquivo PDF.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -245,7 +263,13 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Botão de exportar PDF */}
+          <Button variant="outline" onClick={handleExportPDF} className="gap-2 font-semibold text-slate-700 hover:bg-slate-50">
+            <FileDown className="h-4 w-4 text-rose-600" />
+            Exportar PDF
+          </Button>
+
           {/* Botão de atualizar / refresh */}
           <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isRefetching} title="Atualizar dados">
             <RefreshCw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
