@@ -76,38 +76,49 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/pedidos/:id/imprimir" element={<OrderPrintPage />} />
-              <Route element={<AdminLayout />}>
-                <Route path="/" element={<RootDashboard />} />
-                <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
-                <Route path="/super-admin/lojas" element={<SuperAdminStoresPage />} />
-                <Route path="/pedidos" element={<OrdersPage />} />
-                <Route path="/pedidos/novo" element={<CreateOrderPage />} />
-                <Route path="/pedidos/:id/editar" element={<EditOrderPage />} />
-                <Route path="/pedidos/:id" element={<OrderDetailsPage />} />
-                <Route path="/mapa-entregas" element={<DeliveryMapPage />} />
-                <Route path="/entregas/rotas" element={<DeliveryMapPage />} />
-                <Route path="/motoboys" element={<CouriersPage />} />
-                <Route path="/motoboys/:id" element={<CourierDetailsPage />} />
-                <Route path="/clientes" element={<CustomersPage />} />
-                <Route path="/clientes/:id" element={<CustomerDetailsPage />} />
-                <Route path="/produtos" element={<ProductsPage />} />
-                <Route path="/produtos/:id" element={<ProductDetailsPage />} />
-                <Route path="/categorias" element={<CategoriesPage />} />
-                <Route path="/cupons" element={<CouponsPage />} />
-                <Route path="/entregas" element={<Navigate to="/configuracoes" replace />} />
-                <Route path="/pagamentos" element={<Navigate to="/configuracoes" replace />} />
-                <Route path="/configuracoes" element={<SettingsPage />} />
-                <Route path="/marketing/links" element={<LinksManagerPage />} />
-                <Route path="/caixa" element={<CashRegistersPage />} />
-                <Route path="/caixa/:id" element={<CashRegisterDetailsPage />} />
-                <Route path="/financeiro/atual" element={<CurrentCashRegisterPage />} />
-                <Route path="/financeiro/custos-fixos" element={<CustosFixosPage />} />
-                <Route path="/investimentos" element={<InvestmentsPage />} />
-                <Route path="/investimentos/simulacao" element={<PurchaseAnalysisPage />} />
-                <Route path="/variacoes" element={<VariationPage />} />
-                <Route path="/variacoes/:id" element={<VariationDetailsPage />} />
+              
+              {/* Rotas exclusivas do Super Admin */}
+              <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />}>
+                <Route element={<AdminLayout />}>
+                  <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
+                  <Route path="/super-admin/lojas" element={<SuperAdminStoresPage />} />
+                </Route>
               </Route>
+
+              {/* Rotas exclusivas do Admin da Loja */}
+              <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                <Route path="/pedidos/:id/imprimir" element={<OrderPrintPage />} />
+                <Route element={<AdminLayout />}>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/pedidos" element={<OrdersPage />} />
+                  <Route path="/pedidos/novo" element={<CreateOrderPage />} />
+                  <Route path="/pedidos/:id/editar" element={<EditOrderPage />} />
+                  <Route path="/pedidos/:id" element={<OrderDetailsPage />} />
+                  <Route path="/mapa-entregas" element={<DeliveryMapPage />} />
+                  <Route path="/entregas/rotas" element={<DeliveryMapPage />} />
+                  <Route path="/motoboys" element={<CouriersPage />} />
+                  <Route path="/motoboys/:id" element={<CourierDetailsPage />} />
+                  <Route path="/clientes" element={<CustomersPage />} />
+                  <Route path="/clientes/:id" element={<CustomerDetailsPage />} />
+                  <Route path="/produtos" element={<ProductsPage />} />
+                  <Route path="/produtos/:id" element={<ProductDetailsPage />} />
+                  <Route path="/categorias" element={<CategoriesPage />} />
+                  <Route path="/cupons" element={<CouponsPage />} />
+                  <Route path="/entregas" element={<Navigate to="/configuracoes" replace />} />
+                  <Route path="/pagamentos" element={<Navigate to="/configuracoes" replace />} />
+                  <Route path="/configuracoes" element={<SettingsPage />} />
+                  <Route path="/marketing/links" element={<LinksManagerPage />} />
+                  <Route path="/caixa" element={<CashRegistersPage />} />
+                  <Route path="/caixa/:id" element={<CashRegisterDetailsPage />} />
+                  <Route path="/financeiro/atual" element={<CurrentCashRegisterPage />} />
+                  <Route path="/financeiro/custos-fixos" element={<CustosFixosPage />} />
+                  <Route path="/investimentos" element={<InvestmentsPage />} />
+                  <Route path="/investimentos/simulacao" element={<PurchaseAnalysisPage />} />
+                  <Route path="/variacoes" element={<VariationPage />} />
+                  <Route path="/variacoes/:id" element={<VariationDetailsPage />} />
+                </Route>
+              </Route>
+
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

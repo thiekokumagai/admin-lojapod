@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, isSuperAdmin } from "@/lib/auth";
 import { login, type LoginPayload } from "@/services/auth.service";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
@@ -33,7 +33,8 @@ export default function LoginPage() {
   });
 
   if (isAuthenticated()) {
-    return <Navigate to="/" replace />;
+    const defaultHome = isSuperAdmin() ? "/super-admin/dashboard" : "/";
+    return <Navigate to={defaultHome} replace />;
   }
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -42,9 +43,20 @@ export default function LoginPage() {
     try {
       await login(values as LoginPayload);
 
-      const redirectTo = typeof location.state === "object" && location.state && "from" in location.state
-        ? String((location.state as { from?: string }).from || "/")
-        : "/";
+      const isSuper = isSuperAdmin();
+      const defaultHome = isSuper ? "/super-admin/dashboard" : "/";
+      let redirectTo = defaultHome;
+
+      if (typeof location.state === "object" && location.state && "from" in location.state) {
+        const from = String((location.state as { from?: string }).from || "");
+        if (from && from !== "/login") {
+          if (isSuper && from.startsWith("/super-admin")) {
+            redirectTo = from;
+          } else if (!isSuper && !from.startsWith("/super-admin")) {
+            redirectTo = from;
+          }
+        }
+      }
 
       navigate(redirectTo, { replace: true });
     } catch (error) {
