@@ -10,18 +10,18 @@ export interface CashRegisterPDFData {
     endDate: string;
   };
   summary: {
-    totalReceived?: number;
-    totalGross?: number;
-    totalCardFees?: number;
-    totalEntries?: number;
-    totalOutflows?: number;
-    motoboyOutflows?: number;
-    marketingOutflows?: number;
-    partnersOutflows?: number;
-    totalProductCost?: number;
-    totalInvestment?: number;
-    totalNet?: number;
-    totalsByMethod?: Record<string, number>;
+    totalReceived?: number | string;
+    totalGross?: number | string;
+    totalCardFees?: number | string;
+    totalEntries?: number | string;
+    totalOutflows?: number | string;
+    motoboyOutflows?: number | string;
+    marketingOutflows?: number | string;
+    partnersOutflows?: number | string;
+    totalProductCost?: number | string;
+    totalInvestment?: number | string;
+    totalNet?: number | string;
+    totalsByMethod?: Record<string, number | string>;
     orderCount?: number;
   };
   orders?: Array<{
@@ -31,25 +31,33 @@ export interface CashRegisterPDFData {
     paymentDate?: string;
     paymentMethod?: string;
     installments?: number;
-    totalReceived: number;
-    cardFee?: number;
+    totalReceived: number | string;
+    cardFee?: number | string;
   }>;
   transactions?: Array<{
     id: string;
     description: string;
     type: "ENTRY" | "OUTFLOW" | string;
     category?: string;
-    amount: number;
+    amount: number | string;
     date?: string;
     createdAt?: string;
   }>;
 }
 
-const formatCurrency = (val: number | undefined | null) => {
+const parseNumber = (val: any): number => {
+  if (val === null || val === undefined || val === "") return 0;
+  if (typeof val === "number") return isNaN(val) ? 0 : val;
+  const parsed = parseFloat(String(val));
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+const formatCurrency = (val: any) => {
+  const num = parseNumber(val);
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(val || 0);
+  }).format(num);
 };
 
 const formatMethodName = (method?: string) => {
@@ -129,16 +137,18 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
   doc.text("1. Fluxo de Caixa & Indicadores Financeiros", margin, currentY);
   currentY += 4;
 
-  const gross = summary.totalGross ?? summary.totalReceived ?? 0;
-  const entries = summary.totalEntries ?? 0;
-  const investments = summary.totalInvestment ?? 0;
-  const productCost = summary.totalProductCost ?? 0;
-  const cardFees = summary.totalCardFees ?? 0;
-  const outflows = summary.totalOutflows ?? 0;
-  const motoboy = summary.motoboyOutflows ?? 0;
-  const marketing = summary.marketingOutflows ?? 0;
-  const partners = summary.partnersOutflows ?? 0;
-  const net = summary.totalNet ?? (gross - cardFees - outflows + entries);
+  const gross = parseNumber(summary.totalGross ?? summary.totalReceived);
+  const entries = parseNumber(summary.totalEntries);
+  const investments = parseNumber(summary.totalInvestment);
+  const productCost = parseNumber(summary.totalProductCost);
+  const cardFees = parseNumber(summary.totalCardFees);
+  const outflows = parseNumber(summary.totalOutflows);
+  const motoboy = parseNumber(summary.motoboyOutflows);
+  const marketing = parseNumber(summary.marketingOutflows);
+  const partners = parseNumber(summary.partnersOutflows);
+  const net = summary.totalNet !== undefined
+    ? parseNumber(summary.totalNet)
+    : gross - cardFees - outflows + entries;
 
   const summaryRows = [
     [
@@ -204,7 +214,7 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
 
     const methodBody = Object.entries(summary.totalsByMethod).map(([method, total]) => [
       formatMethodName(method),
-      formatCurrency(total as number),
+      formatCurrency(parseNumber(total)),
     ]);
 
     autoTable(doc, {
@@ -245,8 +255,8 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
   let totalOrdersNet = 0;
 
   const ordersBody = orders.map((order) => {
-    const grossVal = order.totalReceived || 0;
-    const feeVal = order.cardFee || 0;
+    const grossVal = parseNumber(order.totalReceived);
+    const feeVal = parseNumber(order.cardFee);
     const netVal = grossVal - feeVal;
 
     totalOrdersGross += grossVal;
@@ -333,11 +343,14 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
   let totalManualOutflows = 0;
 
   const txBody = displayTransactions.map((tx) => {
-    const isEntry = tx.type === "ENTRY";
+    const typeUpper = String(tx.type || "").toUpperCase();
+    const isEntry = typeUpper === "ENTRY" || typeUpper === "ENTRADA" || typeUpper === "IN";
+    const amountVal = parseNumber(tx.amount);
+
     if (isEntry) {
-      totalManualEntries += tx.amount;
+      totalManualEntries += amountVal;
     } else {
-      totalManualOutflows += tx.amount;
+      totalManualOutflows += amountVal;
     }
 
     const txDateStr = tx.date || tx.createdAt
@@ -349,7 +362,7 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
       tx.description || "-",
       formatCategoryName(tx.category),
       isEntry ? "Entrada (+)" : "Saída (-)",
-      `${isEntry ? "+" : "-"} ${formatCurrency(tx.amount)}`,
+      `${isEntry ? "+" : "-"} ${formatCurrency(amountVal)}`,
     ];
   });
 
