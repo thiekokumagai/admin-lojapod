@@ -780,7 +780,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                     <div className="relative w-32">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                       <Input
-                        className="h-8 text-right bg-background pl-8 pr-3 text-sm rounded-lg font-medium"
+                        className="h-8 text-right bg-background pl-8 pr-3 text-base md:text-sm rounded-lg font-medium"
                         value={manualDiscount !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(manualDiscount) : ""}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "");
@@ -799,7 +799,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                     <div className="relative w-32">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                       <Input
-                        className="h-8 text-right bg-background pl-8 pr-3 text-sm rounded-lg"
+                        className="h-8 text-right bg-background pl-8 pr-3 text-base md:text-sm rounded-lg"
                         value={surcharge !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surcharge) : ""}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "");
@@ -822,7 +822,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                     <div className="relative w-32">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-emerald-600">R$</span>
                       <Input
-                        className="h-8 text-right bg-white pl-8 pr-3 font-bold text-emerald-700 border-emerald-200 focus-visible:ring-emerald-500 rounded-lg text-sm"
+                        className="h-8 text-right bg-white pl-8 pr-3 font-bold text-emerald-700 border-emerald-200 focus-visible:ring-emerald-500 rounded-lg text-base md:text-sm"
                         value={totalReceived !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalReceived) : ""}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "");
