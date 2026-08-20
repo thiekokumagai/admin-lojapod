@@ -259,14 +259,16 @@ export default function OrderDetailsPage() {
           >
             <img src="/whatsapp.svg" alt="WhatsApp" className="h-5 w-5" /> <span className="hidden sm:inline">WhatsApp</span>
           </a>
-          <button 
-            onClick={handleReprintOrder}
-            disabled={reprintMutation.isPending}
-            className="w-9 h-9 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors shrink-0 disabled:opacity-50" 
-            title="Imprimir"
-          >
-            {reprintMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-          </button>
+          {order.status !== 'CANCELLED' && (
+            <button 
+              onClick={handleReprintOrder}
+              disabled={reprintMutation.isPending}
+              className="w-9 h-9 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors shrink-0 disabled:opacity-50" 
+              title="Imprimir"
+            >
+              {reprintMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+            </button>
+          )}
           {order.status === 'PENDING' && order.paymentStatus === 'PENDING' && (
             <button 
               onClick={() => navigate(`/pedidos/${order.id}/editar`)}

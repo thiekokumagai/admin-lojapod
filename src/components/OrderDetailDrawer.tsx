@@ -579,14 +579,16 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                 {/* Quick actions top-right */}
                 <div className="flex items-center gap-1.5">
                   {/* 1. Imprimir na máquina (Print Agent) */}
-                  <button 
-                    onClick={handleReprintOrder}
-                    disabled={reprintMutation.isPending}
-                    className="w-8 h-8 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors disabled:opacity-50" 
-                    title="Imprimir"
-                  >
-                    {reprintMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
-                  </button>
+                  {order.status !== 'CANCELLED' && (
+                    <button 
+                      onClick={handleReprintOrder}
+                      disabled={reprintMutation.isPending}
+                      className="w-8 h-8 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors disabled:opacity-50" 
+                      title="Imprimir"
+                    >
+                      {reprintMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+                    </button>
+                  )}
                   
                   {/* 2. Compartilhar */}
                   <button 
