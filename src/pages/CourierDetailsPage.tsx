@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Courier, couriersService } from "@/services/couriers.service";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, formatPhone } from "@/utils/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, ArrowUpRight, ArrowDownRight, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Trash2, ArrowUpRight, ArrowDownRight, User, Pencil } from "lucide-react";
 import { format, isToday, isThisWeek, isThisMonth } from "date-fns";
 import {
   Select,
@@ -28,6 +30,13 @@ export default function CourierDetailsPage() {
   const [courier, setCourier] = useState<Courier | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterPeriod, setFilterPeriod] = useState<"ALL" | "TODAY" | "WEEK" | "MONTH">("TODAY");
+
+  // Edit Courier form
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const fetchCourier = async () => {
     try {
@@ -57,6 +66,34 @@ export default function CourierDetailsPage() {
     }
   };
 
+  const openEditModal = () => {
+    if (!courier) return;
+    setEditName(courier.name);
+    setEditPhone(formatPhone(courier.phone));
+    setEditIsActive(courier.isActive ?? true);
+    setIsEditOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courier || isSavingEdit) return;
+    try {
+      setIsSavingEdit(true);
+      await couriersService.updateCourier(courier.id, {
+        name: editName,
+        phone: editPhone,
+        isActive: editIsActive,
+      });
+      toast.success("Motoboy atualizado com sucesso");
+      setIsEditOpen(false);
+      fetchCourier();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar motoboy");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-8">Carregando detalhes...</div>;
   }
@@ -80,7 +117,7 @@ export default function CourierDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link to="/motoboys">
             <Button variant="outline" size="icon">
@@ -91,10 +128,16 @@ export default function CourierDetailsPage() {
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
               <User className="h-6 w-6 md:h-7 md:w-7 text-indigo-600" />
               {courier.name}
+              {!courier.isActive && (
+                <span className="bg-slate-100 text-slate-500 text-xs font-bold px-2.5 py-0.5 rounded-full">Inativo</span>
+              )}
             </h1>
-            <p className="text-xs md:text-sm text-slate-500 font-medium">Telefone: {courier.phone}</p>
+            <p className="text-xs md:text-sm text-slate-500 font-medium">Telefone: {formatPhone(courier.phone)}</p>
           </div>
         </div>
+        <Button variant="outline" onClick={openEditModal} className="font-bold text-xs">
+          <Pencil className="w-3.5 h-3.5 mr-2" /> Editar Motoboy
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -270,6 +313,46 @@ export default function CourierDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal Editar Motoboy */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Motoboy</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdate} className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-semibold mb-1 block">Nome</label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} required />
+            </div>
+            <div>
+              <label className="text-sm font-semibold mb-1 block">Telefone / WhatsApp</label>
+              <Input 
+                value={editPhone} 
+                onChange={(e) => setEditPhone(formatPhone(e.target.value))} 
+                required 
+                placeholder="(11) 99999-9999" 
+                maxLength={15}
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="editIsActiveDetails"
+                checked={editIsActive}
+                onChange={(e) => setEditIsActive(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <label htmlFor="editIsActiveDetails" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Motoboy Ativo
+              </label>
+            </div>
+            <Button type="submit" disabled={isSavingEdit} className="w-full bg-indigo-600 hover:bg-indigo-700">
+              {isSavingEdit ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

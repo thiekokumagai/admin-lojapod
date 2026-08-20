@@ -32,6 +32,14 @@ export const couriersService = {
     return response.json();
   },
 
+  updateCourier: async (id: string, data: { name?: string; phone?: string; isActive?: boolean }): Promise<Courier> => {
+    const response = await apiFetch(`/couriers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
   registerFee: async (data: { courierId: string; amount: number; description: string }) => {
     const response = await apiFetch('/couriers/fee', {
       method: 'POST',
