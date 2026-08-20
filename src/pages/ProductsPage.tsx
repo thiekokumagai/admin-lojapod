@@ -70,8 +70,8 @@ export default function ProductsPage() {
 
   // ─── Inline Price Update ──────────────────────────────────────────────────
   const updateProductMutation = useMutation({
-    mutationFn: async ({ id, price, costPrice }: { id: string; price?: number; costPrice?: number }) => {
-      await updateProduct(id, { price, costPrice });
+    mutationFn: async ({ id, price, promotionalPrice, costPrice }: { id: string; price?: number; promotionalPrice?: number; costPrice?: number }) => {
+      await updateProduct(id, { price, promotionalPrice, costPrice });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });

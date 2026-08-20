@@ -213,7 +213,7 @@ interface ProductListTableProps {
   onBulkEnable: (ids: string[]) => void;
   onBulkDelete: (ids: string[]) => void;
   isBulkPending: boolean;
-  onUpdateProduct?: (id: string, values: { price?: number; costPrice?: number }) => Promise<void>;
+  onUpdateProduct?: (id: string, values: { price?: number; promotionalPrice?: number; costPrice?: number }) => Promise<void>;
   onUpdateStock?: (itemId: string, type: 'ADD' | 'SUBTRACT', quantity: number) => Promise<void>;
   onDuplicateProduct?: (id: string) => Promise<void>;
 }
@@ -496,6 +496,15 @@ export function ProductListTable({
                 <div className="flex flex-col">
                   <span className="text-[10px] text-muted-foreground font-semibold">Preço Venda</span>
                   <InlinePriceInput value={product.price} onSave={async (newPrice) => { if (onUpdateProduct) await onUpdateProduct(product.id, { price: newPrice }); }} />
+                  {product.promotionalPrice !== undefined && product.promotionalPrice > 0 && (
+                    <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2 mt-0.5">
+                      <span className="shrink-0 mr-1">Promo:</span>
+                      <InlinePriceInput
+                        value={product.promotionalPrice}
+                        onSave={async (newPromo) => { if (onUpdateProduct) await onUpdateProduct(product.id, { promotionalPrice: newPromo }); }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-muted-foreground font-semibold">Preço Custo</span>
@@ -630,14 +639,29 @@ export function ProductListTable({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <InlinePriceInput
-                      value={product.price}
-                      onSave={async (newPrice) => {
-                        if (onUpdateProduct) {
-                          await onUpdateProduct(product.id, { price: newPrice });
-                        }
-                      }}
-                    />
+                    <div className="flex flex-col gap-0.5">
+                      <InlinePriceInput
+                        value={product.price}
+                        onSave={async (newPrice) => {
+                          if (onUpdateProduct) {
+                            await onUpdateProduct(product.id, { price: newPrice });
+                          }
+                        }}
+                      />
+                      {product.promotionalPrice !== undefined && product.promotionalPrice > 0 && (
+                        <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2">
+                          <span className="shrink-0 mr-1">Promo:</span>
+                          <InlinePriceInput
+                            value={product.promotionalPrice}
+                            onSave={async (newPromo) => {
+                              if (onUpdateProduct) {
+                                await onUpdateProduct(product.id, { promotionalPrice: newPromo });
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <InlinePriceInput
