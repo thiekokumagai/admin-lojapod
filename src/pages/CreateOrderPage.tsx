@@ -108,12 +108,19 @@ export default function CreateOrderPage() {
   });
 
   const subtotal = effectiveItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const discount = coupon ? (coupon.type === "VALUE" ? (coupon.value || 0) : coupon.type === "PERCENTAGE" ? subtotal * ((coupon.value || 0) / 100) : 0) : 0;
+  const nonPromoItemsTotal = effectiveItems.reduce((acc, item) => acc + (!item.isPromo ? item.price * item.quantity : 0), 0);
+  const couponBaseTotal = (coupon && coupon.applyToPromotionalItems === false) ? nonPromoItemsTotal : subtotal;
+
+  const discount = coupon ? (
+    coupon.type === "VALUE"
+      ? Math.min(coupon.value || 0, couponBaseTotal)
+      : coupon.type === "PERCENTAGE"
+        ? couponBaseTotal * ((coupon.value || 0) / 100)
+        : 0
+  ) : 0;
   
   const totalAfterCoupon = Math.max(0, subtotal - discount);
-  const effectiveDeliveryFee = coupon?.type === 'FREE_SHIPPING' ? 0 : deliveryFee;
-  
-  const nonPromoItemsTotal = effectiveItems.reduce((acc, item) => acc + (!item.isPromo ? item.price * item.quantity : 0), 0);
+  const effectiveDeliveryFee = (coupon?.type === 'FREE_SHIPPING' && (coupon.applyToPromotionalItems !== false || nonPromoItemsTotal > 0)) ? 0 : deliveryFee;
   const pixDiscountBase = Math.min(nonPromoItemsTotal, totalAfterCoupon);
   
   const pixDiscountAmount = paymentMethod === "PIX" ? pixDiscountBase * (pixDiscountPercent / 100) : 0;
