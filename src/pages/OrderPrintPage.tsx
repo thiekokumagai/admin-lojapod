@@ -11,6 +11,8 @@ export default function OrderPrintPage() {
 
   useEffect(() => {
     if (order && settings) {
+      if (order.status === 'CANCELLED') return;
+
       setTimeout(() => {
         window.print();
       }, 500);
@@ -30,6 +32,16 @@ export default function OrderPrintPage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+      </div>
+    );
+  }
+
+  if (order.status === 'CANCELLED') {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center gap-3 p-4 text-center">
+        <div className="bg-rose-100 text-rose-700 px-4 py-3 rounded-lg font-bold text-sm border border-rose-200">
+          ⚠️ Este pedido está CANCELADO e não pode ser impresso.
+        </div>
       </div>
     );
   }
