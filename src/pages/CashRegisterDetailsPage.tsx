@@ -469,7 +469,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
         <TabsContent value="pedidos" className="animate-in fade-in duration-300 focus-visible:outline-none focus-visible:ring-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Tabela de Pedidos */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="lg:col-span-2 order-2 lg:order-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="p-4 border-b bg-slate-50/50">
                 <h3 className="font-bold text-slate-700">Pedidos Incluídos neste Caixa</h3>
               </div>
@@ -580,7 +580,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
             </div>
 
             {/* Coluna de Resumos por Método */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="lg:col-span-1 order-1 lg:order-2 space-y-6">
               {/* Resumo por Método (Hoje) */}
               <Card className="border-blue-100 bg-blue-50/10">
                 <CardHeader className="bg-blue-50/50 border-b border-blue-100 py-4">
