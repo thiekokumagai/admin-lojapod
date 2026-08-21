@@ -13,6 +13,7 @@ import {
   Bike,
   Link as LinkIcon,
   Store as StoreIcon,
+  WalletCards,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -25,6 +26,11 @@ export const superAdminNavItems = [
     title: "Lojas Cadastradas",
     url: "/super-admin/lojas",
     icon: StoreIcon,
+  },
+  {
+    title: "Assinaturas",
+    url: "/super-admin/assinaturas",
+    icon: WalletCards,
   },
 ];
 
@@ -66,6 +72,7 @@ export const navSections = [
       { title: "Contas Fixas", url: "/financeiro/custos-fixos", icon: Receipt },
       { title: "Módulo de Investimento", url: "/investimentos", icon: Landmark },
       { title: "Histórico de Caixas", url: "/caixa", icon: FolderTree },
+      { title: "Minha assinatura", url: "/minha-assinatura", icon: CreditCard },
     ],
   },
   {

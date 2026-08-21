@@ -35,8 +35,10 @@ const VariationPage = lazy(() => import("@/pages/VariationPage"));
 const VariationDetailsPage = lazy(() => import("@/pages/VariationDetailsPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const SuperAdminStoresPage = lazy(() => import("@/pages/SuperAdminStoresPage"));
+const SuperAdminBillingPage = lazy(() => import("@/pages/SuperAdminBillingPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const OrderPrintPage = lazy(() => import("@/pages/OrderPrintPage"));
+const BillingPage = lazy(() => import("@/pages/BillingPage"));
 
 function RouteFallback() {
   return (
@@ -82,6 +84,7 @@ const App = () => (
                 <Route element={<AdminLayout />}>
                   <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
                   <Route path="/super-admin/lojas" element={<SuperAdminStoresPage />} />
+                  <Route path="/super-admin/assinaturas" element={<SuperAdminBillingPage />} />
                 </Route>
               </Route>
 
@@ -107,6 +110,7 @@ const App = () => (
                   <Route path="/entregas" element={<Navigate to="/configuracoes" replace />} />
                   <Route path="/pagamentos" element={<Navigate to="/configuracoes" replace />} />
                   <Route path="/configuracoes" element={<SettingsPage />} />
+                  <Route path="/minha-assinatura" element={<BillingPage />} />
                   <Route path="/marketing/links" element={<LinksManagerPage />} />
                   <Route path="/caixa" element={<CashRegistersPage />} />
                   <Route path="/caixa/:id" element={<CashRegisterDetailsPage />} />
