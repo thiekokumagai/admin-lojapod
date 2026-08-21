@@ -257,8 +257,8 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
               {cashRegister.title}
             </h1>
             <p className="text-gray-500">
-              {format(new Date(cashRegister.startDate), "dd/MM/yyyy")} até{" "}
-              {format(new Date(cashRegister.endDate), "dd/MM/yyyy")}
+              {format(new Date(cashRegister.startDate.split("T")[0] + "T00:00:00"), "dd/MM/yyyy")} até{" "}
+              {format(new Date(cashRegister.endDate.split("T")[0] + "T00:00:00"), "dd/MM/yyyy")}
             </p>
           </div>
         </div>

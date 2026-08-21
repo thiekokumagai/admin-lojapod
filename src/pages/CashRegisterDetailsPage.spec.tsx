@@ -89,6 +89,7 @@ describe("CashRegisterDetailsPage", () => {
     render(<CashRegisterDetailsPage />);
 
     expect(screen.getByText("Caixa Sexta-Feira")).toBeInTheDocument();
+    expect(screen.getByText(/23\/05\/2026 até 23\/05\/2026/)).toBeInTheDocument();
     expect(screen.getByText("Faturamento Bruto")).toBeInTheDocument();
     expect(screen.getByText("Taxas Retidas (Cartão)")).toBeInTheDocument();
     expect(screen.getByText("Saldo Líquido")).toBeInTheDocument();
