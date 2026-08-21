@@ -14,6 +14,7 @@ import {
   Link as LinkIcon,
   Store as StoreIcon,
   WalletCards,
+  CreditCard,
 } from "lucide-react";
 
 export const superAdminNavItems = [
