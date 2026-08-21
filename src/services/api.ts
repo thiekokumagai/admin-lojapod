@@ -64,12 +64,18 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     }
   }
 
-
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const message = Array.isArray(errorData.message)
       ? errorData.message.join(", ")
       : errorData.message || `Erro na API: ${response.status}`;
+
+    if (response.status === 403 && (message.includes("Loja Inativa") || errorData.message === "Loja Inativa")) {
+      if (window.location.pathname !== "/suspended") {
+        window.location.href = "/suspended";
+      }
+    }
+
     throw new Error(message);
   }
 

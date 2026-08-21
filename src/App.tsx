@@ -39,6 +39,7 @@ const SuperAdminBillingPage = lazy(() => import("@/pages/SuperAdminBillingPage")
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const OrderPrintPage = lazy(() => import("@/pages/OrderPrintPage"));
 const BillingPage = lazy(() => import("@/pages/BillingPage"));
+const SuspendedStorePage = lazy(() => import("@/pages/SuspendedStorePage"));
 
 function RouteFallback() {
   return (
@@ -78,6 +79,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
+              <Route path="/suspended" element={<SuspendedStorePage />} />
               
               {/* Rotas exclusivas do Super Admin */}
               <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />}>
