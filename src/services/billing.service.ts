@@ -35,4 +35,10 @@ export const billingService = {
       body: JSON.stringify({ action, reason }),
     })).json();
   },
+  async editSubscription(storeId: string, data: Partial<BillingSubscription>) {
+    return (await apiFetch(`/billing/admin/subscriptions/${storeId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })).json();
+  }
 };
