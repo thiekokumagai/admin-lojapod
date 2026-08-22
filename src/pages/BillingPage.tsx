@@ -55,7 +55,27 @@ export default function BillingPage() {
           )}
         </div>
       )}
-      {data?.checkoutUrl && <a href={data.checkoutUrl} className="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-indigo-600 text-white px-4 py-3 font-semibold hover:bg-indigo-700"><CreditCard className="h-5 w-5" />Abrir pagamento seguro<ExternalLink className="h-4 w-4" /></a>}
+
+      {data?.checkoutUrl && (() => {
+        let showCheckout = true;
+        if (data.subscription) {
+          const s = data.subscription;
+          const now = new Date().getTime();
+          if (s.status === 'ACTIVE' && s.currentPeriodEndsAt) {
+            const daysLeft = (new Date(s.currentPeriodEndsAt).getTime() - now) / (1000 * 60 * 60 * 24);
+            if (daysLeft > 3) showCheckout = false;
+          }
+          if (s.status === 'TRIALING' && s.trialEndsAt) {
+            const daysLeft = (new Date(s.trialEndsAt).getTime() - now) / (1000 * 60 * 60 * 24);
+            if (daysLeft > 3) showCheckout = false;
+          }
+        }
+        return showCheckout ? (
+          <a href={data.checkoutUrl} className="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-indigo-600 text-white px-4 py-3 font-semibold hover:bg-indigo-700">
+            <CreditCard className="h-5 w-5" />Abrir pagamento seguro<ExternalLink className="h-4 w-4" />
+          </a>
+        ) : null;
+      })()}
     </div>
   </div>;
 }
