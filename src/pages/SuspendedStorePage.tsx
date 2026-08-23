@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, CreditCard, Loader2, LogOut } from "lucide-react";
 import { apiFetch } from "@/services/api";
-import { clearSession } from "@/services/auth.service";
+import { logout } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 
 export default function SuspendedStorePage() {
@@ -62,7 +62,7 @@ export default function SuspendedStorePage() {
             <Button
               variant="ghost"
               className="text-slate-500 hover:text-slate-700 w-full"
-              onClick={() => clearSession()}
+              onClick={() => logout()}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair da conta

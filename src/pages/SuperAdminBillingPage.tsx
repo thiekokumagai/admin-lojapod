@@ -1,198 +1,363 @@
-import { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, CreditCard, Loader2, RefreshCw, ShieldX, WalletCards, Plus, Edit2, X } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CreditCard,
+  Loader2,
+  RefreshCw,
+  ShieldX,
+  WalletCards,
+  TrendingUp,
+  DollarSign,
+  Search,
+  Filter,
+  ArrowUpRight,
+  Clock,
+  ExternalLink,
+  ShieldAlert,
+} from 'lucide-react';
 import { billingService, BillingOverview, BillingStatus, BillingSubscription } from '@/services/billing.service';
-import { storesService, Store } from '@/services/stores.service';
 
 const labels: Record<BillingStatus, string> = {
-  TRIALING: 'Em teste', ACTIVE: 'Ativa', PAST_DUE: 'Em atraso', SUSPENDED: 'Suspensa', CANCELED: 'Cancelada',
+  TRIALING: 'Em teste',
+  ACTIVE: 'Ativa',
+  PAST_DUE: 'Em atraso',
+  SUSPENDED: 'Suspensa',
+  CANCELED: 'Cancelada',
 };
+
 const badge: Record<BillingStatus, string> = {
-  TRIALING: 'bg-blue-100 text-blue-700', ACTIVE: 'bg-emerald-100 text-emerald-700', PAST_DUE: 'bg-amber-100 text-amber-800', SUSPENDED: 'bg-red-100 text-red-700', CANCELED: 'bg-slate-100 text-slate-600',
+  TRIALING: 'bg-blue-50 text-blue-700 border-blue-200',
+  ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  PAST_DUE: 'bg-amber-50 text-amber-800 border-amber-200',
+  SUSPENDED: 'bg-red-50 text-red-700 border-red-200',
+  CANCELED: 'bg-slate-100 text-slate-600 border-slate-200',
 };
+
+function formatCurrency(val: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
+function formatDateUTC(dateStr?: string | Date | null) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
 
 export default function SuperAdminBillingPage() {
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [items, setItems] = useState<BillingSubscription[]>([]);
-  const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string>();
   const [error, setError] = useState('');
-
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSub, setEditingSub] = useState<Partial<BillingSubscription> | null>(null);
+  const [search, setSearch] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
 
   const load = async () => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
-      const [summary, subscriptions, storesList] = await Promise.all([
-        billingService.overview(), 
+      const [summary, subscriptions] = await Promise.all([
+        billingService.overview(),
         billingService.subscriptions(),
-        storesService.getStores()
       ]);
-      setOverview(summary); 
+      setOverview(summary);
       setItems(subscriptions);
-      setStores(storesList);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Erro ao carregar cobranças'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao carregar cobranças');
+    } finally {
+      setLoading(false);
+    }
   };
-  useEffect(() => { void load(); }, []);
 
-  const handleSaveModal = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!editingSub?.storeId) return;
-    setWorking('modal'); setError('');
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const act = async (item: BillingSubscription, action: 'SUSPEND' | 'REACTIVATE' | 'CANCEL') => {
+    const actionLabel = action === 'SUSPEND' ? 'suspender' : action === 'REACTIVATE' ? 'reativar' : 'cancelar';
+    const reason = window.prompt(`Informe o motivo para ${actionLabel} a loja "${item.store.title}":`);
+    if (!reason?.trim()) return;
+
+    setWorking(item.storeId);
+    setError('');
     try {
-      await billingService.editSubscription(editingSub.storeId, {
-        status: editingSub.status,
-        monthlyFee: editingSub.monthlyFee,
-        trialEndsAt: editingSub.trialEndsAt,
-        currentPeriodEndsAt: editingSub.currentPeriodEndsAt,
-        gracePeriodEndsAt: editingSub.gracePeriodEndsAt,
-      });
-      setIsModalOpen(false);
+      await billingService.action(item.storeId, action, reason.trim());
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao salvar assinatura');
+      setError(e instanceof Error ? e.message : 'Não foi possível executar a ação');
     } finally {
       setWorking(undefined);
     }
   };
 
-  const formatDateForInput = (dateString?: string | null) => {
-    if (!dateString) return '';
-    return new Date(dateString).toISOString().slice(0, 16);
-  };
+  // Cálculos Financeiros (MRR, ARR)
+  const mrr = useMemo(() => {
+    return items
+      .filter((i) => i.status === 'ACTIVE' || i.store.isActive)
+      .reduce((sum, item) => sum + (Number(item.monthlyFee) || 150), 0);
+  }, [items]);
 
-  const cards = [
-    ['Ativas', overview?.statuses.ACTIVE || 0, CheckCircle2, 'text-emerald-600'],
-    ['Em trial', overview?.statuses.TRIALING || 0, WalletCards, 'text-blue-600'],
-    ['Em atraso', overview?.statuses.PAST_DUE || 0, AlertTriangle, 'text-amber-600'],
-    ['Suspensas', overview?.statuses.SUSPENDED || 0, ShieldX, 'text-red-600'],
-  ] as const;
+  const arr = mrr * 12;
 
-  return <div className="p-6 max-w-7xl mx-auto space-y-6">
-    <div className="flex items-center justify-between">
-      <div><h1 className="text-2xl font-bold text-slate-900">Assinaturas e cobrança</h1><p className="text-sm text-slate-500">Controle central da Cakto e do acesso das lojas.</p></div>
-      <div className="flex gap-2">
-        <button onClick={() => {
-          setEditingSub({ status: 'TRIALING', monthlyFee: '150', storeId: '' });
-          setIsModalOpen(true);
-        }} className="inline-flex items-center gap-2 bg-indigo-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-indigo-700">
-          <Plus className="h-4 w-4" /> Nova Assinatura
-        </button>
-        <button onClick={() => void load()} className="inline-flex items-center gap-2 border rounded-lg px-3 py-2 text-sm hover:bg-slate-50">
-          <RefreshCw className="h-4 w-4" /> Atualizar
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchSearch =
+        item.store.title.toLowerCase().includes(search.toLowerCase()) ||
+        item.store.adminEmail.toLowerCase().includes(search.toLowerCase()) ||
+        item.store.subdomain.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
+      return matchSearch && matchStatus;
+    });
+  }, [items, search, selectedStatus]);
+
+  const totalStoresCount = items.length || 1;
+  const activeCount = overview?.statuses.ACTIVE || 0;
+  const trialingCount = overview?.statuses.TRIALING || 0;
+  const pastDueCount = overview?.statuses.PAST_DUE || 0;
+  const suspendedCount = overview?.statuses.SUSPENDED || 0;
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs uppercase tracking-wider mb-1">
+            <DollarSign className="h-4 w-4" />
+            Gestão Financeira & SaaS Metrics
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Assinaturas e Faturamento</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Métricas de MRR, saúde da base de assinantes e sincronização de cobranças via Cakto.
+          </p>
+        </div>
+        <button
+          onClick={() => void load()}
+          disabled={loading}
+          className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar Dados
         </button>
       </div>
-    </div>
-    
-    {error && <div className="border border-red-200 bg-red-50 text-red-700 rounded-lg p-3 text-sm">{error}</div>}
-    {overview && !overview.providerConfigured && <div className="border border-amber-200 bg-amber-50 text-amber-800 rounded-lg p-3 text-sm">Credenciais da Cakto ainda não configuradas no servidor.</div>}
-    
-    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map(([title, value, Icon, color]) => 
-        <div key={title} className="bg-white border rounded-xl p-5 shadow-sm">
-          <div className="flex justify-between text-sm text-slate-500"><span>{title}</span><Icon className={`h-5 w-5 ${color}`} /></div>
-          <div className="text-3xl font-bold mt-2">{value}</div>
+
+      {error && (
+        <div className="border border-red-200 bg-red-50 text-red-700 rounded-xl p-4 text-sm font-medium flex items-center gap-3 shadow-sm">
+          <ShieldAlert className="h-5 w-5 text-red-600 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
-    </div>
 
-    <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-      {loading ? <div className="p-12 flex justify-center"><Loader2 className="animate-spin" /></div> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="text-left p-3">Loja</th><th className="text-left p-3">Situação</th><th className="text-left p-3">Pagamento</th><th className="text-left p-3">Trial/Carência</th><th className="text-right p-3">Ações</th></tr></thead><tbody className="divide-y">{items.map(item => <tr key={item.id}><td className="p-3"><div className="font-semibold">{item.store?.title}</div><div className="text-xs text-slate-500">{item.store?.adminEmail}</div></td><td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${badge[item.status]}`}>{labels[item.status]}</span></td><td className="p-3"><div className="inline-flex items-center gap-1"><CreditCard className="h-4 w-4" />{item.paymentMethod === 'PIX_AUTO' ? 'Pix Automático' : item.paymentMethod === 'CREDIT_CARD' ? 'Cartão' : 'Não definido'}</div><div className="text-xs text-slate-500">R$ {Number(item.monthlyFee).toFixed(2).replace('.', ',')}/mês</div></td><td className="p-3 text-xs text-slate-600">{item.status === 'PAST_DUE' && item.gracePeriodEndsAt ? `Suspende em ${new Date(item.gracePeriodEndsAt).toLocaleString('pt-BR')}` : item.trialEndsAt ? `Trial até ${new Date(item.trialEndsAt).toLocaleDateString('pt-BR')}` : '—'}</td><td className="p-3"><div className="flex justify-end gap-2"><button disabled={working === item.storeId} onClick={() => { setEditingSub(item); setIsModalOpen(true); }} className="border rounded px-2 py-1 hover:bg-slate-50 inline-flex items-center gap-1"><Edit2 className="h-3 w-3" /> Editar</button></div></td></tr>)}</tbody></table></div>}
-    </div>
+      {overview && !overview.providerConfigured && (
+        <div className="border border-amber-200 bg-amber-50 text-amber-800 rounded-xl p-4 text-sm font-medium flex items-center gap-3 shadow-sm">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+          <span>As credenciais de API da Cakto ainda não foram configuradas no servidor de produção (`.env`).</span>
+        </div>
+      )}
 
-    {isModalOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSaveModal} className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">{editingSub?.id ? 'Editar Assinatura' : 'Nova Assinatura'}</h2>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+      {/* Mapeamento de Métricas Principais (MRR, ARR, Total Recebido, Lojas Ativas) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Card MRR */}
+        <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">MRR (Receita Mensal)</span>
+            <div className="p-2 bg-indigo-700/50 rounded-lg text-indigo-200">
+              <TrendingUp className="h-5 w-5" />
             </div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Loja</label>
-                <select 
-                  required 
-                  disabled={!!editingSub?.id} 
-                  className="w-full border rounded-lg p-2"
-                  value={editingSub?.storeId || ''}
-                  onChange={e => setEditingSub(prev => ({ ...prev, storeId: e.target.value }))}
-                >
-                  <option value="">Selecione uma loja</option>
-                  {stores.map(s => <option key={s.id} value={s.id}>{s.title} ({s.subdomain})</option>)}
-                </select>
-              </div>
+          </div>
+          <div className="text-3xl font-black mt-3 tracking-tight">{formatCurrency(mrr)}</div>
+          <div className="flex items-center gap-2 text-xs text-indigo-200 mt-2">
+            <span className="font-medium">ARR Estimado: {formatCurrency(arr)}</span>
+          </div>
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                <select 
-                  required 
-                  className="w-full border rounded-lg p-2"
-                  value={editingSub?.status || 'TRIALING'}
-                  onChange={e => setEditingSub(prev => ({ ...prev, status: e.target.value as BillingStatus }))}
-                >
-                  <option value="TRIALING">Em teste (TRIALING)</option>
-                  <option value="ACTIVE">Ativa (ACTIVE)</option>
-                  <option value="PAST_DUE">Em atraso (PAST_DUE)</option>
-                  <option value="SUSPENDED">Suspensa (SUSPENDED)</option>
-                  <option value="CANCELED">Cancelada (CANCELED)</option>
-                </select>
-              </div>
+        {/* Card Faturamento Total Registrado */}
+        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-2">
+          <div className="flex justify-between items-center text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">Faturamento Acumulado</span>
+            <DollarSign className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900">
+            {formatCurrency(overview?.paidAmount || 0)}
+          </div>
+          <p className="text-xs text-slate-500 font-medium">
+            {overview?.paidCount || 0} transações confirmadas via Cakto
+          </p>
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Mensalidade (R$)</label>
-                <input 
-                  type="number" step="0.01" required 
-                  className="w-full border rounded-lg p-2"
-                  value={editingSub?.monthlyFee || ''}
-                  onChange={e => setEditingSub(prev => ({ ...prev, monthlyFee: e.target.value }))}
-                />
-              </div>
+        {/* Card Lojas Ativas vs Inativas */}
+        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-2">
+          <div className="flex justify-between items-center text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">Assinaturas Ativas</span>
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900">{activeCount}</div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <span>{((activeCount / totalStoresCount) * 100).toFixed(0)}% da base ativa</span>
+            <span className="text-blue-600 font-semibold">• {trialingCount} em teste</span>
+          </div>
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fim do Trial</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full border rounded-lg p-2"
-                  value={formatDateForInput(editingSub?.trialEndsAt)}
-                  onChange={e => setEditingSub(prev => ({ ...prev, trialEndsAt: e.target.value || undefined }))}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fim do Período Atual (Vencimento)</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full border rounded-lg p-2"
-                  value={formatDateForInput(editingSub?.currentPeriodEndsAt)}
-                  onChange={e => setEditingSub(prev => ({ ...prev, currentPeriodEndsAt: e.target.value || undefined }))}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fim da Carência (Suspensão)</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full border rounded-lg p-2"
-                  value={formatDateForInput(editingSub?.gracePeriodEndsAt)}
-                  onChange={e => setEditingSub(prev => ({ ...prev, gracePeriodEndsAt: e.target.value || undefined }))}
-                />
-              </div>
-            </div>
-
-            <div className="pt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-slate-600 border rounded-lg hover:bg-slate-50">Cancelar</button>
-              <button type="submit" disabled={working === 'modal'} className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                {working === 'modal' ? 'Salvando...' : 'Salvar'}
-              </button>
-            </div>
-          </form>
+        {/* Card Alerta de Inadimplência */}
+        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-2">
+          <div className="flex justify-between items-center text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">Atrasadas / Suspensas</span>
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900">{pastDueCount + suspendedCount}</div>
+          <p className="text-xs text-slate-500 font-medium">
+            <span className="text-amber-600 font-semibold">{pastDueCount} em carência</span> |{' '}
+            <span className="text-red-600 font-semibold">{suspendedCount} suspensas</span>
+          </p>
         </div>
       </div>
-    )}
-  </div>;
+
+      {/* Tabela de Assinaturas e Ações */}
+      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden space-y-4">
+        {/* Header e Filtros */}
+        <div className="p-5 border-b bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Lista de Lojas & Status de Cobrança</h2>
+            <p className="text-xs text-slate-500">Gerencie a ativação, suspensão e reativação de cada loja.</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Input de Busca */}
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por loja ou e-mail..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full sm:w-64 pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              />
+            </div>
+
+            {/* Selector de Status */}
+            <div className="relative flex items-center">
+              <Filter className="h-3.5 w-3.5 absolute left-3 text-slate-400 pointer-events-none" />
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="pl-8 pr-8 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium text-slate-700 appearance-none cursor-pointer"
+              >
+                <option value="ALL">Todos os Status</option>
+                <option value="ACTIVE">Ativas</option>
+                <option value="TRIALING">Em Teste (Trial)</option>
+                <option value="PAST_DUE">Em Atraso</option>
+                <option value="SUSPENDED">Suspensas</option>
+                <option value="CANCELED">Canceladas</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabela de Dados */}
+        {loading ? (
+          <div className="py-16 flex flex-col items-center justify-center text-slate-400 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            <span className="text-sm font-medium">Carregando faturamento...</span>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="py-12 text-center text-slate-500 text-sm">
+            Nenhuma assinatura encontrada para os filtros selecionados.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                  <th className="py-3 px-5">Loja / Admin</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Plano / Valor</th>
+                  <th className="py-3 px-4">Método de Pagamento</th>
+                  <th className="py-3 px-4">Vencimento / Trial</th>
+                  <th className="py-3 px-5 text-right">Ações Administrativas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-slate-700">
+                {filteredItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                    <td className="py-4 px-5">
+                      <div className="font-bold text-slate-900">{item.store.title}</div>
+                      <div className="text-xs text-slate-500">{item.store.adminEmail}</div>
+                      <div className="text-[11px] font-mono text-indigo-600 mt-0.5">
+                        {item.store.subdomain}.lojapod.com
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${badge[item.status]}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {labels[item.status]}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="font-semibold text-slate-900">
+                        {formatCurrency(Number(item.monthlyFee) || 150)}/mês
+                      </div>
+                      {item.supportSelected && (
+                        <span className="inline-block mt-0.5 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                          Implantação ERP Ativa
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+                        <CreditCard className="h-3.5 w-3.5 text-slate-400" />
+                        {item.paymentMethod === 'PIX_AUTO'
+                          ? 'Pix Automático'
+                          : item.paymentMethod === 'CREDIT_CARD'
+                          ? 'Cartão de Crédito'
+                          : 'Aguardando'}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-xs text-slate-600">
+                      {item.status === 'PAST_DUE' && item.gracePeriodEndsAt ? (
+                        <div className="text-amber-700 font-medium flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          Suspende em {formatDateUTC(item.gracePeriodEndsAt)}
+                        </div>
+                      ) : item.trialEndsAt && item.status === 'TRIALING' ? (
+                        <div className="text-blue-700 font-medium">
+                          Trial até {formatDateUTC(item.trialEndsAt)}
+                        </div>
+                      ) : item.currentPeriodEndsAt ? (
+                        <div className="text-slate-600">
+                          Renova em {formatDateUTC(item.currentPeriodEndsAt)}
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {item.status !== 'SUSPENDED' && (
+                          <button
+                            disabled={working === item.storeId}
+                            onClick={() => void act(item, 'SUSPEND')}
+                            className="border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                          >
+                            Suspender
+                          </button>
+                        )}
+                        {item.status !== 'ACTIVE' && (
+                          <button
+                            disabled={working === item.storeId}
+                            onClick={() => void act(item, 'REACTIVATE')}
+                            className="border border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                          >
+                            Reativar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

@@ -2,9 +2,37 @@ import { apiFetch } from './api';
 
 export type BillingStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELED';
 
+export interface BillingPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  trialDays: number;
+  isActive: boolean;
+  isPublic: boolean;
+  checkoutType: 'SINGLE_PRODUCT' | 'RECURRING_SUBSCRIPTION';
+  providerProductId?: string;
+  nextSubscriptionPlanId?: string;
+  nextSubscriptionPlan?: BillingPlan;
+}
+
+export interface BillingPaymentReceipt {
+  id: string;
+  storeId: string;
+  providerPaymentId?: string;
+  amount: number;
+  kind: string;
+  method: 'CREDIT_CARD' | 'PIX_AUTO' | 'UNKNOWN';
+  status: 'PENDING' | 'PAID' | 'REFUSED' | 'REFUNDED' | 'CHARGEBACK';
+  paidAt?: string;
+  createdAt: string;
+}
+
 export interface BillingSubscription {
   id: string;
   storeId: string;
+  planId?: string;
+  plan?: BillingPlan;
   status: BillingStatus;
   paymentMethod: 'CREDIT_CARD' | 'PIX_AUTO' | 'UNKNOWN';
   monthlyFee: string;
@@ -35,10 +63,43 @@ export const billingService = {
       body: JSON.stringify({ action, reason }),
     })).json();
   },
-  async editSubscription(storeId: string, data: Partial<BillingSubscription>) {
-    return (await apiFetch(`/billing/admin/subscriptions/${storeId}`, {
+  async getPublicPlans(): Promise<BillingPlan[]> {
+    return (await apiFetch('/billing/plans')).json();
+  },
+  async getMySubscription(): Promise<{
+    subscription: BillingSubscription;
+    availablePlans: BillingPlan[];
+    payments: BillingPaymentReceipt[];
+  }> {
+    return (await apiFetch('/billing/my-subscription')).json();
+  },
+  async getCheckout(planIdOrType?: string): Promise<{ checkoutUrl: string }> {
+    const url = planIdOrType ? `/billing/checkout?planId=${encodeURIComponent(planIdOrType)}` : '/billing/checkout';
+    return (await apiFetch(url)).json();
+  },
+  async getAdminPlans(): Promise<BillingPlan[]> {
+    return (await apiFetch('/billing/admin/plans')).json();
+  },
+  async syncCaktoProducts(): Promise<{ message: string; plans: BillingPlan[]; rawProductsCount: number }> {
+    return (await apiFetch('/billing/admin/plans/sync-cakto', {
       method: 'POST',
-      body: JSON.stringify(data),
     })).json();
-  }
+  },
+  async createPlan(dto: Partial<BillingPlan>): Promise<BillingPlan> {
+    return (await apiFetch('/billing/admin/plans', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    })).json();
+  },
+  async updatePlan(id: string, dto: Partial<BillingPlan>): Promise<BillingPlan> {
+    return (await apiFetch(`/billing/admin/plans/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    })).json();
+  },
+  async deletePlan(id: string): Promise<BillingPlan> {
+    return (await apiFetch(`/billing/admin/plans/${id}`, {
+      method: 'DELETE',
+    })).json();
+  },
 };
