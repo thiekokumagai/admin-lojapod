@@ -35,6 +35,11 @@ export const superAdminNavItems = [
     icon: WalletCards,
   },
   {
+    title: "Transações",
+    url: "/super-admin/transacoes",
+    icon: Receipt,
+  },
+  {
     title: "Planos de Cobrança",
     url: "/super-admin/planos",
     icon: Layers,

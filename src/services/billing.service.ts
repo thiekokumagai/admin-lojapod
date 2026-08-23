@@ -108,4 +108,7 @@ export const billingService = {
       body: JSON.stringify(dto),
     })).json();
   },
+  async getAdminPayments(): Promise<any[]> {
+    return (await apiFetch('/billing/admin/payments')).json();
+  },
 };
