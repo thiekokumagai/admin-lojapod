@@ -185,9 +185,9 @@ export default function BillingPage() {
                 <div className="text-xs text-slate-500 font-semibold uppercase">Forma de Pagamento</div>
                 <div className="text-sm font-bold text-slate-900 mt-0.5">
                   {subscription.paymentMethod === 'PIX_AUTO'
-                    ? 'Pix Automático'
+                    ? 'Pix'
                     : subscription.paymentMethod === 'CREDIT_CARD'
-                    ? 'Cartão de Crédito Recorrente'
+                    ? 'Cartão de Crédito'
                     : 'Processamento Seguro via Cakto'}
                 </div>
               </div>
@@ -363,7 +363,7 @@ export default function BillingPage() {
                     </td>
                     <td className="py-3.5 px-4 text-xs font-medium text-slate-600">
                       {payment.method === 'PIX_AUTO'
-                        ? 'Pix Automático'
+                        ? 'Pix'
                         : payment.method === 'CREDIT_CARD'
                         ? 'Cartão de Crédito'
                         : 'Provedor Cakto'}
