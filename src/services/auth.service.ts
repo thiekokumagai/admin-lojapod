@@ -91,4 +91,5 @@ export function clearSession() {
 
 export function logout() {
   clearSession();
+  window.location.href = "/login";
 }
