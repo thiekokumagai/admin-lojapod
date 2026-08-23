@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { storesService, Store } from "../services/stores.service";
-import { Store as StoreIcon, Package, ShoppingBag, Users, Plus, ArrowRight, ShieldCheck, Globe, Loader2, ExternalLink } from "lucide-react";
+import { billingService, BillingOverview, BillingSubscription } from "../services/billing.service";
+import { Store as StoreIcon, Package, ShoppingBag, Users, Plus, ArrowRight, ShieldCheck, Globe, Loader2, ExternalLink, DollarSign, WalletCards, TrendingUp } from "lucide-react";
 
 function getStoreUrl(subdomain: string): string {
   if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
@@ -14,20 +15,38 @@ function getStoreUrl(subdomain: string): string {
   return `${protocol}//${subdomain}.lojapod.com`;
 }
 
+function formatCurrency(val: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
 export default function SuperAdminDashboardPage() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [subscriptions, setSubscriptions] = useState<BillingSubscription[]>([]);
+  const [billingOverview, setBillingOverview] = useState<BillingOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    storesService.getStores()
-      .then(setStores)
-      .catch(() => {})
+    Promise.all([
+      storesService.getStores(),
+      billingService.subscriptions().catch(() => []),
+      billingService.overview().catch(() => null),
+    ])
+      .then(([storesData, subData, overviewData]) => {
+        setStores(storesData);
+        setSubscriptions(subData);
+        setBillingOverview(overviewData);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const totalProducts = stores.reduce((acc, s) => acc + (s._count?.products || 0), 0);
   const totalOrders = stores.reduce((acc, s) => acc + (s._count?.orders || 0), 0);
   const totalCustomers = stores.reduce((acc, s) => acc + (s._count?.customers || 0), 0);
+
+  // MRR Estimado das assinaturas ativas
+  const mrr = subscriptions
+    .filter((s) => s.status === 'ACTIVE' || s.store.isActive)
+    .reduce((sum, item) => sum + (Number(item.monthlyFee) || 150), 0);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
@@ -40,63 +59,83 @@ export default function SuperAdminDashboardPage() {
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight">Visão Geral da Plataforma Loja Pod</h1>
           <p className="text-indigo-200 text-sm mt-1 max-w-xl">
-            Acompanhe a quantidade de lojas ativas, catálogo global e atividade de vendas em tempo real.
+            Acompanhe o faturamento recorrente (MRR), quantidade de lojas ativas, catálogo global e atividade de vendas.
           </p>
         </div>
 
-        <Link
-          to="/super-admin/lojas"
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Gerenciar Lojas
-        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          <Link
+            to="/super-admin/assinaturas"
+            className="flex items-center gap-2 bg-indigo-700/60 hover:bg-indigo-700 text-white border border-indigo-500/30 px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            <WalletCards className="h-4 w-4" />
+            Ver Assinaturas
+          </Link>
+          <Link
+            to="/super-admin/lojas"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Loja
+          </Link>
+        </div>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <div className="bg-white border rounded-xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">MRR Atual</span>
+            <TrendingUp className="h-5 w-5 text-indigo-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900">
+            {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-400" /> : formatCurrency(mrr)}
+          </div>
+          <p className="text-xs text-slate-400">Receita Mensal Recorrente</p>
+        </div>
+
         <div className="bg-white border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-semibold uppercase tracking-wider">Total de Lojas</span>
-            <StoreIcon className="h-5 w-5 text-indigo-600" />
+            <StoreIcon className="h-5 w-5 text-blue-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">
+          <div className="text-2xl font-extrabold text-slate-900">
             {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-400" /> : stores.length}
           </div>
-          <p className="text-xs text-slate-400">Lojas ativas na plataforma</p>
+          <p className="text-xs text-slate-400">Lojas cadastradas</p>
         </div>
 
         <div className="bg-white border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Produtos Cadastrados</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Produtos</span>
             <Package className="h-5 w-5 text-emerald-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">
+          <div className="text-2xl font-extrabold text-slate-900">
             {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-400" /> : totalProducts}
           </div>
-          <p className="text-xs text-slate-400">Em todas as lojas</p>
+          <p className="text-xs text-slate-400">Catálogo consolidado</p>
         </div>
 
         <div className="bg-white border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Pedidos Realizados</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Pedidos</span>
             <ShoppingBag className="h-5 w-5 text-amber-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">
+          <div className="text-2xl font-extrabold text-slate-900">
             {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-400" /> : totalOrders}
           </div>
-          <p className="text-xs text-slate-400">Volume total de vendas</p>
+          <p className="text-xs text-slate-400">Volume de vendas</p>
         </div>
 
         <div className="bg-white border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Clientes Totais</span>
-            <Users className="h-5 w-5 text-blue-600" />
+            <span className="text-xs font-semibold uppercase tracking-wider">Clientes</span>
+            <Users className="h-5 w-5 text-indigo-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">
+          <div className="text-2xl font-extrabold text-slate-900">
             {loading ? <Loader2 className="h-6 w-6 animate-spin text-slate-400" /> : totalCustomers}
           </div>
-          <p className="text-xs text-slate-400">Base consolidada</p>
+          <p className="text-xs text-slate-400">Base total</p>
         </div>
       </div>
 

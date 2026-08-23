@@ -36,6 +36,7 @@ const VariationDetailsPage = lazy(() => import("@/pages/VariationDetailsPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const SuperAdminStoresPage = lazy(() => import("@/pages/SuperAdminStoresPage"));
 const SuperAdminBillingPage = lazy(() => import("@/pages/SuperAdminBillingPage"));
+const SuperAdminPlansPage = lazy(() => import("@/pages/SuperAdminPlansPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const OrderPrintPage = lazy(() => import("@/pages/OrderPrintPage"));
 const BillingPage = lazy(() => import("@/pages/BillingPage"));
@@ -87,6 +88,7 @@ const App = () => (
                   <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
                   <Route path="/super-admin/lojas" element={<SuperAdminStoresPage />} />
                   <Route path="/super-admin/assinaturas" element={<SuperAdminBillingPage />} />
+                  <Route path="/super-admin/planos" element={<SuperAdminPlansPage />} />
                 </Route>
               </Route>
 

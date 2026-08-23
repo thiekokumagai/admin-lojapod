@@ -14,6 +14,8 @@ import {
   Link as LinkIcon,
   Store as StoreIcon,
   WalletCards,
+  CreditCard,
+  Layers,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -31,6 +33,11 @@ export const superAdminNavItems = [
     title: "Assinaturas",
     url: "/super-admin/assinaturas",
     icon: WalletCards,
+  },
+  {
+    title: "Planos de Cobrança",
+    url: "/super-admin/planos",
+    icon: Layers,
   },
 ];
 

@@ -88,3 +88,7 @@ export function clearSession() {
   signOut();
   clearAccessToken();
 }
+
+export function logout() {
+  clearSession();
+}
