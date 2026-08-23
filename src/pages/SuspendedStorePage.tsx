@@ -150,8 +150,11 @@ export default function SuspendedStorePage() {
           <div className="pt-4 border-t border-slate-100 text-center">
             <Button
               variant="ghost"
-              className="text-slate-400 hover:text-slate-600 text-xs w-full"
-              onClick={() => logout()}
+              className="text-slate-500 hover:text-slate-700 text-xs w-full font-medium"
+              onClick={() => {
+                logout();
+                window.location.href = "/login";
+              }}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair da conta
