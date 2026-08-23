@@ -429,6 +429,201 @@ export default function SuperAdminBillingPage() {
                   type="number"
                   step="0.01"
                   value={editForm.monthlyFee}
+          <p className="text-xs text-indigo-600 font-medium">Projeção anual de faturamento</p>
+        </div>
+
+        <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>Lojas Ativas / Teste</span>
+            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900">{activeCount + trialingCount}</div>
+          <p className="text-xs text-slate-500 font-medium">
+            <span className="text-emerald-600 font-semibold">{activeCount} ativas</span> |{' '}
+            <span className="text-blue-600 font-semibold">{trialingCount} em teste</span>
+          </p>
+        </div>
+
+        <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>Pendentes / Suspensas</span>
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900">{pastDueCount + suspendedCount}</div>
+          <p className="text-xs text-slate-500 font-medium">
+            <span className="text-amber-600 font-semibold">{pastDueCount} em carência</span> |{' '}
+            <span className="text-red-600 font-semibold">{suspendedCount} suspensas</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Tabela de Assinaturas */}
+      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 border-b bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Lista de Lojas & Status</h2>
+            <p className="text-xs text-slate-500">Gerencie a ativação, suspensão e reativação de cada loja.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por loja..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full sm:w-64 pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-medium text-slate-700 cursor-pointer"
+            >
+              <option value="ALL">Todos os Status</option>
+              <option value="ACTIVE">Ativas</option>
+              <option value="TRIALING">Em Teste</option>
+              <option value="PAST_DUE">Em Atraso</option>
+              <option value="SUSPENDED">Suspensas</option>
+              <option value="CANCELED">Canceladas</option>
+            </select>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="py-16 flex flex-col items-center justify-center text-slate-400 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            <span className="text-sm font-medium">Carregando faturamento...</span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                  <th className="py-3 px-5">Loja / Admin</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Plano / Valor</th>
+                  <th className="py-3 px-4">Pagamento</th>
+                  <th className="py-3 px-4">Vencimento</th>
+                  <th className="py-3 px-5 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-slate-700">
+                {filteredItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                    <td className="py-4 px-5">
+                      <div className="font-bold text-slate-900">{item.store.title}</div>
+                      <div className="text-xs text-slate-500">{item.store.adminEmail}</div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${badge[item.status]}`}>
+                        {labels[item.status]}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="font-semibold text-slate-900">
+                        {formatCurrency(Number(item.monthlyFee) || 150)}/mês
+                      </div>
+                      {item.plan?.name && (
+                        <div className="text-[11px] text-slate-500 font-medium">{item.plan.name}</div>
+                      )}
+                      {item.supportSelected && (
+                        <span className="inline-block mt-0.5 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                          Implantação ERP Ativa
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+                        <CreditCard className="h-3.5 w-3.5 text-slate-400" />
+                        {item.paymentMethod === 'PIX_AUTO' ? 'Pix Automático' : 'Cartão'}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-xs text-slate-600">
+                      {formatDateUTC(item.currentPeriodEndsAt || item.trialEndsAt)}
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition inline-flex items-center gap-1"
+                        >
+                          <Edit className="h-3.5 w-3.5 text-slate-500" />
+                          Editar
+                        </button>
+                        {item.status !== 'SUSPENDED' && (
+                          <button
+                            disabled={working === item.storeId}
+                            onClick={() => void act(item, 'SUSPEND')}
+                            className="border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                          >
+                            Suspender
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Edição */}
+      {editingSub && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 border border-slate-100">
+            <div className="flex items-center justify-between border-b pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Editar Assinatura</h3>
+                <p className="text-xs text-slate-500">{editingSub.store.title}</p>
+              </div>
+              <button onClick={() => setEditingSub(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Status da Assinatura</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value as BillingStatus }))}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-semibold text-slate-800"
+                >
+                  <option value="TRIALING">Em Teste (TRIALING)</option>
+                  <option value="ACTIVE">Ativa (ACTIVE)</option>
+                  <option value="PAST_DUE">Em Atraso (PAST_DUE)</option>
+                  <option value="SUSPENDED">Suspensa (SUSPENDED)</option>
+                  <option value="CANCELED">Cancelada (CANCELED)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Plano Vinculado</label>
+                <select
+                  value={editForm.planId}
+                  onChange={(e) => {
+                    const pId = e.target.value;
+                    const selected = availablePlans.find((p) => p.id === pId);
+                    setEditForm((prev) => ({ ...prev, planId: pId, monthlyFee: selected ? Number(selected.price) : prev.monthlyFee }));
+                  }}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-semibold text-slate-800"
+                >
+                  <option value="">Sem plano específico</option>
+                  {availablePlans.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} - R$ {Number(p.price).toFixed(2)}/mês</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Valor da Mensalidade (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.monthlyFee}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, monthlyFee: parseFloat(e.target.value) || 0 }))}
                   className="w-full px-3 py-2 border rounded-xl font-bold text-slate-800"
                 />
@@ -437,25 +632,18 @@ export default function SuperAdminBillingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Data Fim do Trial</label>
-                  <input type="date" value={editForm.trialEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, trialEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl" />
+                  <input type="date" value={editForm.trialEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, trialEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl font-medium" />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Data Próxima Renovação</label>
-                  <input type="date" value={editForm.currentPeriodEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, currentPeriodEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl" />
+                  <input type="date" value={editForm.currentPeriodEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, currentPeriodEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl font-medium" />
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 border rounded-xl bg-slate-50">
-                <div>
-                  <div className="font-bold text-slate-800">Implantação ERP Ativa</div>
-                </div>
-                <input type="checkbox" checked={editForm.supportSelected} onChange={(e) => setEditForm((prev) => ({ ...prev, supportSelected: e.target.checked }))} className="h-5 w-5 rounded text-indigo-600" />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 border-t pt-4">
-              <button onClick={() => setEditingSub(null)} className="px-4 py-2 border text-slate-600 rounded-xl text-xs font-semibold">Cancelar</button>
-              <button disabled={saving} onClick={() => void handleSaveSubscription()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700">
+              <button onClick={() => setEditingSub(null)} className="px-4 py-2 border text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-100 transition">Cancelar</button>
+              <button disabled={saving} onClick={() => void handleSaveSubscription()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition disabled:opacity-50 inline-flex items-center gap-1.5">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Alterações'}
               </button>
             </div>

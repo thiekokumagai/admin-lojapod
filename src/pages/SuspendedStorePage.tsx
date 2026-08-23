@@ -42,8 +42,7 @@ export default function SuspendedStorePage() {
       } catch (err) {
         console.error("Erro ao carregar opções de pagamento", err);
         setError("Não foi possível carregar os planos no momento.");
-      } font-medium
-      finally {
+      } finally {
         setLoading(false);
       }
     }
