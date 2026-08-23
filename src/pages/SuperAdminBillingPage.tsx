@@ -333,7 +333,7 @@ export default function SuperAdminBillingPage() {
                       <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 font-medium">
                         <CreditCard className="h-3.5 w-3.5 text-slate-400" />
                         {item.paymentMethod === 'PIX_AUTO'
-                          ? 'Pix Automático'
+                          ? 'Pix'
                           : item.paymentMethod === 'CREDIT_CARD'
                           ? 'Cartão de Crédito'
                           : 'Aguardando'}
@@ -447,7 +447,7 @@ export default function SuperAdminBillingPage() {
                 >
                   <option value="UNKNOWN">Aguardando Pagamento (UNKNOWN)</option>
                   <option value="CREDIT_CARD">Cartão de Crédito (CREDIT_CARD)</option>
-                  <option value="PIX_AUTO">Pix Automático (PIX_AUTO)</option>
+                  <option value="PIX_AUTO">Pix (PIX)</option>
                 </select>
               </div>
 

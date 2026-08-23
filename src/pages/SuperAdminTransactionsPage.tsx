@@ -327,7 +327,7 @@ export default function SuperAdminTransactionsPage() {
                     <td className="py-4 px-4 text-xs font-medium text-slate-700">
                       {item.method === 'PIX_AUTO' ? (
                         <span className="inline-flex items-center gap-1 text-emerald-700">
-                          Pix Automático
+                          Pix
                         </span>
                       ) : item.method === 'CREDIT_CARD' ? (
                         <span className="inline-flex items-center gap-1 text-blue-700">
