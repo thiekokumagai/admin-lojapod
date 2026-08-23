@@ -15,8 +15,11 @@ import {
   Clock,
   ExternalLink,
   ShieldAlert,
+  Edit,
+  X,
+  Sparkles,
 } from 'lucide-react';
-import { billingService, BillingOverview, BillingStatus, BillingSubscription } from '@/services/billing.service';
+import { billingService, BillingOverview, BillingStatus, BillingSubscription, BillingPlan } from '@/services/billing.service';
 
 const labels: Record<BillingStatus, string> = {
   TRIALING: 'Em teste',
@@ -43,25 +46,48 @@ function formatDateUTC(dateStr?: string | Date | null) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
+function toInputDate(dateStr?: string | null) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+}
+
 export default function SuperAdminBillingPage() {
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [items, setItems] = useState<BillingSubscription[]>([]);
+  const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string>();
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+
+  // Modal de edição
+  const [editingSub, setEditingSub] = useState<BillingSubscription | null>(null);
+  const [editForm, setEditForm] = useState({
+    status: 'TRIALING' as BillingStatus,
+    monthlyFee: 150,
+    planId: '',
+    trialEndsAt: '',
+    currentPeriodEndsAt: '',
+    paymentMethod: 'CREDIT_CARD' as 'CREDIT_CARD' | 'PIX_AUTO' | 'UNKNOWN',
+    supportSelected: false,
+  });
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
-      const [summary, subscriptions] = await Promise.all([
+      const [summary, subscriptions, plans] = await Promise.all([
         billingService.overview(),
         billingService.subscriptions(),
+        billingService.getAdminPlans(),
       ]);
       setOverview(summary);
       setItems(subscriptions);
+      setAvailablePlans(plans);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao carregar cobranças');
     } finally {
@@ -72,6 +98,42 @@ export default function SuperAdminBillingPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  const openEditModal = (item: BillingSubscription) => {
+    setEditingSub(item);
+    setEditForm({
+      status: item.status,
+      monthlyFee: Number(item.monthlyFee) || 150,
+      planId: item.planId || '',
+      trialEndsAt: toInputDate(item.trialEndsAt),
+      currentPeriodEndsAt: toInputDate(item.currentPeriodEndsAt),
+      paymentMethod: item.paymentMethod || 'UNKNOWN',
+      supportSelected: item.supportSelected || false,
+    });
+  };
+
+  const handleSaveSubscription = async () => {
+    if (!editingSub) return;
+    setSaving(true);
+    setError('');
+    try {
+      await billingService.updateSubscription(editingSub.storeId, {
+        status: editForm.status,
+        monthlyFee: editForm.monthlyFee,
+        planId: editForm.planId || null,
+        trialEndsAt: editForm.trialEndsAt ? `${editForm.trialEndsAt}T12:00:00.000Z` : null,
+        currentPeriodEndsAt: editForm.currentPeriodEndsAt ? `${editForm.currentPeriodEndsAt}T12:00:00.000Z` : null,
+        paymentMethod: editForm.paymentMethod,
+        supportSelected: editForm.supportSelected,
+      });
+      setEditingSub(null);
+      await load();
+    } catch (e: any) {
+      setError(e.message || 'Erro ao salvar assinatura');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const act = async (item: BillingSubscription, action: 'SUSPEND' | 'REACTIVATE' | 'CANCEL') => {
     const defaultReason = action === 'SUSPEND'
@@ -112,30 +174,29 @@ export default function SuperAdminBillingPage() {
     });
   }, [items, search, selectedStatus]);
 
-  const totalStoresCount = items.length || 1;
-  const activeCount = overview?.statuses.ACTIVE || 0;
-  const trialingCount = overview?.statuses.TRIALING || 0;
-  const pastDueCount = overview?.statuses.PAST_DUE || 0;
-  const suspendedCount = overview?.statuses.SUSPENDED || 0;
+  const activeCount = items.filter((i) => i.status === 'ACTIVE').length;
+  const trialingCount = items.filter((i) => i.status === 'TRIALING').length;
+  const pastDueCount = items.filter((i) => i.status === 'PAST_DUE').length;
+  const suspendedCount = items.filter((i) => i.status === 'SUSPENDED').length;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs uppercase tracking-wider mb-1">
-            <DollarSign className="h-4 w-4" />
-            Gestão Financeira & SaaS Metrics
+            <WalletCards className="h-4 w-4" />
+            Super Admin ➔ Faturamento Global
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Assinaturas e Faturamento</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Gestão de Assinaturas & Lojas</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Métricas de MRR, saúde da base de assinantes e sincronização de cobranças via Cakto.
+            Acompanhe o faturamento mensal (MRR), altere planos e gerencie reativação e suspensão de lojas.
           </p>
         </div>
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Atualizar Dados
@@ -156,54 +217,42 @@ export default function SuperAdminBillingPage() {
         </div>
       )}
 
-      {/* Mapeamento de Métricas Principais (MRR, ARR, Total Recebido, Lojas Ativas) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Card MRR */}
-        <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">MRR (Receita Mensal)</span>
-            <div className="p-2 bg-indigo-700/50 rounded-lg text-indigo-200">
-              <TrendingUp className="h-5 w-5" />
-            </div>
+      {/* Cards Financeiros */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>MRR (Receita Mensal)</span>
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
           </div>
-          <div className="text-3xl font-black mt-3 tracking-tight">{formatCurrency(mrr)}</div>
-          <div className="flex items-center gap-2 text-xs text-indigo-200 mt-2">
-            <span className="font-medium">ARR Estimado: {formatCurrency(arr)}</span>
-          </div>
+          <div className="text-3xl font-extrabold text-slate-900">{formatCurrency(mrr)}</div>
+          <p className="text-xs text-emerald-600 font-medium">Lojas ativas gerando mensalidade</p>
         </div>
 
-        {/* Card Faturamento Total Registrado */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Faturamento Acumulado</span>
-            <DollarSign className="h-5 w-5 text-emerald-600" />
+        <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>ARR (Receita Anual)</span>
+            <DollarSign className="h-4 w-4 text-indigo-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">
-            {formatCurrency(overview?.paidAmount || 0)}
+          <div className="text-3xl font-extrabold text-slate-900">{formatCurrency(arr)}</div>
+          <p className="text-xs text-indigo-600 font-medium">Projeção anual de faturamento</p>
+        </div>
+
+        <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>Lojas Ativas / Teste</span>
+            <CheckCircle2 className="h-4 w-4 text-blue-600" />
           </div>
+          <div className="text-3xl font-extrabold text-slate-900">{activeCount + trialingCount}</div>
           <p className="text-xs text-slate-500 font-medium">
-            {overview?.paidCount || 0} transações confirmadas via Cakto
+            <span className="text-emerald-600 font-semibold">{activeCount} ativas</span> |{' '}
+            <span className="text-blue-600 font-semibold">{trialingCount} em teste</span>
           </p>
         </div>
 
-        {/* Card Lojas Ativas vs Inativas */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Assinaturas Ativas</span>
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900">{activeCount}</div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <span>{((activeCount / totalStoresCount) * 100).toFixed(0)}% da base ativa</span>
-            <span className="text-blue-600 font-semibold">• {trialingCount} em teste</span>
-          </div>
-        </div>
-
-        {/* Card Alerta de Inadimplência */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-2">
-          <div className="flex justify-between items-center text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Atrasadas / Suspensas</span>
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+        <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>Pendentes / Suspensas</span>
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900">{pastDueCount + suspendedCount}</div>
           <p className="text-xs text-slate-500 font-medium">
@@ -213,56 +262,43 @@ export default function SuperAdminBillingPage() {
         </div>
       </div>
 
-      {/* Tabela de Assinaturas e Ações */}
-      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden space-y-4">
-        {/* Header e Filtros */}
+      {/* Tabela de Assinaturas */}
+      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
         <div className="p-5 border-b bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Lista de Lojas & Status de Cobrança</h2>
+            <h2 className="text-lg font-bold text-slate-900">Lista de Lojas & Status</h2>
             <p className="text-xs text-slate-500">Gerencie a ativação, suspensão e reativação de cada loja.</p>
           </div>
-
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* Input de Busca */}
             <div className="relative">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Buscar por loja ou e-mail..."
+                placeholder="Buscar por loja..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full sm:w-64 pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                className="w-full sm:w-64 pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
-
-            {/* Selector de Status */}
-            <div className="relative flex items-center">
-              <Filter className="h-3.5 w-3.5 absolute left-3 text-slate-400 pointer-events-none" />
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="pl-8 pr-8 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium text-slate-700 appearance-none cursor-pointer"
-              >
-                <option value="ALL">Todos os Status</option>
-                <option value="ACTIVE">Ativas</option>
-                <option value="TRIALING">Em Teste (Trial)</option>
-                <option value="PAST_DUE">Em Atraso</option>
-                <option value="SUSPENDED">Suspensas</option>
-                <option value="CANCELED">Canceladas</option>
-              </select>
-            </div>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-medium text-slate-700 cursor-pointer"
+            >
+              <option value="ALL">Todos os Status</option>
+              <option value="ACTIVE">Ativas</option>
+              <option value="TRIALING">Em Teste</option>
+              <option value="PAST_DUE">Em Atraso</option>
+              <option value="SUSPENDED">Suspensas</option>
+              <option value="CANCELED">Canceladas</option>
+            </select>
           </div>
         </div>
 
-        {/* Tabela de Dados */}
         {loading ? (
           <div className="py-16 flex flex-col items-center justify-center text-slate-400 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
             <span className="text-sm font-medium">Carregando faturamento...</span>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-sm">
-            Nenhuma assinatura encontrada para os filtros selecionados.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -272,9 +308,9 @@ export default function SuperAdminBillingPage() {
                   <th className="py-3 px-5">Loja / Admin</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Plano / Valor</th>
-                  <th className="py-3 px-4">Método de Pagamento</th>
-                  <th className="py-3 px-4">Vencimento / Trial</th>
-                  <th className="py-3 px-5 text-right">Ações Administrativas</th>
+                  <th className="py-3 px-4">Pagamento</th>
+                  <th className="py-3 px-4">Vencimento</th>
+                  <th className="py-3 px-5 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-slate-700">
@@ -283,13 +319,9 @@ export default function SuperAdminBillingPage() {
                     <td className="py-4 px-5">
                       <div className="font-bold text-slate-900">{item.store.title}</div>
                       <div className="text-xs text-slate-500">{item.store.adminEmail}</div>
-                      <div className="text-[11px] font-mono text-indigo-600 mt-0.5">
-                        {item.store.subdomain}.lojapod.com
-                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${badge[item.status]}`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
                         {labels[item.status]}
                       </span>
                     </td>
@@ -297,6 +329,9 @@ export default function SuperAdminBillingPage() {
                       <div className="font-semibold text-slate-900">
                         {formatCurrency(Number(item.monthlyFee) || 150)}/mês
                       </div>
+                      {item.plan?.name && (
+                        <div className="text-[11px] text-slate-500 font-medium">{item.plan.name}</div>
+                      )}
                       {item.supportSelected && (
                         <span className="inline-block mt-0.5 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
                           Implantação ERP Ativa
@@ -306,33 +341,21 @@ export default function SuperAdminBillingPage() {
                     <td className="py-4 px-4">
                       <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 font-medium">
                         <CreditCard className="h-3.5 w-3.5 text-slate-400" />
-                        {item.paymentMethod === 'PIX_AUTO'
-                          ? 'Pix Automático'
-                          : item.paymentMethod === 'CREDIT_CARD'
-                          ? 'Cartão de Crédito'
-                          : 'Aguardando'}
+                        {item.paymentMethod === 'PIX_AUTO' ? 'Pix Automático' : 'Cartão'}
                       </div>
                     </td>
                     <td className="py-4 px-4 text-xs text-slate-600">
-                      {item.status === 'PAST_DUE' && item.gracePeriodEndsAt ? (
-                        <div className="text-amber-700 font-medium flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          Suspende em {formatDateUTC(item.gracePeriodEndsAt)}
-                        </div>
-                      ) : item.trialEndsAt && item.status === 'TRIALING' ? (
-                        <div className="text-blue-700 font-medium">
-                          Trial até {formatDateUTC(item.trialEndsAt)}
-                        </div>
-                      ) : item.currentPeriodEndsAt ? (
-                        <div className="text-slate-600">
-                          Renova em {formatDateUTC(item.currentPeriodEndsAt)}
-                        </div>
-                      ) : (
-                        '—'
-                      )}
+                      {formatDateUTC(item.currentPeriodEndsAt || item.trialEndsAt)}
                     </td>
                     <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition inline-flex items-center gap-1"
+                        >
+                          <Edit className="h-3.5 w-3.5 text-slate-500" />
+                          Editar
+                        </button>
                         {item.status !== 'SUSPENDED' && (
                           <button
                             disabled={working === item.storeId}
@@ -340,15 +363,6 @@ export default function SuperAdminBillingPage() {
                             className="border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
                           >
                             Suspender
-                          </button>
-                        )}
-                        {item.status !== 'ACTIVE' && (
-                          <button
-                            disabled={working === item.storeId}
-                            onClick={() => void act(item, 'REACTIVATE')}
-                            className="border border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
-                          >
-                            Reativar
                           </button>
                         )}
                       </div>
@@ -360,6 +374,94 @@ export default function SuperAdminBillingPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Edição */}
+      {editingSub && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 border border-slate-100">
+            <div className="flex items-center justify-between border-b pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Editar Assinatura</h3>
+                <p className="text-xs text-slate-500">{editingSub.store.title}</p>
+              </div>
+              <button onClick={() => setEditingSub(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Status da Assinatura</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value as BillingStatus }))}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-semibold text-slate-800"
+                >
+                  <option value="TRIALING">Em Teste (TRIALING)</option>
+                  <option value="ACTIVE">Ativa (ACTIVE)</option>
+                  <option value="PAST_DUE">Em Atraso (PAST_DUE)</option>
+                  <option value="SUSPENDED">Suspensa (SUSPENDED)</option>
+                  <option value="CANCELED">Cancelada (CANCELED)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Plano Vinculado</label>
+                <select
+                  value={editForm.planId}
+                  onChange={(e) => {
+                    const pId = e.target.value;
+                    const selected = availablePlans.find((p) => p.id === pId);
+                    setEditForm((prev) => ({ ...prev, planId: pId, monthlyFee: selected ? Number(selected.price) : prev.monthlyFee }));
+                  }}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-semibold text-slate-800"
+                >
+                  <option value="">Sem plano específico</option>
+                  {availablePlans.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} - R$ {Number(p.price).toFixed(2)}/mês</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Valor da Mensalidade (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.monthlyFee}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, monthlyFee: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border rounded-xl font-bold text-slate-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Data Fim do Trial</label>
+                  <input type="date" value={editForm.trialEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, trialEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Data Próxima Renovação</label>
+                  <input type="date" value={editForm.currentPeriodEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, currentPeriodEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-slate-50">
+                <div>
+                  <div className="font-bold text-slate-800">Implantação ERP Ativa</div>
+                </div>
+                <input type="checkbox" checked={editForm.supportSelected} onChange={(e) => setEditForm((prev) => ({ ...prev, supportSelected: e.target.checked }))} className="h-5 w-5 rounded text-indigo-600" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <button onClick={() => setEditingSub(null)} className="px-4 py-2 border text-slate-600 rounded-xl text-xs font-semibold">Cancelar</button>
+              <button disabled={saving} onClick={() => void handleSaveSubscription()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Alterações'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
