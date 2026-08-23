@@ -22,11 +22,33 @@ export default function SuspendedStorePage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  const checkStatus = async () => {
+    try {
+      const subRes = await apiFetch("/billing/my-subscription");
+      const subData = await subRes.json();
+      if (subData?.subscription?.status === 'ACTIVE' || subData?.subscription?.store?.isActive) {
+        setPaymentSuccess(true);
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+        return true;
+      }
+    } catch {
+      // silencioso
+    }
+    return false;
+  };
+
   useEffect(() => {
     async function loadPlans() {
       setLoading(true);
       setError(null);
       try {
+        const isPaid = await checkStatus();
+        if (isPaid) return;
+
         const subRes = await apiFetch("/billing/my-subscription");
         const subData = await subRes.json();
 
@@ -47,6 +69,13 @@ export default function SuspendedStorePage() {
       }
     }
     void loadPlans();
+
+    // Polling automático a cada 4 segundos para detectar quando o webhook da Cakto for recebido!
+    const interval = setInterval(() => {
+      void checkStatus();
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleCheckout = async (planId: string) => {
@@ -66,6 +95,23 @@ export default function SuspendedStorePage() {
       setCheckoutLoading(null);
     }
   };
+
+  if (paymentSuccess) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-emerald-100 text-center space-y-4">
+          <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900">Pagamento Confirmado!</h1>
+          <p className="text-sm text-slate-600">
+            Sua assinatura foi reativada com sucesso. Redirecionando para o seu painel de gestão...
+          </p>
+          <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-12">
