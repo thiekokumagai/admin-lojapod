@@ -3,7 +3,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { LogOut, Menu, Printer, Bell, Store, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { clearSession } from "@/services/auth.service";
 import { isSuperAdmin } from "@/lib/auth";
 import { apiFetch } from "@/services/api";
@@ -19,6 +19,7 @@ import { Key } from "lucide-react";
 
 export function AdminLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const superAdmin = isSuperAdmin();
   const { data: settings } = useSettings();
@@ -153,7 +154,7 @@ export function AdminLayout() {
             </div>
           </header>
 
-          {renewalWarning && !superAdmin && (
+          {renewalWarning && !superAdmin && location.pathname !== '/minha-assinatura' && (
             <div className="bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-sm border-b border-amber-600">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0 animate-bounce text-slate-950" />
