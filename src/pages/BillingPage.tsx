@@ -199,79 +199,99 @@ export default function BillingPage() {
       {/* Planos Disponíveis para Seleção/Contratação */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Planos e Ofertas Disponíveis</h2>
-          <p className="text-xs text-slate-500">Selecione o plano desejado para regularizar ou migrar sua assinatura.</p>
+          <h2 className="text-lg font-bold text-slate-900">
+            {subscription?.plan ? 'Sua Assinatura Vinculada' : 'Planos e Ofertas Disponíveis'}
+          </h2>
+          <p className="text-xs text-slate-500">
+            {subscription?.plan
+              ? 'Clique no botão abaixo para efetuar o pagamento da mensalidade ou renovar sua assinatura.'
+              : 'Selecione o plano desejado para regularizar ou assinar o serviço.'}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-5"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-extrabold text-slate-900">{plan.name}</h3>
-                    {plan.checkoutType === 'SINGLE_PRODUCT' ? (
-                      <span className="inline-block mt-1 bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-2 py-0.5 rounded-md">
-                        Produto Único + Assinatura
-                      </span>
-                    ) : (
-                      <span className="inline-block mt-1 bg-indigo-50 text-indigo-800 border border-indigo-200 text-[11px] font-bold px-2 py-0.5 rounded-md">
-                        Assinatura Recorrente
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-slate-900">
-                      {formatCurrency(Number(plan.price))}
+          {plans.map((plan) => {
+            const isStorePlan = subscription?.plan?.id === plan.id;
+            const isSuspendedOrDue = subscription?.status === 'PAST_DUE' || subscription?.status === 'SUSPENDED';
+
+            let buttonText = `Contratar ${plan.name}`;
+            if (isStorePlan || plans.length === 1) {
+              if (isSuspendedOrDue) {
+                buttonText = 'Regularizar Assinatura Agora';
+              } else {
+                buttonText = 'Renovar Assinatura via Cakto';
+              }
+            }
+
+            return (
+              <div
+                key={plan.id}
+                className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-5"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900">{plan.name}</h3>
+                      {plan.checkoutType === 'SINGLE_PRODUCT' ? (
+                        <span className="inline-block mt-1 bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-2 py-0.5 rounded-md">
+                          Produto Único + Assinatura
+                        </span>
+                      ) : (
+                        <span className="inline-block mt-1 bg-indigo-50 text-indigo-800 border border-indigo-200 text-[11px] font-bold px-2 py-0.5 rounded-md">
+                          Assinatura Recorrente
+                        </span>
+                      )}
                     </div>
-                    {plan.checkoutType === 'RECURRING_SUBSCRIPTION' && (
-                      <span className="text-xs text-slate-500 font-medium">/mês</span>
-                    )}
+                    <div className="text-right">
+                      <div className="text-2xl font-black text-slate-900">
+                        {formatCurrency(Number(plan.price))}
+                      </div>
+                      {plan.checkoutType === 'RECURRING_SUBSCRIPTION' && (
+                        <span className="text-xs text-slate-500 font-medium">/mês</span>
+                      )}
+                    </div>
                   </div>
+
+                  {plan.description && (
+                    <p className="text-xs text-slate-600 leading-relaxed">{plan.description}</p>
+                  )}
+
+                  <ul className="text-xs text-slate-600 space-y-1.5 pt-2 border-t">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>Acesso completo ao ERP e Vitrine Online</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>Cobrança segura e automatizada via Cakto</span>
+                    </li>
+                    {plan.checkoutType === 'SINGLE_PRODUCT' && (
+                      <li className="flex items-center gap-1.5 font-semibold text-indigo-900">
+                        <Sparkles className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                        <span>Inclui 1ª mensalidade + Suporte de Implantação</span>
+                      </li>
+                    )}
+                  </ul>
                 </div>
 
-                {plan.description && (
-                  <p className="text-xs text-slate-600 leading-relaxed">{plan.description}</p>
-                )}
-
-                <ul className="text-xs text-slate-600 space-y-1.5 pt-2 border-t">
-                  <li className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Acesso completo ao ERP e Vitrine Online</span>
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Cobrança segura e automatizada via Cakto</span>
-                  </li>
-                  {plan.checkoutType === 'SINGLE_PRODUCT' && (
-                    <li className="flex items-center gap-1.5 font-semibold text-indigo-900">
-                      <Sparkles className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                      <span>Inclui 1ª mensalidade + Suporte de Implantação</span>
-                    </li>
+                <button
+                  onClick={() => void handleOpenCheckout(plan.id)}
+                  disabled={loadingCheckout === plan.id}
+                  className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-3 font-semibold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50"
+                >
+                  {loadingCheckout === plan.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      {buttonText}
+                      <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-75" />
+                    </>
                   )}
-                </ul>
+                </button>
               </div>
-
-              <button
-                onClick={() => void handleOpenCheckout(plan.id)}
-                disabled={loadingCheckout === plan.id}
-                className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-3 font-semibold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50"
-              >
-                {loadingCheckout === plan.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4" />
-                    Contratar {plan.name}
-                    <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-75" />
-                  </>
-                )}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
