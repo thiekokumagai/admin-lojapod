@@ -23,18 +23,31 @@ export default function SuspendedStorePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiFetch("/billing/plans")
-      .then((res) => res.json())
-      .then((data: Plan[]) => {
-        setPlans(data || []);
-      })
-      .catch((err) => {
-        console.error("Erro ao buscar planos de pagamento", err);
+    async function loadPlans() {
+      setLoading(true);
+      setError(null);
+      try {
+        const subRes = await apiFetch("/billing/my-subscription");
+        const subData = await subRes.json();
+
+        if (subData?.subscription?.plan) {
+          // Se a loja tem um plano vinculado especificamente pelo Super Admin, mostra APENAS ele!
+          setPlans([subData.subscription.plan]);
+        } else {
+          // Se não tem plano vinculado prévio, lista os planos públicos disponíveis
+          const plansRes = await apiFetch("/billing/plans");
+          const plansData = await plansRes.json();
+          setPlans(plansData || []);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar opções de pagamento", err);
         setError("Não foi possível carregar os planos no momento.");
-      })
-      .finally(() => {
+      } font-medium
+      finally {
         setLoading(false);
-      });
+      }
+    }
+    void loadPlans();
   }, []);
 
   const handleCheckout = async (planId: string) => {
