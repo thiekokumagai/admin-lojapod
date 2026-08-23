@@ -64,7 +64,14 @@ export default function BillingPage() {
     try {
       const res = await billingService.getMySubscription();
       setSubscription(res.subscription);
-      setPlans(res.availablePlans || []);
+      
+      // Se a loja tiver um plano específico vinculado, exibe apenas ele para pagamento
+      if (res.subscription?.plan) {
+        setPlans([res.subscription.plan]);
+      } else {
+        setPlans(res.availablePlans || []);
+      }
+
       setPayments(res.payments || []);
     } catch (e: any) {
       setError(e.message || 'Erro ao carregar faturamento da loja');
