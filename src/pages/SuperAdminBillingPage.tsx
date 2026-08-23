@@ -47,6 +47,17 @@ function toInputDate(dateStr?: string | null) {
   return d.toISOString().split('T')[0];
 }
 
+function getNextMonthSameDay(dateStr: string) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return '';
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1;
+  const d = parseInt(parts[2], 10);
+  const nextDate = new Date(Date.UTC(y, m + 1, d));
+  return nextDate.toISOString().split('T')[0];
+}
+
 export default function SuperAdminBillingPage() {
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [items, setItems] = useState<BillingSubscription[]>([]);
@@ -443,7 +454,19 @@ export default function SuperAdminBillingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Data Fim do Trial</label>
-                  <input type="date" value={editForm.trialEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, trialEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl font-medium" />
+                  <input
+                    type="date"
+                    value={editForm.trialEndsAt}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditForm((prev) => ({
+                        ...prev,
+                        trialEndsAt: val,
+                        currentPeriodEndsAt: getNextMonthSameDay(val) || prev.currentPeriodEndsAt,
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border rounded-xl font-medium"
+                  />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Data Próxima Renovação</label>
