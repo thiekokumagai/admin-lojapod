@@ -125,6 +125,21 @@ export default function SuperAdminTransactionsPage() {
     });
   }, [items, search, selectedStatus]);
 
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const handleReprocess = async () => {
+    setReprocessing(true);
+    setError('');
+    try {
+      await billingService.reprocessWebhooks();
+      await load();
+    } catch (e: any) {
+      setError(e.message || 'Erro ao reprocessar webhooks');
+    } finally {
+      setReprocessing(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* Header com Botão de Atualizar */}
@@ -140,14 +155,24 @@ export default function SuperAdminTransactionsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => void load()}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Atualizar Lista
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => void handleReprocess()}
+            disabled={loading || reprocessing}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            <RotateCcw className={`h-4 w-4 ${reprocessing ? 'animate-spin' : ''}`} />
+            {reprocessing ? 'Reprocessando...' : 'Reprocessar Webhooks'}
+          </button>
+          <button
+            onClick={() => void load()}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar Lista
+          </button>
+        </div>
       </div>
 
       {error && (

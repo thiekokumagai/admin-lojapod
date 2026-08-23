@@ -111,4 +111,7 @@ export const billingService = {
   async getAdminPayments(): Promise<any[]> {
     return (await apiFetch('/billing/admin/payments')).json();
   },
+  async reprocessWebhooks(): Promise<any> {
+    return (await apiFetch('/billing/admin/webhooks/reprocess', { method: 'POST' })).json();
+  },
 };
