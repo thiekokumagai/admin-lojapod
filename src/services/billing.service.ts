@@ -102,4 +102,10 @@ export const billingService = {
       method: 'DELETE',
     })).json();
   },
+  async updateSubscription(storeId: string, dto: any): Promise<BillingSubscription> {
+    return (await apiFetch(`/billing/admin/stores/${storeId}/subscription`, {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    })).json();
+  },
 };
