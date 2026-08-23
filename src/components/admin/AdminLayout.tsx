@@ -1,7 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
-import { LogOut, Menu, Printer, Bell, Store, ExternalLink } from "lucide-react";
+import { LogOut, Menu, Printer, Bell, Store, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Outlet, useNavigate } from "react-router-dom";
 import { clearSession } from "@/services/auth.service";
@@ -24,12 +24,35 @@ export function AdminLayout() {
   const { data: settings } = useSettings();
   const [subdomain, setSubdomain] = useState<string>("");
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [renewalWarning, setRenewalWarning] = useState<{ daysLeft: number } | null>(null);
 
   useEffect(() => {
     if (superAdmin) {
       document.title = "Super Admin | Loja Pod";
       return;
     }
+
+    // Verificar se faltam 5 dias ou menos para o vencimento da assinatura da loja
+    apiFetch('/billing/my-subscription')
+      .then((res) => res.json())
+      .then((data) => {
+        const sub = data?.subscription;
+        if (sub && sub.status !== 'SUSPENDED' && sub.status !== 'CANCELED') {
+          const target = sub.currentPeriodEndsAt || sub.trialEndsAt;
+          if (target) {
+            const exp = new Date(target);
+            const now = new Date();
+            const diffTime = exp.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // Exibir aviso apenas se faltarem 5 dias ou menos (<= 5)
+            if (diffDays >= 0 && diffDays <= 5) {
+              setRenewalWarning({ daysLeft: diffDays });
+            }
+          }
+        }
+      })
+      .catch(() => {});
 
     if (!superAdmin && settings && (settings as any).storeId) {
       apiFetch(`/stores/${(settings as any).storeId}`)
@@ -129,6 +152,25 @@ export function AdminLayout() {
               <ChangePasswordDialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
             </div>
           </header>
+
+          {renewalWarning && !superAdmin && (
+            <div className="bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-sm border-b border-amber-600">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 animate-bounce text-slate-950" />
+                <span>
+                  Sua assinatura vence {renewalWarning.daysLeft === 0 ? 'hoje' : `em ${renewalWarning.daysLeft} dia(s)`}! Evite a paralisação das suas vendas.
+                </span>
+              </div>
+              <Button
+                onClick={() => navigate('/minha-assinatura')}
+                size="sm"
+                className="bg-slate-950 text-white hover:bg-slate-900 font-extrabold text-[11px] h-7 px-3 rounded-lg shadow cursor-pointer"
+              >
+                Renovar Assinatura Agora →
+              </Button>
+            </div>
+          )}
+
           <main className="flex-1 overflow-auto p-4 md:p-6">
             <Outlet />
           </main>
