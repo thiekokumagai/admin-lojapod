@@ -260,6 +260,9 @@ export default function BillingPage() {
                       {plan.checkoutType === 'RECURRING_SUBSCRIPTION' && (
                         <span className="text-xs text-slate-500 font-medium">/mês</span>
                       )}
+                      <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        + R$ 0,99 de taxa de serviço
+                      </div>
                     </div>
                   </div>
 

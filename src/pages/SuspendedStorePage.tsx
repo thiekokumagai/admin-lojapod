@@ -179,6 +179,9 @@ export default function SuspendedStorePage() {
                       <div className="text-[10px] text-slate-400 font-medium">
                         {plan.checkoutType === 'SINGLE_PRODUCT' ? 'taxa única + 1ª mensalidade' : '/mês'}
                       </div>
+                      <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        + R$ 0,99 taxa de serviço
+                      </div>
                     </div>
                   </div>
 
