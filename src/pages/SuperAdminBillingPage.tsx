@@ -74,14 +74,16 @@ export default function SuperAdminBillingPage() {
   }, []);
 
   const act = async (item: BillingSubscription, action: 'SUSPEND' | 'REACTIVATE' | 'CANCEL') => {
-    const actionLabel = action === 'SUSPEND' ? 'suspender' : action === 'REACTIVATE' ? 'reativar' : 'cancelar';
-    const reason = window.prompt(`Informe o motivo para ${actionLabel} a loja "${item.store.title}":`);
-    if (!reason?.trim()) return;
+    const defaultReason = action === 'SUSPEND'
+      ? 'Suspenso pelo Super Admin'
+      : action === 'REACTIVATE'
+      ? 'Reativado pelo Super Admin'
+      : 'Cancelado pelo Super Admin';
 
     setWorking(item.storeId);
     setError('');
     try {
-      await billingService.action(item.storeId, action, reason.trim());
+      await billingService.action(item.storeId, action, defaultReason);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível executar a ação');
