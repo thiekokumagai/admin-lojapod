@@ -194,11 +194,11 @@ export default function SuperAdminTransactionsPage() {
 
         <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
-            <span>Pix Automático</span>
+            <span>Pix</span>
             <Sparkles className="h-4 w-4 text-indigo-600" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900">{pixCount}</div>
-          <p className="text-xs text-slate-500 font-medium">Pagamentos recorrentes via Pix</p>
+          <p className="text-xs text-slate-500 font-medium">Pagamentos via Pix</p>
         </div>
 
         <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
