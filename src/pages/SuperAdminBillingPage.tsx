@@ -315,15 +315,15 @@ export default function SuperAdminBillingPage() {
                       {item.status === 'PAST_DUE' && item.gracePeriodEndsAt ? (
                         <div className="text-amber-700 font-medium flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5 shrink-0" />
-                          Suspende em {new Date(item.gracePeriodEndsAt).toLocaleDateString('pt-BR')}
+                          Suspende em {formatDateUTC(item.gracePeriodEndsAt)}
                         </div>
                       ) : item.trialEndsAt && item.status === 'TRIALING' ? (
                         <div className="text-blue-700 font-medium">
-                          Trial até {new Date(item.trialEndsAt).toLocaleDateString('pt-BR')}
+                          Trial até {formatDateUTC(item.trialEndsAt)}
                         </div>
                       ) : item.currentPeriodEndsAt ? (
                         <div className="text-slate-600">
-                          Renova em {new Date(item.currentPeriodEndsAt).toLocaleDateString('pt-BR')}
+                          Renova em {formatDateUTC(item.currentPeriodEndsAt)}
                         </div>
                       ) : (
                         '—'
