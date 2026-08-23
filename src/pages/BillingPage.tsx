@@ -214,6 +214,17 @@ export default function BillingPage() {
             const isStorePlan = subscription?.plan?.id === plan.id;
             const isSuspendedOrDue = subscription?.status === 'PAST_DUE' || subscription?.status === 'SUSPENDED';
 
+            const targetDate = subscription?.currentPeriodEndsAt || subscription?.trialEndsAt;
+            let daysRemaining = 999;
+            if (targetDate) {
+              const exp = new Date(targetDate);
+              const now = new Date();
+              const diffTime = exp.getTime() - now.getTime();
+              daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+
+            const canRenew = daysRemaining <= 5 || isSuspendedOrDue;
+
             let buttonText = `Contratar ${plan.name}`;
             if (isStorePlan || plans.length === 1) {
               if (isSuspendedOrDue) {
@@ -274,21 +285,33 @@ export default function BillingPage() {
                   </ul>
                 </div>
 
-                <button
-                  onClick={() => void handleOpenCheckout(plan.id)}
-                  disabled={loadingCheckout === plan.id}
-                  className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-3 font-semibold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50"
-                >
-                  {loadingCheckout === plan.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard className="h-4 w-4" />
-                      {buttonText}
-                      <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-75" />
-                    </>
-                  )}
-                </button>
+                {!canRenew && (isStorePlan || plans.length === 1) ? (
+                  <div className="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-center space-y-1">
+                    <div className="inline-flex items-center gap-1.5 font-bold text-xs text-emerald-800">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Assinatura Ativa & Em Dia
+                    </div>
+                    <p className="text-[11px] text-emerald-700 font-medium">
+                      Próxima renovação em {formatDateUTC(targetDate)}. O botão de renovação ficará disponível 5 dias antes do vencimento.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => void handleOpenCheckout(plan.id)}
+                    disabled={loadingCheckout === plan.id}
+                    className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-3 font-semibold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                  >
+                    {loadingCheckout === plan.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4" />
+                        {buttonText}
+                        <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-75" />
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             );
           })}
