@@ -38,6 +38,11 @@ function formatCurrency(val: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 }
 
+function formatDateUTC(dateStr?: string | Date | null) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
+
 export default function SuperAdminBillingPage() {
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [items, setItems] = useState<BillingSubscription[]>([]);

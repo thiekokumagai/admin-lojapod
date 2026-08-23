@@ -40,6 +40,16 @@ function formatCurrency(val: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 }
 
+function formatDateUTC(dateStr?: string | Date | null) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
+
+function formatDateTimeUTC(dateStr?: string | Date | null) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleString('pt-BR', { timeZone: 'UTC' });
+}
+
 export default function BillingPage() {
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null);
   const [plans, setPlans] = useState<BillingPlan[]>([]);
@@ -92,8 +102,6 @@ export default function BillingPage() {
       </div>
     );
   }
-
-  const activePlan = subscription?.plan;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
@@ -156,9 +164,9 @@ export default function BillingPage() {
                 <div className="text-xs text-slate-500 font-semibold uppercase">Próxima Renovação</div>
                 <div className="text-sm font-bold text-slate-900 mt-0.5">
                   {subscription.currentPeriodEndsAt
-                    ? new Date(subscription.currentPeriodEndsAt).toLocaleDateString('pt-BR')
+                    ? formatDateUTC(subscription.currentPeriodEndsAt)
                     : subscription.trialEndsAt
-                    ? `Trial até ${new Date(subscription.trialEndsAt).toLocaleDateString('pt-BR')}`
+                    ? `Trial até ${formatDateUTC(subscription.trialEndsAt)}`
                     : '—'}
                 </div>
               </div>
