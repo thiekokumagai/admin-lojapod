@@ -321,7 +321,11 @@ export default function SuperAdminBillingPage() {
                     <td className="py-4 px-4">
                       <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 font-medium">
                         <CreditCard className="h-3.5 w-3.5 text-slate-400" />
-                        {item.paymentMethod === 'PIX_AUTO' ? 'Pix Automático' : 'Cartão'}
+                        {item.paymentMethod === 'PIX_AUTO'
+                          ? 'Pix Automático'
+                          : item.paymentMethod === 'CREDIT_CARD'
+                          ? 'Cartão de Crédito'
+                          : 'Aguardando'}
                       </div>
                     </td>
                     <td className="py-4 px-4 text-xs text-slate-600">
@@ -421,6 +425,19 @@ export default function SuperAdminBillingPage() {
                   onChange={(e) => setEditForm((prev) => ({ ...prev, monthlyFee: parseFloat(e.target.value) || 0 }))}
                   className="w-full px-3 py-2 border rounded-xl font-bold text-slate-800"
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Método de Pagamento</label>
+                <select
+                  value={editForm.paymentMethod}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, paymentMethod: e.target.value as any }))}
+                  className="w-full px-3 py-2 border rounded-xl bg-white font-semibold text-slate-800"
+                >
+                  <option value="UNKNOWN">Aguardando Pagamento (UNKNOWN)</option>
+                  <option value="CREDIT_CARD">Cartão de Crédito (CREDIT_CARD)</option>
+                  <option value="PIX_AUTO">Pix Automático (PIX_AUTO)</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
