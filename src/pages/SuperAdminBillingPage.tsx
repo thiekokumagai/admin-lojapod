@@ -58,6 +58,16 @@ function getNextMonthSameDay(dateStr: string) {
   return nextDate.toISOString().split('T')[0];
 }
 
+function formatCurrencyBRL(value: number): string {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseCurrencyBRL(valueStr: string): number {
+  const digits = valueStr.replace(/\D/g, '');
+  if (!digits) return 0;
+  return parseInt(digits, 10) / 100;
+}
+
 export default function SuperAdminBillingPage() {
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [items, setItems] = useState<BillingSubscription[]>([]);
@@ -74,6 +84,7 @@ export default function SuperAdminBillingPage() {
   const [editForm, setEditForm] = useState({
     status: 'TRIALING' as BillingStatus,
     monthlyFee: 150,
+    monthlyFeeStr: '150,00',
     planId: '',
     trialEndsAt: '',
     currentPeriodEndsAt: '',
@@ -105,9 +116,11 @@ export default function SuperAdminBillingPage() {
 
   const openEditModal = (item: BillingSubscription) => {
     setEditingSub(item);
+    const fee = Number(item.monthlyFee) || 150;
     setEditForm({
       status: item.status,
-      monthlyFee: Number(item.monthlyFee) || 150,
+      monthlyFee: fee,
+      monthlyFeeStr: formatCurrencyBRL(fee),
       planId: item.planId || '',
       trialEndsAt: toInputDate(item.trialEndsAt),
       currentPeriodEndsAt: toInputDate(item.currentPeriodEndsAt),
@@ -416,7 +429,13 @@ export default function SuperAdminBillingPage() {
                   onChange={(e) => {
                     const pId = e.target.value;
                     const selected = availablePlans.find((p) => p.id === pId);
-                    setEditForm((prev) => ({ ...prev, planId: pId, monthlyFee: selected ? Number(selected.price) : prev.monthlyFee }));
+                    const fee = selected ? Number(selected.price) : editForm.monthlyFee;
+                    setEditForm((prev) => ({
+                      ...prev,
+                      planId: pId,
+                      monthlyFee: fee,
+                      monthlyFeeStr: formatCurrencyBRL(fee),
+                    }));
                   }}
                   className="w-full px-3 py-2 border rounded-xl bg-white font-semibold text-slate-800"
                 >
@@ -428,14 +447,23 @@ export default function SuperAdminBillingPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Valor da Mensalidade (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editForm.monthlyFee}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, monthlyFee: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border rounded-xl font-bold text-slate-800"
-                />
+                <label className="block font-bold text-slate-700 mb-1">Valor da Mensalidade</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 font-bold text-slate-400 text-xs">R$</span>
+                  <input
+                    type="text"
+                    value={editForm.monthlyFeeStr}
+                    onChange={(e) => {
+                      const num = parseCurrencyBRL(e.target.value);
+                      setEditForm((prev) => ({
+                        ...prev,
+                        monthlyFee: num,
+                        monthlyFeeStr: formatCurrencyBRL(num),
+                      }));
+                    }}
+                    className="w-full pl-9 pr-3 py-2 border rounded-xl font-bold text-slate-800 text-sm"
+                  />
+                </div>
               </div>
 
               <div>
