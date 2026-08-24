@@ -52,6 +52,8 @@ export default function EditOrderPage() {
   const [isBudgetMode, setIsBudgetMode] = useState(false);
   const [customTotal, setCustomTotal] = useState("");
   const [showProductPrices, setShowProductPrices] = useState(true);
+  const [needsChange, setNeedsChange] = useState(false);
+  const [changeFor, setChangeFor] = useState("");
   const [orderNote, setOrderNote] = useState("");
   
   const [productForVariation, setProductForVariation] = useState<ProductResponse | null>(null);
@@ -184,6 +186,13 @@ export default function EditOrderPage() {
       setCreditInstallments(order.installments || 1);
       setCustomTotal("");
       setOrderNote(order.observation || "");
+      if (order.amountProvided && order.amountProvided > order.totalOrder) {
+        setNeedsChange(true);
+        setChangeFor(new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(order.amountProvided));
+      } else {
+        setNeedsChange(false);
+        setChangeFor("");
+      }
     }
   }, [order]);
 
@@ -259,7 +268,7 @@ export default function EditOrderPage() {
   const parsedCustomTotal = parseFloat(customTotal.replace(/\./g, '').replace(',', '.'));
   const finalTotal = !isNaN(parsedCustomTotal) && customTotal.trim() !== "" ? parsedCustomTotal : total;
 
-  const isValid = (isBudgetMode || (selectedCustomer !== null && selectedAddress !== null)) && orderItems.length > 0 && paymentMethod !== "";
+  const isValid = (isBudgetMode || (selectedCustomer !== null && selectedAddress !== null)) && orderItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
 
   const handleSubmit = async () => {
     if (!id || !isValid || (!isBudgetMode && !selectedCustomer)) return;
@@ -349,6 +358,8 @@ export default function EditOrderPage() {
         paymentStatus: isPaid ? "PAID" : "PENDING",
         installments: paymentMethod === 'Cartão de Crédito' ? effectiveCreditInstallments : 1,
         showProductPrices: showProductPrices,
+        amountProvided: paymentMethod === 'Dinheiro' && needsChange ? parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) : (paymentMethod === 'Dinheiro' ? finalTotal : undefined),
+        changeAmount: paymentMethod === 'Dinheiro' && needsChange ? Math.max(0, parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) - finalTotal) : undefined,
         street: selectedAddress?.street || "Local",
         number: selectedAddress?.number || "S/N",
         neighborhood: selectedAddress?.neighborhood || "Local",
@@ -667,6 +678,10 @@ export default function EditOrderPage() {
               onCustomTotalChange={setCustomTotal}
               showProductPrices={showProductPrices}
               onShowProductPricesChange={setShowProductPrices}
+              needsChange={needsChange}
+              onNeedsChangeChange={setNeedsChange}
+              changeFor={changeFor}
+              onChangeForChange={setChangeFor}
               submitLabel="Salvar e Imprimir"
             />
           </div>
