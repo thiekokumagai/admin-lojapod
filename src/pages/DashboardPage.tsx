@@ -7,10 +7,15 @@ import { getCategories } from "@/services/category.service";
 import type { CategoryList } from "@/types/category";
 import { buildImageUrl } from "@/utils/image-url";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/hooks/useSettings";
+import { OnboardingWidget } from "@/components/admin/OnboardingWidget";
+import { useOrders } from "@/hooks/useOrders";
 
 type FilterType = "today" | "7days" | "30days" | "6months" | "year" | "custom";
 
 export default function DashboardPage() {
+  const { data: settings, isLoading: isLoadingSettings } = useSettings();
+  const { data: ordersData, isLoading: isLoadingOrders } = useOrders(undefined, undefined, undefined, undefined, 1, 1);
   const [filter, setFilter] = useState<FilterType>("today");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -246,6 +251,16 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Onboarding Widget */}
+      {(!loading && !isLoadingSettings && !isLoadingOrders) && (
+        <OnboardingWidget 
+          hasConfiguredStore={!!(settings?.logoUrl || settings?.pixKey || (settings?.cep && settings?.cep !== ""))}
+          hasCategory={categories.length > 0}
+          hasProduct={(stats?.produtosAtivos || 0) + (stats?.produtosInativos || 0) > 0}
+          hasOrder={ordersData && ordersData.meta ? ordersData.meta.total > 0 : false}
+        />
+      )}
 
       {/* Custom Date Form Block */}
       {showCustomRange && (
