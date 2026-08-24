@@ -11,6 +11,8 @@ import {
   Receipt,
   FileText,
   Sparkles,
+  RotateCcw,
+  AlertCircle,
 } from 'lucide-react';
 import {
   billingService,
@@ -34,6 +36,37 @@ const statusBadge: Record<BillingStatus, string> = {
   PAST_DUE: 'bg-amber-50 text-amber-800 border-amber-200',
   SUSPENDED: 'bg-red-50 text-red-700 border-red-200',
   CANCELED: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+const paymentStatusBadges: Record<
+  string,
+  { label: string; className: string; icon: React.ComponentType<{ className?: string }> }
+> = {
+  PAID: {
+    label: 'Pago',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    icon: CheckCircle2,
+  },
+  PENDING: {
+    label: 'Pendente',
+    className: 'bg-amber-50 text-amber-800 border-amber-200',
+    icon: Clock,
+  },
+  REFUSED: {
+    label: 'Recusado',
+    className: 'bg-red-50 text-red-700 border-red-200',
+    icon: AlertTriangle,
+  },
+  REFUNDED: {
+    label: 'Reembolsado',
+    className: 'bg-purple-50 text-purple-700 border-purple-200',
+    icon: RotateCcw,
+  },
+  CHARGEBACK: {
+    label: 'Estornado (Chargeback)',
+    className: 'bg-orange-50 text-orange-800 border-orange-200',
+    icon: AlertCircle,
+  },
 };
 
 function formatCurrency(val: number) {
@@ -375,19 +408,22 @@ export default function BillingPage() {
                       {formatCurrency(Number(payment.amount))}
                     </td>
                     <td className="py-3.5 px-5 text-right">
-                      {payment.status === 'PAID' ? (
-                        <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-full">
-                          <CheckCircle2 className="h-3 w-3" /> Pago
-                        </span>
-                      ) : payment.status === 'REFUSED' ? (
-                        <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 text-xs font-bold px-2.5 py-1 rounded-full">
-                          <AlertTriangle className="h-3 w-3" /> Recusado
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-full">
-                          {payment.status}
-                        </span>
-                      )}
+                      {(() => {
+                        const statusConfig = paymentStatusBadges[payment.status] || {
+                          label: payment.status,
+                          className: 'bg-slate-100 text-slate-600 border-slate-200',
+                          icon: Clock,
+                        };
+                        const IconComponent = statusConfig.icon;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 border text-xs font-bold px-2.5 py-1 rounded-full ${statusConfig.className}`}
+                          >
+                            <IconComponent className="h-3 w-3 shrink-0" />
+                            {statusConfig.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
