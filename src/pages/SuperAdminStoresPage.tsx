@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { storesService, Store } from '../services/stores.service';
-import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil, Trash2, Power } from 'lucide-react';
+import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil, Trash2, Power, AlertTriangle } from 'lucide-react';
 
 function getStoreUrl(subdomain: string): string {
   if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
@@ -21,6 +21,7 @@ export default function SuperAdminStoresPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [deletingStore, setDeletingStore] = useState<Store | null>(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -122,12 +123,22 @@ export default function SuperAdminStoresPage() {
 
   const handleDelete = async () => {
     if (!deletingStore) return;
+
+    const expectedName = deletingStore.title.trim().toLowerCase();
+    const expectedSubdomain = deletingStore.subdomain.trim().toLowerCase();
+    const inputClean = deleteConfirmInput.trim().toLowerCase();
+
+    if (inputClean !== expectedName && inputClean !== expectedSubdomain && inputClean !== 'excluir') {
+      return;
+    }
+
     setSubmitting(true);
     setError('');
     try {
       await storesService.deleteStore(deletingStore.id);
       setSuccess(`Loja "${deletingStore.title}" excluída permanentemente!`);
       setDeletingStore(null);
+      setDeleteConfirmInput('');
       loadStores();
     } catch (err: any) {
       setError(err.message || 'Erro ao excluir loja');
@@ -234,7 +245,10 @@ export default function SuperAdminStoresPage() {
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setDeletingStore(store)}
+                    onClick={() => {
+                      setDeletingStore(store);
+                      setDeleteConfirmInput('');
+                    }}
                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                     title="Excluir Loja Permanentemente"
                   >
@@ -325,8 +339,6 @@ export default function SuperAdminStoresPage() {
                 />
               </div>
 
-
-
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <button
                   type="button"
@@ -407,8 +419,6 @@ export default function SuperAdminStoresPage() {
                 />
               </div>
 
-
-
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <button
                   type="button"
@@ -434,44 +444,82 @@ export default function SuperAdminStoresPage() {
         </div>
       )}
 
-      {/* Modal de Exclusão */}
+      {/* Modal de Exclusão Segura de Loja */}
       {deletingStore && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
-            <div className="flex items-center gap-3 text-red-600 border-b border-red-100 pb-3">
-              <div className="p-2 bg-red-100 rounded-full">
-                <Trash2 className="h-6 w-6" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 border border-slate-100">
+            {/* Header com ícone de perigo */}
+            <div className="flex items-center gap-3 text-red-600 border-b border-red-100 pb-4">
+              <div className="p-3 bg-red-100/80 text-red-600 rounded-xl shrink-0">
+                <AlertTriangle className="h-6 w-6" />
               </div>
-              <h2 className="text-xl font-bold">Excluir Loja Permanentemente</h2>
-            </div>
-            
-            <div className="space-y-3 py-2">
-              <p className="text-slate-700 text-sm">
-                Tem certeza que deseja excluir a loja <strong>{deletingStore.title}</strong>?
-              </p>
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-700 font-medium">
-                  ⚠️ AVISO: Esta ação é irreversível. Todos os dados associados a esta loja (produtos, pedidos, clientes, etc.) serão apagados para sempre.
-                </p>
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900">Excluir Loja Permanentemente</h2>
+                <p className="text-xs text-red-600 font-medium">Ação destrutiva e irreversível</p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+            {/* Alerta e Lista de Impactos */}
+            <div className="space-y-3">
+              <p className="text-slate-700 text-sm leading-relaxed">
+                Você está prestes a excluir a loja <strong className="text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-bold">{deletingStore.title}</strong> (<code>{deletingStore.subdomain}.lojapod.com</code>).
+              </p>
+
+              <div className="p-3.5 bg-rose-50/80 border border-rose-200 rounded-xl space-y-2 text-xs text-rose-900">
+                <div className="font-bold flex items-center gap-1.5 text-rose-800">
+                  <Trash2 className="h-4 w-4 text-rose-600 shrink-0" />
+                  <span>Todos os dados abaixo serão EXCLUÍDOS PERMANENTEMENTE:</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1 pl-1 text-rose-700">
+                  <li><strong>Catálogo:</strong> Todos os produtos, imagens e variações ({deletingStore._count?.products || 0} produtos)</li>
+                  <li><strong>Vendas:</strong> Histórico de pedidos e faturamento ({deletingStore._count?.orders || 0} pedidos)</li>
+                  <li><strong>Clientes & Usuários:</strong> Base de clientes e acessos administrativos</li>
+                  <li><strong>Configurações:</strong> Domínios, cupons, taxas e parametrizações da loja</li>
+                </ul>
+              </div>
+
+              {/* Campo de Verificação */}
+              <div className="space-y-2 pt-2">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Para confirmar a exclusão, digite o nome da loja <span className="text-red-600 font-bold">"{deletingStore.title}"</span> ou a palavra <span className="text-red-600 font-bold">"EXCLUIR"</span>:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmInput}
+                  onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                  placeholder={`Digite "${deletingStore.title}" ou "EXCLUIR"`}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition font-medium"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Botões do Modal */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => setDeletingStore(null)}
-                className="px-4 py-2 border text-slate-700 rounded-lg text-sm hover:bg-slate-50"
+                onClick={() => {
+                  setDeletingStore(null);
+                  setDeleteConfirmInput('');
+                }}
+                className="px-4 py-2.5 border border-slate-300 text-slate-700 font-semibold rounded-xl text-sm hover:bg-slate-50 transition"
                 disabled={submitting}
               >
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleDelete}
-                disabled={submitting}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                disabled={
+                  submitting ||
+                  (deleteConfirmInput.trim().toLowerCase() !== deletingStore.title.trim().toLowerCase() &&
+                   deleteConfirmInput.trim().toLowerCase() !== deletingStore.subdomain.trim().toLowerCase() &&
+                   deleteConfirmInput.trim().toUpperCase() !== 'EXCLUIR')
+                }
+                className="px-5 py-2.5 bg-red-600 text-white font-semibold rounded-xl text-sm hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-2 shadow-sm"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {submitting ? 'Excluindo...' : 'Sim, Excluir Loja'}
+                {submitting ? 'Excluindo Loja...' : 'Excluir Permanentemente'}
               </button>
             </div>
           </div>
@@ -480,3 +528,4 @@ export default function SuperAdminStoresPage() {
     </div>
   );
 }
+
