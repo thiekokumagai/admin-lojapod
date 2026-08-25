@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { isAuthenticated, isSuperAdmin } from "@/lib/auth";
 import { login, type LoginPayload } from "@/services/auth.service";
 import { toast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, LockKeyhole, ShieldCheck } from "lucide-react";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -23,6 +23,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -71,15 +72,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-3 text-center">
-          <div className="space-y-1">
-            <CardTitle>Entrar no painel</CardTitle>
-            <CardDescription>Use suas credenciais para acessar o administrativo.</CardDescription>
+    <main className="login-scene relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10 text-white">
+      <div className="login-grid absolute inset-0" aria-hidden="true" />
+      <div className="login-orb login-orb-primary absolute -left-24 top-[8%] h-72 w-72 rounded-full" aria-hidden="true" />
+      <div className="login-orb login-orb-secondary absolute -right-24 bottom-[4%] h-80 w-80 rounded-full" aria-hidden="true" />
+      <div className="login-orb login-orb-small absolute right-[20%] top-[12%] h-32 w-32 rounded-full" aria-hidden="true" />
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="login-brand mb-7 flex items-center justify-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-400/10 shadow-[0_0_32px_rgba(52,211,153,0.2)] backdrop-blur-md">
+            <LockKeyhole className="h-5 w-5 text-emerald-300" aria-hidden="true" />
+          </span>
+          <div className="text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">Área segura</p>
+            <p className="text-sm text-slate-400">Painel administrativo</p>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <Card className="login-card overflow-hidden border-white/10 bg-slate-900/70 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent" />
+          <CardHeader className="space-y-3 px-6 pb-5 pt-8 text-center sm:px-8">
+            <CardTitle className="text-2xl font-semibold tracking-tight sm:text-3xl">Bem-vindo de volta</CardTitle>
+            <CardDescription className="text-sm leading-relaxed text-slate-400">
+              Entre com suas credenciais para continuar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pb-8 sm:px-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -87,9 +105,15 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-mail</FormLabel>
+                    <FormLabel className="text-slate-200">E-mail</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="admin@admin.com" autoComplete="email" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="seu@email.com"
+                        autoComplete="email"
+                        className="h-12 border-white/10 bg-white/[0.06] text-white placeholder:text-slate-500 focus-visible:border-emerald-400/60 focus-visible:ring-emerald-400/20"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -101,23 +125,50 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Digite sua senha" autoComplete="current-password" {...field} />
-                    </FormControl>
+                    <FormLabel className="text-slate-200">Senha</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Digite sua senha"
+                          autoComplete="current-password"
+                          className="h-12 border-white/10 bg-white/[0.06] pr-11 text-white placeholder:text-slate-500 focus-visible:border-emerald-400/60 focus-visible:ring-emerald-400/20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((visible) => !visible)}
+                        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition-colors hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400"
+                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                        aria-pressed={showPassword}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="h-12 w-full bg-emerald-500 font-semibold text-slate-950 shadow-lg shadow-emerald-950/30 transition-all hover:-translate-y-0.5 hover:bg-emerald-400 hover:shadow-emerald-500/20 disabled:hover:translate-y-0"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Entrar
+                {isSubmitting ? "Entrando..." : "Entrar no painel"}
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+
+        <p className="login-footer mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+          <ShieldCheck className="h-4 w-4 text-emerald-400/70" aria-hidden="true" />
+          Acesso protegido e restrito a usuários autorizados
+        </p>
+      </div>
+    </main>
   );
 }

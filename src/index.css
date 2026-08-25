@@ -59,6 +59,71 @@
   }
 }
 
+@layer components {
+  .login-scene { isolation: isolate; }
+
+  .login-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+    background-size: 54px 54px;
+    mask-image: radial-gradient(circle at center, black 20%, transparent 78%);
+  }
+
+  .login-orb {
+    filter: blur(18px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+
+  .login-orb-primary {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.38), rgba(6, 78, 59, 0.04) 70%);
+    animation: login-float 12s ease-in-out infinite;
+  }
+
+  .login-orb-secondary {
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.25), rgba(12, 74, 110, 0.02) 70%);
+    animation: login-float 15s ease-in-out infinite reverse;
+  }
+
+  .login-orb-small {
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.2), transparent 70%);
+    animation: login-drift 10s ease-in-out infinite;
+  }
+
+  .login-card { animation: login-rise 650ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  .login-brand,
+  .login-footer { animation: login-fade 700ms 180ms ease-out both; }
+}
+
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes login-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes login-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(36px, -24px, 0) scale(1.08); }
+}
+
+@keyframes login-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-42px, 32px, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-orb,
+  .login-card,
+  .login-brand,
+  .login-footer { animation: none; }
+}
+
 @layer base {
   * {
     @apply border-border;
