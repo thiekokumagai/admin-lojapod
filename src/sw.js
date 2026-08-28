@@ -46,10 +46,10 @@ self.addEventListener('notificationclick', (event) => {
   const notificationData = event.notification.data || {};
   let targetUrl = '/pedidos';
 
-  if (notificationData.url) {
+  if (notificationData.orderId) {
+    targetUrl = `/pedidos?id=${notificationData.orderId}`;
+  } else if (notificationData.url) {
     targetUrl = notificationData.url;
-  } else if (notificationData.orderId) {
-    targetUrl = `/pedidos/${notificationData.orderId}`;
   }
 
   event.waitUntil(

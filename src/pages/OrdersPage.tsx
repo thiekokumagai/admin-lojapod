@@ -1,4 +1,5 @@
 import { useState, Fragment, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useInfiniteOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
 import { Input } from "@/components/ui/input";
 import { 
@@ -59,7 +60,25 @@ export default function OrdersPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const limit = 20;
+
+  useEffect(() => {
+    const orderIdParam = searchParams.get("id") || searchParams.get("orderId");
+    if (orderIdParam) {
+      setSelectedOrderId(orderIdParam);
+    }
+  }, [searchParams]);
+
+  const handleCloseDrawer = () => {
+    setSelectedOrderId(null);
+    if (searchParams.get("id") || searchParams.get("orderId")) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("id");
+      newParams.delete("orderId");
+      setSearchParams(newParams, { replace: true });
+    }
+  };
 
   const hasFilters = search !== "" || status !== "ALL" || paymentStatus !== "ALL" || startDate !== "" || endDate !== "";
   const queryClient = useQueryClient();
@@ -675,7 +694,7 @@ export default function OrdersPage() {
       <OrderDetailDrawer 
         orderId={selectedOrderId} 
         isOpen={!!selectedOrderId} 
-        onClose={() => setSelectedOrderId(null)}
+        onClose={handleCloseDrawer}
       />
     </div>
   );
