@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { 
-  ArrowLeft, Send, Copy, Printer, Download, Edit,
+  ArrowLeft, Send, Copy, Printer, Edit,
   User, Phone, MapPin, CreditCard, Check, Loader2, Repeat 
 } from "lucide-react";
 import { useState } from "react";
@@ -12,6 +12,7 @@ import { customersService } from "@/services/customers.service";
 import { getProductById } from "@/services/product.service";
 import { OrderStatus } from "@/types/order";
 import { formatPhone } from "@/utils/formatters";
+import { buildImageUrl } from "@/utils/image-url";
 
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
   PENDING: { label: "Pendente", bg: "bg-amber-100", text: "text-amber-700" },
@@ -247,18 +248,7 @@ export default function OrderDetailsPage() {
 
         {/* Quick actions top-right */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-          <button className="h-9 px-4 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors gap-2 text-sm font-semibold whitespace-nowrap" title="Compartilhar">
-            <Send className="h-4 w-4" /> <span className="hidden sm:inline">Compartilhar</span>
-          </button>
-          <a 
-            href={`https://wa.me/55${order.customerPhone.replace(/\D/g, "")}`}
-            target="_blank"
-            rel="noreferrer"
-            className="h-9 px-4 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors gap-2 text-sm font-semibold whitespace-nowrap" 
-            title="WhatsApp"
-          >
-            <img src="/whatsapp.svg" alt="WhatsApp" className="h-5 w-5" /> <span className="hidden sm:inline">WhatsApp</span>
-          </a>
+          {/* 1. Imprimir */}
           {order.status !== 'CANCELLED' && (
             <button 
               onClick={handleReprintOrder}
@@ -269,6 +259,16 @@ export default function OrderDetailsPage() {
               {reprintMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
             </button>
           )}
+
+          {/* 2. Enviar (Compartilhar) */}
+          <button 
+            className="w-9 h-9 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors shrink-0" 
+            title="Enviar"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+
+          {/* 3. Editar */}
           {order.status === 'PENDING' && order.paymentStatus === 'PENDING' && (
             <button 
               onClick={() => navigate(`/pedidos/${order.id}/editar`)}
@@ -278,6 +278,8 @@ export default function OrderDetailsPage() {
               <Edit className="h-4 w-4" />
             </button>
           )}
+
+          {/* 4. Repetir */}
           <button 
             onClick={handleRepeatOrder}
             disabled={isRepeating}
@@ -286,9 +288,17 @@ export default function OrderDetailsPage() {
           >
             {isRepeating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Repeat className="h-4 w-4" />}
           </button>
-          <button className="w-9 h-9 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors shrink-0" title="Download PDF">
-            <Download className="h-4 w-4" />
-          </button>
+
+          {/* 5. WhatsApp */}
+          <a 
+            href={`https://wa.me/55${order.customerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${order.customerName}! Referente ao seu pedido #${order.orderNumber}.`)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-9 h-9 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors shrink-0" 
+            title="WhatsApp"
+          >
+            <img src="/whatsapp.svg" alt="WhatsApp" className="h-5 w-5" />
+          </a>
         </div>
       </div>
 
@@ -323,7 +333,7 @@ export default function OrderDetailsPage() {
                       {item.quantity}
                     </div>
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.productName} className="object-cover w-full h-full" />
+                      <img src={buildImageUrl(item.imageUrl)} alt={item.productName} className="object-cover w-full h-full" />
                     ) : (
                       <span className="text-xs text-slate-400 font-semibold font-mono">Foto</span>
                     )}
