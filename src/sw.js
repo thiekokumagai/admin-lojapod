@@ -42,15 +42,26 @@ self.addEventListener('push', (event) => {
 // Listen to Notification click event
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  const notificationData = event.notification.data || {};
+  let targetUrl = '/pedidos';
+
+  if (notificationData.url) {
+    targetUrl = notificationData.url;
+  } else if (notificationData.orderId) {
+    targetUrl = `/pedidos/${notificationData.orderId}`;
+  }
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      let client = windowClients.find((c) => c.visibilityState === 'visible');
+      let client = windowClients.find((c) => c.visibilityState === 'visible') || windowClients[0];
       if (client) {
-        client.navigate('/pedidos');
+        client.navigate(targetUrl);
         client.focus();
       } else {
-        clients.openWindow('/pedidos');
+        clients.openWindow(targetUrl);
       }
     })
   );
 });
+
