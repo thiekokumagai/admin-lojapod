@@ -23,10 +23,17 @@ const statusConfig: Record<OrderStatus, { label: string; bg: string; text: strin
 };
 
 const paymentLabels: Record<string, string> = {
-  PIX: "PIX",
+  PIX: "Pix",
+  pix: "Pix",
   "Cartão de Crédito": "Cartão de Crédito",
+  credit: "Cartão de Crédito",
+  credito: "Cartão de Crédito",
   "Cartão de Débito": "Cartão de Débito",
+  debit: "Cartão de Débito",
+  debito: "Cartão de Débito",
   Dinheiro: "Dinheiro",
+  cash: "Dinheiro",
+  dinheiro: "Dinheiro",
 };
 
 export default function OrderDetailsPage() {
@@ -262,8 +269,9 @@ export default function OrderDetailsPage() {
 
           {/* 2. Enviar (Compartilhar) */}
           <button 
-            className="w-9 h-9 rounded-full bg-violet-50 hover:bg-violet-100 flex items-center justify-center text-violet-600 hover:text-violet-700 transition-colors shrink-0" 
-            title="Enviar"
+            disabled
+            className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 cursor-not-allowed shrink-0" 
+            title="Compartilhar (Em breve)"
           >
             <Send className="h-4 w-4" />
           </button>
@@ -326,31 +334,42 @@ export default function OrderDetailsPage() {
             </h3>
             <div className="space-y-3 bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm">
               {order.items.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0 border-b border-slate-100 last:border-0">
-                  {/* Image Thumbnail with Circular quantity badge overlay */}
-                  <div className="relative shrink-0 w-16 h-16 bg-slate-100 border border-slate-200/80 rounded-lg overflow-hidden flex items-center justify-center">
-                    <div className="absolute -top-2 -left-2 w-6 h-6 bg-violet-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md z-10">
+                <div key={item.id} className="flex items-center gap-3 relative py-3 first:pt-0 last:pb-0 border-b border-slate-100 last:border-0">
+                  {/* Product Image Container */}
+                  <div className="relative w-16 h-16 shrink-0">
+                    <div className="w-full h-full rounded-lg overflow-hidden border border-slate-200/50">
+                      {item.imageUrl ? (
+                        <img
+                          src={buildImageUrl(item.imageUrl)}
+                          alt={item.productName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                          <span className="text-[10px] text-slate-400 font-medium text-center leading-none px-1">Sem foto</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Quantity Badge */}
+                    <div className="absolute -top-1.5 -left-1.5 min-w-[24px] h-[24px] rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold px-1 shadow-sm z-10">
                       {item.quantity}
                     </div>
-                    {item.imageUrl ? (
-                      <img src={buildImageUrl(item.imageUrl)} alt={item.productName} className="object-cover w-full h-full" />
-                    ) : (
-                      <span className="text-xs text-slate-400 font-semibold font-mono">Foto</span>
-                    )}
                   </div>
                   
-                  {/* Name with line connector to price */}
-                  <div className="flex-1 flex items-start justify-between min-w-0 gap-4">
+                  {/* Product Name and Price */}
+                  <div className="flex-1 flex items-start justify-between min-w-0 gap-3">
                     <div className="min-w-0 flex-1">
-                      <span className="text-base font-bold text-slate-700 leading-snug block break-words" title={item.productName}>
+                      <span className="text-sm font-bold text-slate-700 leading-snug block break-words" title={item.productName}>
                         {item.productName}
                       </span>
                       {item.variation && (
-                        <span className="block text-xs text-slate-500 font-medium mt-0.5 break-words">Variação: {item.variation}</span>
+                        <span className="block text-xs text-slate-400 font-medium mt-0.5 break-words">
+                          ({item.variation})
+                        </span>
                       )}
                     </div>
-                    <span className="text-base font-extrabold text-slate-800 shrink-0 whitespace-nowrap">
-                      R$ {item.price.toFixed(2)}
+                    <span className="text-sm font-bold text-slate-700 shrink-0 whitespace-nowrap">
+                      R$ {(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -409,12 +428,16 @@ export default function OrderDetailsPage() {
              <h3 className="text-sm uppercase tracking-wider text-slate-400 font-bold">Pagamento</h3>
              <div className="space-y-2.5 text-sm font-medium">
                 <div className="flex justify-between text-slate-500">
-                  <span className="flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> Status</span>
-                  <span className="text-slate-800 font-bold">{order.paymentType}</span>
+                  <span>Pagamento</span>
+                  <span className="text-slate-800 font-bold">
+                    {order.paymentStatus === "PAID" 
+                      ? (order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega") 
+                      : (order.paymentMethod?.toLowerCase() === "pix" ? "Online" : "Na Entrega")}
+                  </span>
                 </div>
-                <div className="flex justify-between text-slate-500">
-                  <span>Forma</span>
-                  <span className="text-slate-800 font-bold">{paymentLabels[order.paymentMethod] || order.paymentMethod}</span>
+                <div className="flex justify-between text-slate-500 items-center">
+                  <span>Forma de pagamento</span>
+                  <span className="font-bold text-slate-800">{paymentLabels[order.paymentMethod] || order.paymentMethod || "-"}</span>
                 </div>
                 {order.pixKey && (
                   <div className="flex flex-col gap-1 text-slate-500 pt-2 border-t border-slate-100">
