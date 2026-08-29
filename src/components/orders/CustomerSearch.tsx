@@ -334,12 +334,16 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
             {isAddingAddress && (
               <SimpleAddressForm 
                 onCancel={() => setIsAddingAddress(false)}
-                onSave={async (newAddr) => {
+                onSave={async (addr) => {
+                  const newAddr = { ...addr, isDefault: true };
                   if (selectedCustomerData) {
                     const isTempCustomer = !selectedCustomerData.id || selectedCustomerData.id.startsWith("temp_");
                     let updatedCustomer: Customer = {
                       ...selectedCustomerData,
-                      addresses: [...(selectedCustomerData.addresses || []), newAddr]
+                      addresses: [
+                        ...(selectedCustomerData.addresses || []).map(a => ({ ...a, isDefault: false })),
+                        newAddr
+                      ]
                     };
 
                     if (mode === "edit" && !isTempCustomer) {
