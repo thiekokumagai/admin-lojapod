@@ -384,10 +384,11 @@ export default function EditOrderPage() {
         description: "As alterações foram salvas e enviadas para impressão."
       });
       navigate("/pedidos");
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Tente novamente ou verifique os dados.";
       toast({
         title: "Erro ao editar pedido",
-        description: "Tente novamente ou verifique os dados.",
+        description: Array.isArray(errorMessage) ? errorMessage[0] : errorMessage,
         variant: "destructive"
       });
     } finally {
