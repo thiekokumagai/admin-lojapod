@@ -43,7 +43,7 @@ export function DynamicFavicon() {
       const storeName = (settings.storeName && settings.storeName !== "undefined")
         ? settings.storeName
         : "Loja Pod";
-      document.title = `${storeName};
+      document.title = `${storeName}`;
     }
   }, [settings, superAdmin]);
 
