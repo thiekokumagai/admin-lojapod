@@ -39,7 +39,7 @@
         })
         .then(data => {
           if (data && data.name && typeof data.name === 'string') {
-            document.title = data.name + ' - Admin';
+            document.title = data.name;
             const metaAuthor = document.getElementById('meta-author');
             if (metaAuthor) metaAuthor.content = data.name;
             const metaDesc = document.getElementById('meta-desc');
