@@ -41,17 +41,23 @@ const statusConfig: Record<OrderStatus, { label: string; bg: string; text: strin
 };
 
 const paymentLabels: Record<string, string> = {
-  "pix": "PIX",
-  "PIX": "PIX",
-  "credit": "Cartão de Crédito",
-  "credito": "Cartão de Crédito",
+  pix: "Pix",
+  PIX: "Pix",
+  credit: "Cartão de Crédito",
+  credito: "Cartão de Crédito",
+  Credit: "Cartão de Crédito",
+  CREDIT: "Cartão de Crédito",
   "Cartão de Crédito": "Cartão de Crédito",
-  "debit": "Cartão de Débito",
-  "debito": "Cartão de Débito",
+  debit: "Cartão de Débito",
+  debito: "Cartão de Débito",
+  Debit: "Cartão de Débito",
+  DEBIT: "Cartão de Débito",
   "Cartão de Débito": "Cartão de Débito",
-  "cash": "Dinheiro",
-  "dinheiro": "Dinheiro",
-  "Dinheiro": "Dinheiro",
+  cash: "Dinheiro",
+  dinheiro: "Dinheiro",
+  Cash: "Dinheiro",
+  CASH: "Dinheiro",
+  Dinheiro: "Dinheiro",
 };
 
 export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly = false }: OrderDetailDrawerProps) {

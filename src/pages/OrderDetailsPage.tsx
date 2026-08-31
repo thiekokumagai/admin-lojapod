@@ -28,12 +28,18 @@ const paymentLabels: Record<string, string> = {
   "Cartão de Crédito": "Cartão de Crédito",
   credit: "Cartão de Crédito",
   credito: "Cartão de Crédito",
+  Credit: "Cartão de Crédito",
+  CREDIT: "Cartão de Crédito",
   "Cartão de Débito": "Cartão de Débito",
   debit: "Cartão de Débito",
   debito: "Cartão de Débito",
+  Debit: "Cartão de Débito",
+  DEBIT: "Cartão de Débito",
   Dinheiro: "Dinheiro",
   cash: "Dinheiro",
   dinheiro: "Dinheiro",
+  Cash: "Dinheiro",
+  CASH: "Dinheiro",
 };
 
 export default function OrderDetailsPage() {
