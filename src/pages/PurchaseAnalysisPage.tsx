@@ -17,18 +17,18 @@ export default function PurchaseAnalysisPage() {
   const navigate = useNavigate();
   const { data: categories, loading: categoriesLoading } = useCategories();
   
-  const [params, setParams] = useState<PurchaseAnalysisParams>({
-    meses: 3,
-    dias_cobertura: 45,
-    valor: undefined,
-  });
+  const [meses, setMeses] = useState<string>("3");
+  const [diasCobertura, setDiasCobertura] = useState<string>("45");
+  const [valor, setValor] = useState<number | undefined>(undefined);
   
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [shouldFetch, setShouldFetch] = useState(false);
 
   // When form is submitted, trigger fetch by passing actual params
   const finalParams: PurchaseAnalysisParams = {
-    ...params,
+    meses: meses ? Number(meses) : undefined,
+    dias_cobertura: diasCobertura ? Number(diasCobertura) : undefined,
+    valor,
     categoria: selectedCategories.length > 0 ? selectedCategories.join(",") : undefined,
   };
 
@@ -110,26 +110,28 @@ export default function PurchaseAnalysisPage() {
                   id="valor"
                   customInput={Input}
                   placeholder="Ex: 5000,00 (Se vazio, usa orçamento do caixa)"
-                  value={params.valor === undefined ? "" : params.valor}
+                  value={valor === undefined ? "" : valor}
                   onValueChange={(values) => {
                     const { floatValue } = values;
-                    setParams({ ...params, valor: floatValue });
+                    setValor(floatValue);
                   }}
                   thousandSeparator="."
                   decimalSeparator=","
                   prefix="R$ "
                   decimalScale={2}
                   fixedDecimalScale
+                  inputMode="decimal"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="meses">Meses de Histórico (Vendas)</Label>
                 <Input
                   id="meses"
-                  type="number"
-                  min="1"
-                  value={params.meses}
-                  onChange={(e) => setParams({ ...params, meses: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={meses}
+                  onChange={(e) => setMeses(e.target.value.replace(/\D/g, ""))}
                   required
                 />
               </div>
@@ -137,10 +139,11 @@ export default function PurchaseAnalysisPage() {
                 <Label htmlFor="dias_cobertura">Dias de Cobertura (Estoque)</Label>
                 <Input
                   id="dias_cobertura"
-                  type="number"
-                  min="1"
-                  value={params.dias_cobertura}
-                  onChange={(e) => setParams({ ...params, dias_cobertura: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={diasCobertura}
+                  onChange={(e) => setDiasCobertura(e.target.value.replace(/\D/g, ""))}
                   required
                 />
               </div>
