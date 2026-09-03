@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Copy, Images, Package, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { buildImageUrl } from "@/utils/image-url";
+import { matchesProductSearch } from "@/utils/search";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ export function ProductListCard({
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      const matchesSearch = product.title.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = matchesProductSearch(search, product);
       const matchesCategory = categoryFilter === "all" || product.categoryId === categoryFilter;
       return matchesSearch && matchesCategory;
     });
