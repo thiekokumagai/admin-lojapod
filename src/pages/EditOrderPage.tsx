@@ -218,19 +218,26 @@ export default function EditOrderPage() {
 
   const installmentsOptions = useMemo(() => {
     const rules = storeSettings?.paymentRules?.filter((r: any) => r.paymentMethod === 'credit' && r.type === 'charge') || [];
-    const options = [{ value: 1, interest: 0 }];
-    if (rules.length === 0) return options;
-    rules.sort((a: any, b: any) => (a.parcelaMin || 0) - (b.parcelaMin || 0));
-    rules.forEach((rule: any) => {
-       const min = rule.parcelaMin || 2;
-       const max = rule.parcelaMax || min;
-       const interest = rule.passedToCustomer !== false ? rule.value : 0; 
-       for (let i = min; i <= max; i++) {
-           if (!options.find(o => o.value === i)) {
-               options.push({ value: i, interest: interest });
-           }
-       }
-    });
+    const options: { value: number; interest: number }[] = [];
+    
+    if (rules.length > 0) {
+      rules.sort((a: any, b: any) => (a.parcelaMin || 0) - (b.parcelaMin || 0));
+      rules.forEach((rule: any) => {
+         const min = rule.parcelaMin !== undefined && rule.parcelaMin !== null && rule.parcelaMin > 0 ? rule.parcelaMin : 1;
+         const max = rule.parcelaMax !== undefined && rule.parcelaMax !== null && rule.parcelaMax > 0 ? rule.parcelaMax : min;
+         const interest = rule.passedToCustomer !== false ? rule.value : 0; 
+         for (let i = min; i <= max; i++) {
+             if (!options.find(o => o.value === i)) {
+                 options.push({ value: i, interest: interest });
+             }
+         }
+      });
+    }
+
+    if (!options.find(o => o.value === 1)) {
+      options.push({ value: 1, interest: 0 });
+    }
+
     return options.sort((a, b) => a.value - b.value);
   }, [storeSettings]);
 
