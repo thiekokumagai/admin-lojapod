@@ -82,6 +82,11 @@ export default function CreateOrderPage() {
     return rule ? rule.value : 0;
   }, [storeSettings]);
 
+  const debitFeePercent = useMemo(() => {
+    const rule = storeSettings?.paymentRules?.find((r: any) => r.paymentMethod === 'debit' && r.type === 'charge');
+    return (rule && rule.passedToCustomer !== false) ? rule.value : 0;
+  }, [storeSettings]);
+
   const installmentsOptions = useMemo(() => {
     const rules = storeSettings?.paymentRules?.filter((r: any) => r.paymentMethod === 'credit' && r.type === 'charge') || [];
     const options: { value: number; interest: number }[] = [];
@@ -135,7 +140,11 @@ export default function CreateOrderPage() {
 
   const effectiveCreditInstallments = paymentMethod === "Cartão de Crédito" ? creditInstallments : 1;
   const selectedInstallment = installmentsOptions.find((opt) => opt.value === effectiveCreditInstallments) ?? installmentsOptions[0];
-  const creditInterestAmount = paymentMethod === "Cartão de Crédito" ? (totalAfterCoupon + effectiveDeliveryFee) * (selectedInstallment.interest / 100) : 0;
+  const creditInterestAmount = paymentMethod === "Cartão de Crédito" 
+    ? (totalAfterCoupon + effectiveDeliveryFee) * (selectedInstallment.interest / 100)
+    : paymentMethod === "Cartão de Débito"
+      ? (totalAfterCoupon + effectiveDeliveryFee) * (debitFeePercent / 100)
+      : 0;
 
   const total = discountedProductsTotal + effectiveDeliveryFee + creditInterestAmount;
   const parsedCustomTotal = parseFloat(customTotal.replace(/\./g, '').replace(',', '.'));
@@ -219,7 +228,7 @@ export default function CreateOrderPage() {
         itemsTotal: Number(subtotal.toFixed(2)),
         freight: Number(effectiveDeliveryFee.toFixed(2)),
         paymentDiscount: paymentMethod === 'PIX' ? Number(pixDiscountAmount.toFixed(2)) : 0,
-        installmentSurcharge: paymentMethod === 'Cartão de Crédito' ? Number(creditInterestAmount.toFixed(2)) : 0,
+        installmentSurcharge: (paymentMethod === 'Cartão de Crédito' || paymentMethod === 'Cartão de Débito') ? Number(creditInterestAmount.toFixed(2)) : 0,
         couponTitle: coupon?.title || undefined,
         couponDiscount: coupon?.type !== 'FREE_SHIPPING' ? Number(discount.toFixed(2)) : 0,
         couponFreightDiscount: coupon?.type === 'FREE_SHIPPING' ? Number(deliveryFee.toFixed(2)) : 0,
