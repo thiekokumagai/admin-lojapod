@@ -50,7 +50,6 @@ export function RegisterPurchaseModal({ isOpen, onClose }: Props) {
                 id="amount"
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]*"
                 value={amount !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount)) : ""}
                 onChange={(e) => {
                   const digits = e.target.value.replace(/\D/g, "");
