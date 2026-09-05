@@ -128,31 +128,67 @@ export default function DashboardPage() {
   };
 
   // Define KPI cards with icons and dynamic values
-  const kpiCards = [
+  const row1Cards = [
+    {
+      label: "Produtos Ativos",
+      value: stats ? stats.produtosAtivos : 0,
+      icon: CheckCircle,
+      color: "text-emerald-600 bg-emerald-100",
+    },
+    {
+      label: "Qtd. Total Estoque",
+      value: stats ? (stats.qtdTotalEstoque || 0) : 0,
+      icon: Package,
+      color: "text-indigo-600 bg-indigo-100",
+    },
+    {
+      label: "Custo Prod. Ativos",
+      value: stats ? `R$ ${(stats.custoProdAtivos || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
+      icon: DollarSign,
+      color: "text-emerald-600 bg-emerald-100",
+    },
+    {
+      label: "Produtos Inativos",
+      value: stats ? stats.produtosInativos : 0,
+      icon: XCircle,
+      color: "text-slate-600 bg-slate-200",
+    },
+    {
+      label: "Venda Total Estoque",
+      value: stats ? `R$ ${(stats.vendaTotalEstoque || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
+      icon: DollarSign,
+      color: "text-emerald-600 bg-emerald-100",
+    },
+  ];
+
+  const row2Cards = [
     {
       label: "Total Vendas",
       value: stats ? `R$ ${(stats.totalVendas || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: DollarSign,
-      color: "text-primary bg-primary/10",
+      color: "text-emerald-600 bg-emerald-100",
     },
     {
       label: "Pedidos no Período",
       value: stats ? stats.totalPedidos : 0,
       icon: ShoppingBag,
-      color: "text-info bg-info/10",
+      color: "text-sky-600 bg-sky-100",
     },
     {
       label: "Ticket Médio",
       value: stats ? `R$ ${(stats.ticketMedio || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: TrendingUp,
-      color: "text-success bg-success/10",
+      color: "text-emerald-600 bg-emerald-100",
     },
     {
       label: "Produtos Vendidos",
       value: stats ? stats.totalProdutosVendidos : 0,
       icon: Package,
-      color: "text-warning bg-warning/10",
+      color: "text-amber-600 bg-amber-100",
     },
+  ];
+
+  const row3Cards = [
     {
       label: "Visitas",
       value: stats?.visitas ?? "--",
@@ -176,39 +212,6 @@ export default function DashboardPage() {
       value: stats?.abandonos ?? "--",
       icon: ShoppingCart,
       color: "text-amber-600 bg-amber-100",
-    },
-    {
-      label: "Qtd Estoque Total",
-      value: stats ? (stats.qtdTotalEstoque || 0) : 0,
-      icon: Package,
-      color: "text-emerald-600 bg-emerald-100",
-    },
-    {
-      label: "Custo Prod. Ativos",
-      value: stats ? `R$ ${(stats.custoProdAtivos || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
-      icon: DollarSign,
-      color: "text-emerald-600 bg-emerald-100",
-    },
-    {
-      label: "Venda Total Estoque",
-      value: stats ? `R$ ${(stats.vendaTotalEstoque || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
-      icon: DollarSign,
-      color: "text-emerald-600 bg-emerald-100",
-    },
-  ];
-
-  const inventoryCards = [
-    {
-      label: "Produtos Ativos",
-      value: stats ? stats.produtosAtivos : 0,
-      icon: CheckCircle,
-      color: "text-emerald-600 bg-emerald-100",
-    },
-    {
-      label: "Produtos Inativos",
-      value: stats ? stats.produtosInativos : 0,
-      icon: XCircle,
-      color: "text-slate-600 bg-slate-200",
     },
   ];
 
@@ -315,51 +318,79 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
-        {inventoryCards.map((card, idx) => {
-          const IconComponent = card.icon;
-          return (
-            <Card key={idx} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-5 flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${card.color}`}>
-                  <IconComponent className="h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
-                  {loading ? (
-                    <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
-                  ) : (
-                    <p className="text-xl font-bold text-foreground">{card.value}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
       {/* KPI Cards Section */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
-        {kpiCards.map((card, idx) => {
-          const IconComponent = card.icon;
-          return (
-            <Card key={idx} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-5 flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${card.color}`}>
-                  <IconComponent className="h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
-                  {loading ? (
-                    <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
-                  ) : (
-                    <p className="text-xl font-bold text-foreground">{card.value}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="space-y-4">
+        {/* Row 1 - 5 items */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {row1Cards.map((card, idx) => {
+            const IconComponent = card.icon;
+            return (
+              <Card key={`r1-${idx}`} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className={`p-3 rounded-xl ${card.color}`}>
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+                    {loading ? (
+                      <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
+                    ) : (
+                      <p className="text-xl font-bold text-foreground">{card.value}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Row 2 - 4 items */}
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
+          {row2Cards.map((card, idx) => {
+            const IconComponent = card.icon;
+            return (
+              <Card key={`r2-${idx}`} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className={`p-3 rounded-xl ${card.color}`}>
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+                    {loading ? (
+                      <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
+                    ) : (
+                      <p className="text-xl font-bold text-foreground">{card.value}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Row 3 - 4 items */}
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
+          {row3Cards.map((card, idx) => {
+            const IconComponent = card.icon;
+            return (
+              <Card key={`r3-${idx}`} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className={`p-3 rounded-xl ${card.color}`}>
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+                    {loading ? (
+                      <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
+                    ) : (
+                      <p className="text-xl font-bold text-foreground">{card.value}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       {/* Visual Analytics Chart and Best Selling Products Section */}
