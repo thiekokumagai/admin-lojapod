@@ -11,6 +11,9 @@ export interface DashboardKPIs {
   conversao: number;
   tempoMedio: number;
   abandonos: number;
+  qtdTotalEstoque?: number;
+  custoProdAtivos?: number;
+  vendaTotalEstoque?: number;
 }
 
 export interface DashboardChartItem {

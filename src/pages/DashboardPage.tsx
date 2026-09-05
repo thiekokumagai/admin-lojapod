@@ -131,7 +131,7 @@ export default function DashboardPage() {
   const kpiCards = [
     {
       label: "Total Vendas",
-      value: stats ? `R$ ${stats.totalVendas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
+      value: stats ? `R$ ${(stats.totalVendas || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: DollarSign,
       color: "text-primary bg-primary/10",
     },
@@ -143,7 +143,7 @@ export default function DashboardPage() {
     },
     {
       label: "Ticket Médio",
-      value: stats ? `R$ ${stats.ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
+      value: stats ? `R$ ${(stats.ticketMedio || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: TrendingUp,
       color: "text-success bg-success/10",
     },
@@ -176,6 +176,24 @@ export default function DashboardPage() {
       value: stats?.abandonos ?? "--",
       icon: ShoppingCart,
       color: "text-amber-600 bg-amber-100",
+    },
+    {
+      label: "Qtd Estoque Total",
+      value: stats ? (stats.qtdTotalEstoque || 0) : 0,
+      icon: Package,
+      color: "text-emerald-600 bg-emerald-100",
+    },
+    {
+      label: "Custo Prod. Ativos",
+      value: stats ? `R$ ${(stats.custoProdAtivos || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
+      icon: DollarSign,
+      color: "text-emerald-600 bg-emerald-100",
+    },
+    {
+      label: "Venda Total Estoque",
+      value: stats ? `R$ ${(stats.vendaTotalEstoque || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
+      icon: DollarSign,
+      color: "text-emerald-600 bg-emerald-100",
     },
   ];
 
@@ -373,7 +391,7 @@ export default function DashboardPage() {
                         borderRadius: 12,
                         boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                       }}
-                      formatter={(v: number) => [`R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Vendas"]}
+                      formatter={(v: number) => [`R$ ${(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Vendas"]}
                     />
                     <Bar dataKey="vendas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -445,7 +463,7 @@ export default function DashboardPage() {
                     <div className="text-right">
                       <p className="text-xs font-bold text-foreground">{item.quantity} un.</p>
                       <p className="text-[10px] text-muted-foreground">
-                        R$ {item.totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {(item.totalRevenue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>

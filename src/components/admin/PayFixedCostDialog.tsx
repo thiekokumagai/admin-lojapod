@@ -152,6 +152,8 @@ export default function PayFixedCostDialog({
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                 <Input
                   id="amount"
+                  type="tel"
+                  inputMode="numeric"
                   value={amount !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount)) : ""}
                   onChange={(e) => {
                     const digits = e.target.value.replace(/\D/g, "");

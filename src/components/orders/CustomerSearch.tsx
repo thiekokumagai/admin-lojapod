@@ -170,6 +170,8 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
             onChange={(e) => setNewCustomerName(e.target.value)}
           />
           <Input 
+            type="tel"
+            inputMode="numeric"
             placeholder="Telefone do cliente ex: (99) 99999-9999" 
             value={newCustomerPhone}
             maxLength={15}
@@ -242,6 +244,8 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
                   <div>
                     <Label className="text-xs">Telefone</Label>
                     <Input 
+                      type="tel"
+                      inputMode="numeric"
                       value={tempCustomerPhone} 
                       onChange={(e) => setTempCustomerPhone(formatPhone(e.target.value))} 
                       maxLength={15}

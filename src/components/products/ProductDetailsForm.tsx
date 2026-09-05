@@ -103,6 +103,8 @@ export function ProductDetailsForm({
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                         <Input
+                          type="tel"
+                          inputMode="numeric"
                           className="h-12 rounded-2xl bg-background pl-9"
                           placeholder="0,00"
                           value={field.value !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(field.value) : ""}
@@ -128,6 +130,8 @@ export function ProductDetailsForm({
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                         <Input
+                          type="tel"
+                          inputMode="numeric"
                           className="h-12 rounded-2xl bg-background pl-9"
                           placeholder="0,00"
                           value={field.value !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(field.value) : ""}
@@ -153,6 +157,8 @@ export function ProductDetailsForm({
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                         <Input
+                          type="tel"
+                          inputMode="numeric"
                           className="h-12 rounded-2xl bg-background pl-9"
                           placeholder="0,00"
                           value={field.value !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(field.value) : ""}

@@ -203,6 +203,8 @@ export function OrderSummary({
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">R$</span>
                   <Input 
+                    type="tel"
+                    inputMode="numeric"
                     value={changeFor}
                     onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, "");
@@ -292,6 +294,8 @@ export function OrderSummary({
           <div className="relative w-32">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">R$</span>
             <Input 
+              type="tel"
+              inputMode="numeric"
               value={customTotal} 
               onChange={(e) => {
                 let val = e.target.value.replace(/\D/g, "");

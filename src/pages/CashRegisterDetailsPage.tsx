@@ -811,6 +811,8 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                 <Input
                   id="tx-amount"
+                  type="tel"
+                  inputMode="numeric"
                   value={txAmount !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(txAmount)) : ""}
                   onChange={(e) => {
                     const digits = e.target.value.replace(/\D/g, "");

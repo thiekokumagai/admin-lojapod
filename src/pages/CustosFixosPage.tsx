@@ -406,6 +406,8 @@ export default function CustosFixosPage() {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                       <Input
                         id="value"
+                        type="tel"
+                        inputMode="numeric"
                         placeholder="0,00"
                         value={field.value !== undefined ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(field.value) : ""}
                         onChange={(e) => {
