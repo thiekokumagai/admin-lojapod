@@ -466,6 +466,45 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
             </CardContent>
           </Card>
         </div>
+
+        {/* Row 2 (Caixa) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          <Card className="border-slate-200 bg-slate-50/20 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl text-sky-600 bg-sky-50">
+                <ShoppingBag className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Pedidos Totais (Caixa)</p>
+                <p className="text-2xl font-black text-slate-800">{pedidosTotaisCaixa}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 bg-slate-50/20 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl text-teal-600 bg-teal-50">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Ticket Médio (Caixa)</p>
+                <p className="text-2xl font-black text-slate-800">{currencyFormatter.format(ticketMedioCaixa)}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 bg-slate-50/20 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl text-amber-600 bg-amber-50">
+                <Package className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Itens Vendidos (Caixa)</p>
+                <p className="text-2xl font-black text-slate-800">{itensVendidosCaixa}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Tabs defaultValue="pedidos" className="w-full">
