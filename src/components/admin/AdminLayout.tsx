@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { LogOut, Menu, Printer, Bell, Store, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -172,11 +173,12 @@ export function AdminLayout() {
             </div>
           )}
 
-          <main className="flex-1 overflow-auto p-4 md:p-6">
+          <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 md:pb-6">
             <Outlet />
           </main>
         </div>
       </div>
+      {!superAdmin && <MobileBottomNav />}
     </SidebarProvider>
   );
 }
