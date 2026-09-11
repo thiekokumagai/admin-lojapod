@@ -45,6 +45,10 @@ export interface StoreSettings {
   deliveryOriginNumber: string | null;
   deliveryRanges: any;
   
+  businessHours?: any;
+  isTemporarilyClosed?: boolean;
+  closedNoticeMessage?: string | null;
+  
   // Pagamentos
   pixEnabled: boolean;
   pixKeyType: string | null;

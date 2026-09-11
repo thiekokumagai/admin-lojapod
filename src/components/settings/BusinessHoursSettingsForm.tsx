@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
-import { Plus, Trash2, Clock, Save } from "lucide-react";
+import { Plus, Trash2, Clock, Save, AlertOctagon } from "lucide-react";
 
 export interface BusinessHourInterval {
   open: string;
@@ -33,12 +35,18 @@ export function BusinessHoursSettingsForm() {
   const updateSettingsMutation = useUpdateSettings();
 
   const [rules, setRules] = useState<BusinessHourRule[]>([]);
+  const [isTemporarilyClosed, setIsTemporarilyClosed] = useState(false);
+  const [closedNoticeMessage, setClosedNoticeMessage] = useState("");
 
   useEffect(() => {
-    if (settings && settings.businessHours) {
-      setRules(settings.businessHours);
-    } else if (settings && !settings.businessHours) {
-      setRules([]);
+    if (settings) {
+      if (settings.businessHours) {
+        setRules(settings.businessHours);
+      } else {
+        setRules([]);
+      }
+      setIsTemporarilyClosed(!!settings.isTemporarilyClosed);
+      setClosedNoticeMessage(settings.closedNoticeMessage || "");
     }
   }, [settings]);
 
@@ -110,16 +118,18 @@ export function BusinessHoursSettingsForm() {
     try {
       await updateSettingsMutation.mutateAsync({
         businessHours: rules,
+        isTemporarilyClosed,
+        closedNoticeMessage,
       });
       toast({
-        title: "Horários salvos!",
-        description: "Suas configurações de horário de atendimento foram salvas.",
+        title: "Configurações salvas!",
+        description: "Suas configurações de horário e pausa da loja foram salvas.",
       });
     } catch (err) {
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: "Falha ao salvar os horários.",
+        description: "Falha ao salvar as configurações.",
       });
     }
   };
@@ -137,7 +147,40 @@ export function BusinessHoursSettingsForm() {
   return (
     <Card>
       <CardContent className="p-5 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="border p-4 rounded-xl space-y-4 bg-amber-50/60 border-amber-200">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 font-semibold text-amber-900 text-sm">
+                <AlertOctagon className="h-4 w-4 text-amber-600" />
+                Suspender Loja Temporariamente
+              </div>
+              <p className="text-xs text-amber-700">
+                Ative para pausar as vendas da loja manualmente (ex: feriado, manutenção ou recesso). Um aviso bloqueante será exibido no site.
+              </p>
+            </div>
+            <Switch
+              checked={isTemporarilyClosed}
+              onCheckedChange={setIsTemporarilyClosed}
+            />
+          </div>
+
+          {isTemporarilyClosed && (
+            <div className="space-y-2 pt-2 border-t border-amber-200/80">
+              <Label className="text-xs font-semibold text-amber-900">
+                Mensagem Exibida aos Clientes
+              </Label>
+              <Textarea
+                value={closedNoticeMessage}
+                onChange={(e) => setClosedNoticeMessage(e.target.value)}
+                placeholder="Ex: Estamos em recesso temporário para balanço de estoque. Retornaremos nossas atividades no dia 20!"
+                className="bg-white text-xs text-slate-800 border-amber-200 focus:border-amber-400"
+                rows={3}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
           <div className="space-y-1">
             <h2 className="font-semibold text-base flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
