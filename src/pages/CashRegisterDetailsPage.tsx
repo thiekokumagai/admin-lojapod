@@ -170,7 +170,21 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
   if (!data) return <div className="p-8">Caixa não encontrado.</div>;
 
   const { cashRegister, summary, orders, transactions = [] } = data;
-  
+
+  const gross = summary?.totalGross || summary?.totalReceived || 0;
+  const cardFees = summary?.totalCardFees || 0;
+  const productCost = summary?.totalProductCost || 0;
+  const investment = summary?.totalInvestment || 0;
+  const outflows = summary?.totalOutflows || 0;
+  const motoboy = summary?.motoboyOutflows || 0;
+  const marketing = summary?.marketingOutflows || 0;
+  const partners = summary?.partnersOutflows || 0;
+  const investmentDeduction = Math.max(0, investment - productCost);
+
+  const totalNetProfit = summary?.totalNetProfit !== undefined
+    ? summary.totalNetProfit
+    : gross - cardFees - productCost - outflows - motoboy - marketing - partners - investmentDeduction;
+
   // Ocultar a transação de Caixa Inicial da lista, pois ela é editada na tela do próprio Caixa
   const displayTransactions = transactions.filter((tx: any) => !(tx.description === 'Caixa Inicial' && tx.category === 'Banco'));
 
@@ -403,6 +417,17 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
             <CardContent>
               <p className="text-2xl font-black text-violet-600">
                 {currencyFormatter.format(summary.totalNet !== undefined ? summary.totalNet : summary.totalReceived)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-emerald-200 bg-emerald-50/20 rounded-2xl shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs uppercase tracking-wider text-emerald-800 font-bold">Lucro Líquido</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`text-2xl font-black ${totalNetProfit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                {currencyFormatter.format(totalNetProfit)}
               </p>
             </CardContent>
           </Card>

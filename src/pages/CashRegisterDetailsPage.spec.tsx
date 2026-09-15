@@ -93,6 +93,7 @@ describe("CashRegisterDetailsPage", () => {
     expect(screen.getByText("Faturamento Bruto")).toBeInTheDocument();
     expect(screen.getByText("Taxas Retidas (Cartão)")).toBeInTheDocument();
     expect(screen.getByText("Saldo Líquido")).toBeInTheDocument();
+    expect(screen.getByText("Lucro Líquido")).toBeInTheDocument();
 
     // Verify values format using regex and getAllByText to avoid multiple matches error
     expect(screen.getAllByText(/500,00/).length).toBeGreaterThan(0);
