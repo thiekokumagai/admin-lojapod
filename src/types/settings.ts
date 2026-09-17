@@ -48,6 +48,8 @@ export interface StoreSettings {
   businessHours?: any;
   isTemporarilyClosed?: boolean;
   closedNoticeMessage?: string | null;
+  enableExchangePolicy?: boolean;
+  exchangePolicy?: string | null;
   
   // Pagamentos
   pixEnabled: boolean;

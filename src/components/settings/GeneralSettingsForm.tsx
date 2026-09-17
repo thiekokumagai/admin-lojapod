@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key } from "lucide-react";
 
@@ -38,6 +39,8 @@ export function GeneralSettingsForm() {
   const [state, setState] = useState("");
   const [complement, setComplement] = useState("");
   const [hideAddress, setHideAddress] = useState(false);
+  const [exchangePolicy, setExchangePolicy] = useState("");
+  const [enableExchangePolicy, setEnableExchangePolicy] = useState(false);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingWhiteLogo, setIsUploadingWhiteLogo] = useState(false);
@@ -93,6 +96,8 @@ export function GeneralSettingsForm() {
       setState(settings.state || "");
       setComplement(settings.complement || "");
       setHideAddress(!!settings.hideAddress);
+      setExchangePolicy(settings.exchangePolicy || "");
+      setEnableExchangePolicy(!!settings.enableExchangePolicy);
     }
   }, [settings]);
 
@@ -375,6 +380,8 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         state,
         complement,
         hideAddress,
+        exchangePolicy,
+        enableExchangePolicy,
       });
 
       toast({
@@ -689,6 +696,31 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               Ocultar endereço físico na loja pública
             </Label>
           </div>
+
+        {/* Política de Trocas */}
+        <div className="space-y-4 pt-4 border-t">
+          <div className="flex items-center gap-2">
+            <Switch checked={enableExchangePolicy} onCheckedChange={setEnableExchangePolicy} />
+            <Label className="font-normal text-sm cursor-pointer select-none" onClick={() => setEnableExchangePolicy(!enableExchangePolicy)}>
+              Ativar página de Política de Trocas na loja
+            </Label>
+          </div>
+
+          {enableExchangePolicy && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Label className="font-medium">Texto da Política</Label>
+              <Textarea 
+                placeholder="Descreva aqui as regras de trocas, prazos e condições para devolução de produtos..."
+                value={exchangePolicy}
+                onChange={(e) => setExchangePolicy(e.target.value)}
+                className="min-h-[120px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Este texto será exibido na página de Política de Trocas da sua loja.
+              </p>
+            </div>
+          )}
+        </div>
 
           <div className="flex justify-end pt-4 border-t">
             <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending}>
