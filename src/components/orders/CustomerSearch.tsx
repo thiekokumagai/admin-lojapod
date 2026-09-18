@@ -339,7 +339,7 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
               <SimpleAddressForm 
                 onCancel={() => setIsAddingAddress(false)}
                 onSave={async (addr) => {
-                  const newAddr = { ...addr, isDefault: true };
+                  let newAddr = { ...addr, isDefault: true };
                   if (selectedCustomerData) {
                     const isTempCustomer = !selectedCustomerData.id || selectedCustomerData.id.startsWith("temp_");
                     let updatedCustomer: Customer = {

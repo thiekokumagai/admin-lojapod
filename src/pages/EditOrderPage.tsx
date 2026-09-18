@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductSearch } from "@/components/orders/ProductSearch";
 import { CustomerSearch } from "@/components/orders/CustomerSearch";
@@ -526,34 +526,34 @@ export default function EditOrderPage() {
         {/* Left Column - Products and Customer */}
         <div className="lg:col-span-2 space-y-6">
           {/* Product Search Section */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-4 sm:p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-800 mb-4">Produtos</h2>
             <ProductSearch onSelectProduct={handleAddProduct} />
             
             {orderItems.length > 0 && (
               <div className="mt-6 space-y-3">
                 {effectiveItems.map((item, index) => (
-                  <div key={`${item.productId}-${index}`} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50">
-                    <div className="flex items-center gap-3">
+                  <div key={`${item.productId}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 border border-slate-100 rounded-xl bg-slate-50">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {item.imageUrl ? (
-                        <img src={buildImageUrl(item.imageUrl)} alt={item.title} className="w-10 h-10 rounded-md object-cover" />
+                        <img src={buildImageUrl(item.imageUrl)} alt={item.title} className="w-10 h-10 shrink-0 rounded-md object-cover" />
                       ) : (
-                        <div className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center">
+                        <div className="w-10 h-10 shrink-0 rounded-md bg-slate-100 flex items-center justify-center">
                           <span className="text-xs text-slate-400">Sem img</span>
                         </div>
                       )}
-                      <div>
-                        <div className="font-semibold text-slate-700 text-sm">{item.title}</div>
-                        {item.variation && <div className="text-xs text-slate-500">{item.variation}</div>}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-slate-700 text-sm leading-snug break-words">{item.title}</div>
+                        {item.variation && <div className="text-xs text-slate-500 mt-0.5">{item.variation}</div>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right flex flex-col items-end">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                      <div className="text-left sm:text-right flex flex-col sm:items-end">
                         {item.isPromo && item.oldPrice && paymentMethod !== "PIX" && paymentMethod !== "" && (
-                          <span className="text-xs text-amber-500 font-bold">Sem desconto PIX</span>
+                          <span className="text-[10px] text-amber-500 font-bold">Sem desconto PIX</span>
                         )}
                         {item.isPromo && item.oldPrice && (paymentMethod === "PIX" || paymentMethod === "") && (
-                          <span className="text-xs text-muted-foreground line-through">
+                          <span className="text-[11px] text-muted-foreground line-through">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.oldPrice * item.quantity)}
                           </span>
                         )}
@@ -561,14 +561,14 @@ export default function EditOrderPage() {
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <Button 
                           variant="outline" 
                           size="icon" 
                           className="h-7 w-7 rounded-md"
                           onClick={() => handleUpdateQuantity(item.productId, item.variation, item.quantity - 1)}
                         >
-                          -
+                          <Minus className="h-3.5 w-3.5" />
                         </Button>
                         <span className="w-6 text-center font-medium text-sm">{item.quantity}</span>
                         <Button 
@@ -578,17 +578,17 @@ export default function EditOrderPage() {
                           disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
                           onClick={() => handleUpdateQuantity(item.productId, item.variation, item.quantity + 1)}
                         >
-                          +
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md shrink-0 ml-1 sm:ml-2"
+                          onClick={() => handleRemoveProduct(item.productId, item.variation)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md"
-                        onClick={() => handleRemoveProduct(item.productId, item.variation)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}
