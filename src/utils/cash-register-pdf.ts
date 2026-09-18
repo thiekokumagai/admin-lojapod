@@ -192,7 +192,7 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
       "",
       "",
       { content: "Lucro Líquido:", styles: { fontStyle: "bold", textColor: [16, 185, 129] } },
-      { content: formatCurrency(netProfit), styles: { fontStyle: "bold", textColor: [16, 185, 129] } },
+      { content: `${formatCurrency(netProfit)}${gross > 0 ? ` (${((netProfit / gross) * 100).toFixed(1)}%)` : ""}`, styles: { fontStyle: "bold", textColor: [16, 185, 129] } },
     ],
   ];
 
