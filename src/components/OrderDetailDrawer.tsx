@@ -17,7 +17,8 @@ import {
   Phone, 
   Check, 
   Loader2,
-  Repeat
+  Repeat,
+  MapPin
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { OrderStatus } from "@/types/order";
@@ -457,6 +458,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
       }
 
       const duplicateData = {
+        deliveryModality: order.deliveryModality || "DELIVERY",
         items: validItems,
         customer: fullCustomer || {
           id: order.customerId || "",
@@ -749,7 +751,15 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                 </div>
                 <div className="flex justify-between text-slate-500 items-center">
                   <span>Frete</span>
-                  <span>{formatCurrency(order.freight)}</span>
+                  <span className="font-medium text-slate-700">
+                    {order.deliveryModality === "STORE_PICKUP"
+                      ? "Retirada na loja"
+                      : order.freight === -1
+                        ? "A combinar"
+                        : order.freight === 0 || (order.coupon && order.coupon.type === "FREE_SHIPPING")
+                          ? "Grátis"
+                          : formatCurrency(order.freight)}
+                  </span>
                 </div>
                 {order.coupon && (
                   <div className="flex justify-between text-violet-600 font-bold items-center bg-violet-50/30 px-1 py-0.5 rounded border border-violet-100">
@@ -957,35 +967,49 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                 )}
               </div>
 
-              {/* Shipping Address Section */}
+              {/* Shipping Address / Pickup Section */}
               <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Endereço de Entrega</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleCopyAddress}
-                    className="h-7 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 gap-1 rounded-md"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-3 w-3" />
-                        <span>Copiado</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3" />
-                        <span>Copiar endereço</span>
-                      </>
-                    )}
-                  </Button>
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">
+                    {order.deliveryModality === "STORE_PICKUP" ? "Retirada" : "Endereço de Entrega"}
+                  </span>
+                  {order.deliveryModality !== "STORE_PICKUP" && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleCopyAddress}
+                      className="h-7 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 gap-1 rounded-md"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-3 w-3" />
+                          <span>Copiado</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          <span>Copiar endereço</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
-                <div className="text-xs text-slate-600 leading-relaxed font-medium space-y-0.5">
-                  <div className="font-bold text-slate-800">{order.street}, {order.number}</div>
-                  {order.complement && <div>{order.complement}</div>}
-                  <div>{order.neighborhood} - {order.city}/{order.state}</div>
-                  <div>CEP: {order.cep}</div>
-                </div>
+                {order.deliveryModality === "STORE_PICKUP" ? (
+                  <div className="text-sm text-slate-600 leading-relaxed font-medium space-y-1">
+                    <div className="font-bold text-slate-800 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                      <span>Retirada na Loja</span>
+                    </div>
+                    <div className="pl-6 text-slate-500 text-xs">O cliente virá buscar o pedido no estabelecimento.</div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-600 leading-relaxed font-medium space-y-0.5">
+                    <div className="font-bold text-slate-800">{order.street}, {order.number}</div>
+                    {order.complement && <div>{order.complement}</div>}
+                    <div>{order.neighborhood} - {order.city}/{order.state}</div>
+                    <div>CEP: {order.cep}</div>
+                  </div>
+                )}
               </div>
 
               {/* Observação Section */}

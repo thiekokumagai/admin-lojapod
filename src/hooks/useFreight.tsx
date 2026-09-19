@@ -85,10 +85,37 @@ export function useFreight() {
     const [distanceKm, setDistanceKm] = useState<number | null>(null);
     const [price, setPrice] = useState<number | null>(null);
 
-    const calculate = useCallback(async (destination: string) => {
+    const calculate = useCallback(async (destination: string, cartTotal?: number) => {
         try {
             setLoading(true);
             setError(null);
+
+            // Verifica tipo de entrega padrão
+            if (storeSettings?.deliveryType === "NO_FEE") {
+                setPrice(0);
+                setDistanceKm(0);
+                return { distanceKm: 0, duration: "", freightPrice: 0, error: null };
+            }
+
+            if (storeSettings?.deliveryType === "FIXED_FEE") {
+                const fixed = storeSettings?.deliveryFixedFee ? Number(storeSettings.deliveryFixedFee) : 0;
+                let freightPrice = fixed;
+                const freeShippingMin = storeSettings?.freeShippingMinValue ? Number(storeSettings.freeShippingMinValue) : null;
+                if (storeSettings?.freeShippingEnabled && freeShippingMin !== null && !isNaN(freeShippingMin) && freeShippingMin > 0) {
+                    if (cartTotal && cartTotal >= freeShippingMin) {
+                        freightPrice = 0;
+                    }
+                }
+                setPrice(freightPrice);
+                setDistanceKm(0);
+                return { distanceKm: 0, duration: "", freightPrice, error: null };
+            }
+
+            if (storeSettings?.deliveryType === "TO_COMBINE") {
+                setPrice(null);
+                setDistanceKm(0);
+                return { distanceKm: 0, duration: "", freightPrice: null, error: null };
+            }
 
             if (!destination) {
                 setError("Endereço de destino é obrigatório");
@@ -108,10 +135,29 @@ export function useFreight() {
             const ranges = storeSettings?.deliveryRanges?.ranges || [];
             const allowAboveMax = !!storeSettings?.deliveryRanges?.allowAboveMax;
 
+            let freightPrice: number | null = null;
+            let deliveryError = null;
+
             const validationError = validateDistance(km, ranges, allowAboveMax);
-            if (validationError) return validationError;
-            
-            const freightPrice = getFreightPrice(km, ranges);
+            if (validationError) {
+                deliveryError = validationError.error;
+            } else {
+                freightPrice = getFreightPrice(km, ranges);
+            }
+
+            // Regra de Frete Grátis
+            const freeShippingMin = storeSettings?.freeShippingMinValue ? Number(storeSettings.freeShippingMinValue) : null;
+            if (storeSettings?.freeShippingEnabled && freeShippingMin !== null && !isNaN(freeShippingMin) && freeShippingMin > 0) {
+                if (cartTotal && cartTotal >= freeShippingMin) {
+                    freightPrice = 0;
+                    deliveryError = null;
+                }
+            }
+
+            if (deliveryError && freightPrice !== 0) {
+                setError(deliveryError);
+                return { distanceKm: Math.round(km * 10) / 10, duration: "", freightPrice: null, error: deliveryError };
+            }
 
             const result: FreightResult = {
                 distanceKm: Math.round(km * 10) / 10,

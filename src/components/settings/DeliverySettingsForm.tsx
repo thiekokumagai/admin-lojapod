@@ -25,6 +25,12 @@ export function DeliverySettingsForm() {
   const [ranges, setRanges] = useState<RangeItem[]>([]);
   const [allowAboveMax, setAllowAboveMax] = useState(false);
 
+  const [freeShippingEnabled, setFreeShippingEnabled] = useState(false);
+  const [freeShippingMinValue, setFreeShippingMinValue] = useState<number | "">("");
+  const [storePickupEnabled, setStorePickupEnabled] = useState(false);
+  const [deliveryType, setDeliveryType] = useState("DISTANCE");
+  const [deliveryFixedFee, setDeliveryFixedFee] = useState<number | "">("");
+
   const [newDist, setNewDist] = useState("");
   const [newVal, setNewVal] = useState("");
 
@@ -34,6 +40,11 @@ export function DeliverySettingsForm() {
       setOriginCep(settings.deliveryOriginCep || "");
       setOriginNumber(settings.deliveryOriginNumber || "");
       
+      setFreeShippingEnabled(settings.freeShippingEnabled || false);
+      setFreeShippingMinValue(settings.freeShippingMinValue || "");
+      setStorePickupEnabled(settings.storePickupEnabled || false);
+      setDeliveryType(settings.deliveryType || "DISTANCE");
+      setDeliveryFixedFee(settings.deliveryFixedFee || "");
       const savedRanges = settings.deliveryRanges;
       if (savedRanges && typeof savedRanges === "object") {
         setRanges(savedRanges.ranges || []);
@@ -121,14 +132,34 @@ export function DeliverySettingsForm() {
       return;
     }
 
+    if (deliveryType === "FIXED_FEE" && (!deliveryFixedFee || deliveryFixedFee === "")) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Para taxa fixa, informe o valor da taxa.",
+      });
+      return;
+    }
+
+    if (freeShippingEnabled && (!freeShippingMinValue || freeShippingMinValue === "")) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Informe o valor mínimo para frete grátis.",
+      });
+      return;
+    }
+
     try {
       await updateSettingsMutation.mutateAsync({
-        deliveryOriginCep: originCep.trim() || null,
+        deliveryOriginCep: cleanCep || null,
         deliveryOriginNumber: originNumber.trim() || null,
-        deliveryRanges: {
-          ranges,
-          allowAboveMax,
-        },
+        deliveryRanges: { ranges, allowAboveMax },
+        freeShippingEnabled,
+        freeShippingMinValue: freeShippingMinValue === "" ? null : Number(freeShippingMinValue),
+        storePickupEnabled,
+        deliveryType,
+        deliveryFixedFee: deliveryFixedFee === "" ? null : Number(deliveryFixedFee),
       });
 
       toast({
@@ -170,6 +201,137 @@ export function DeliverySettingsForm() {
             <Save className="h-4 w-4 mr-1" />
             {updateSettingsMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
+        </div>
+
+        {/* Modalidades e Tipos de Entrega */}
+        <div className="space-y-6 border-b pb-6">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Opções de Entrega &amp; Retirada
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border p-3 rounded-lg bg-card">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Permitir Retirada na Loja</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Cliente pode buscar o pedido pessoalmente
+                  </p>
+                </div>
+                <Switch
+                  checked={storePickupEnabled}
+                  onCheckedChange={setStorePickupEnabled}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 border p-3 rounded-lg bg-card">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Frete Grátis</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Isentar taxa a partir de um valor
+                    </p>
+                  </div>
+                  <Switch
+                    checked={freeShippingEnabled}
+                    onCheckedChange={setFreeShippingEnabled}
+                  />
+                </div>
+                {freeShippingEnabled && (
+                  <div className="space-y-2 pt-2 border-t mt-1">
+                    <Label className="text-xs">Valor mínimo do pedido</Label>
+                    <div className="relative w-full">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={freeShippingMinValue !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(freeShippingMinValue)) : ""}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          setFreeShippingMinValue(digits ? Number(digits) / 100 : "");
+                        }}
+                        placeholder="0,00"
+                        className="h-8 pl-9"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4 border p-4 rounded-lg bg-card">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Tipo de Entrega Padrão</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Como a taxa de entrega será calculada para pedidos via delivery
+                </p>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="NO_FEE"
+                    checked={deliveryType === "NO_FEE"}
+                    onChange={(e) => setDeliveryType(e.target.value)}
+                    className="text-primary"
+                  />
+                  Sem taxa (Entrega Gratuita sempre)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="TO_COMBINE"
+                    checked={deliveryType === "TO_COMBINE"}
+                    onChange={(e) => setDeliveryType(e.target.value)}
+                    className="text-primary"
+                  />
+                  Taxa a combinar (Calculada depois)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer flex-wrap">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      value="FIXED_FEE"
+                      checked={deliveryType === "FIXED_FEE"}
+                      onChange={(e) => setDeliveryType(e.target.value)}
+                      className="text-primary"
+                    />
+                    Taxa fixa
+                  </div>
+                  {deliveryType === "FIXED_FEE" && (
+                    <div className="relative ml-6 sm:ml-2">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">R$</span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={deliveryFixedFee !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(deliveryFixedFee)) : ""}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          setDeliveryFixedFee(digits ? Number(digits) / 100 : "");
+                        }}
+                        placeholder="0,00"
+                        className="h-8 w-28 pl-7 text-xs"
+                      />
+                    </div>
+                  )}
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="DISTANCE"
+                    checked={deliveryType === "DISTANCE"}
+                    onChange={(e) => setDeliveryType(e.target.value)}
+                    className="text-primary"
+                  />
+                  Por distância (Usar faixas abaixo)
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Endereço de Origem */}

@@ -176,6 +176,7 @@ export default function OrderDetailsPage() {
       }
 
       const duplicateData = {
+        deliveryModality: order.deliveryModality || "DELIVERY",
         items: validItems,
         customer: fullCustomer || {
           id: order.customerId || "",
@@ -408,25 +409,39 @@ export default function OrderDetailsPage() {
           {/* Shipping Address Section */}
           <div className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm uppercase tracking-wider text-slate-400 font-bold">Endereço de Entrega</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleCopyAddress}
-                className="h-7 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 gap-1.5 rounded-md"
-              >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
+              <h3 className="text-sm uppercase tracking-wider text-slate-400 font-bold">
+                {order.deliveryModality === "STORE_PICKUP" ? "Retirada" : "Endereço de Entrega"}
+              </h3>
+              {order.deliveryModality !== "STORE_PICKUP" && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleCopyAddress}
+                  className="h-7 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 gap-1.5 rounded-md"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                </Button>
+              )}
             </div>
-            <div className="text-sm text-slate-600 leading-relaxed font-medium space-y-1">
-              <div className="font-bold text-slate-800 flex items-start gap-2">
-                 <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                 <span>{order.street}, {order.number}</span>
+            {order.deliveryModality === "STORE_PICKUP" ? (
+              <div className="text-sm text-slate-600 leading-relaxed font-medium space-y-1">
+                <div className="font-bold text-slate-800 flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <span>Retirada na Loja</span>
+                </div>
+                <div className="pl-6 text-slate-500 text-xs mt-1">O cliente virá buscar o pedido no estabelecimento.</div>
               </div>
-              <div className="pl-6">{order.neighborhood} {order.complement ? `- ${order.complement}` : ""}</div>
-              <div className="pl-6">{order.city} - {order.state}</div>
-              <div className="pl-6 font-mono text-slate-500 mt-1">CEP: {order.cep}</div>
-            </div>
+            ) : (
+              <div className="text-sm text-slate-600 leading-relaxed font-medium space-y-1">
+                <div className="font-bold text-slate-800 flex items-start gap-2">
+                   <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                   <span>{order.street}, {order.number}</span>
+                </div>
+                <div className="pl-6">{order.neighborhood} {order.complement ? `- ${order.complement}` : ""}</div>
+                <div className="pl-6">{order.city} - {order.state}</div>
+                <div className="pl-6 font-mono text-slate-500 mt-1">CEP: {order.cep}</div>
+              </div>
+            )}
           </div>
 
           {/* Payment Section */}
@@ -464,7 +479,15 @@ export default function OrderDetailsPage() {
               </div>
               <div className="flex justify-between text-slate-500">
                 <span>Frete</span>
-                <span>R$ {order.freight.toFixed(2)}</span>
+                <span>
+                  {order.deliveryModality === "STORE_PICKUP"
+                    ? "Retirada na loja"
+                    : order.freight === -1
+                      ? "A combinar"
+                      : order.freight === 0 || order.coupon?.type === 'FREE_SHIPPING'
+                        ? <span className="font-bold text-green-600">Grátis</span>
+                        : `R$ ${order.freight.toFixed(2)}`}
+                </span>
               </div>
               {order.couponDiscount ? (
                 <div className="flex justify-between text-rose-600">

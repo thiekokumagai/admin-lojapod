@@ -44,6 +44,9 @@ interface OrderSummaryProps {
   onNeedsChangeChange: (val: boolean) => void;
   changeFor: string;
   onChangeForChange: (val: string) => void;
+  deliveryModality?: string;
+  isFreeShipping?: boolean;
+  deliveryType?: string;
 }
 
 export function OrderSummary({
@@ -74,7 +77,10 @@ export function OrderSummary({
   needsChange,
   onNeedsChangeChange,
   changeFor,
-  onChangeForChange
+  onChangeForChange,
+  deliveryModality,
+  isFreeShipping,
+  deliveryType,
 }: OrderSummaryProps) {
   const [couponCode, setCouponCode] = useState("");
   const { data: coupons } = useCoupons();
@@ -258,6 +264,14 @@ export function OrderSummary({
           <span>Frete</span>
           {isCalculatingFreight ? (
             <span className="text-slate-400 text-sm">Calculando...</span>
+          ) : deliveryModality === "STORE_PICKUP" ? (
+            <span className="font-bold text-slate-700">Retirada na loja</span>
+          ) : deliveryType === "NO_FEE" ? (
+            <span className="font-bold text-emerald-600">Grátis</span>
+          ) : isFreeShipping && subtotal > 0 ? (
+            <span className="font-bold text-emerald-600">Grátis</span>
+          ) : deliveryFee === -1 ? (
+            <span className="font-bold text-slate-700">A combinar</span>
           ) : (
             <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(deliveryFee)}</span>
           )}

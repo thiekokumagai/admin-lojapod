@@ -136,7 +136,7 @@ export default function DeliveryMapPage() {
   const activeOrders = useMemo(() => {
     if (!ordersData?.data) return [];
     return ordersData.data.filter(
-      (order) => order.status === "PENDING" || order.status === "CONFIRMED" 
+      (order) => (order.status === "PENDING" || order.status === "CONFIRMED") && order.deliveryModality !== "STORE_PICKUP"
     );
   }, [ordersData]);
 

@@ -61,6 +61,12 @@ export interface StoreSettings {
   payOnDeliveryCardDebit: boolean;
   payOnDeliveryCardCredit: boolean;
   
+  // Frete e Retirada
+  freeShippingEnabled?: boolean;
+  freeShippingMinValue?: number | null;
+  storePickupEnabled?: boolean;
+  deliveryType?: string; // "NO_FEE", "FIXED_FEE", "TO_COMBINE", "DISTANCE"
+  deliveryFixedFee?: number | null;
   paymentRules: PaymentRule[];
   installmentRules?: InstallmentRule[] | null;
   

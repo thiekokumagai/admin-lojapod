@@ -17,9 +17,10 @@ interface CustomerSearchProps {
   initialCustomer?: Customer | null;
   initialAddressId?: string | null;
   mode?: "create" | "edit";
+  hideAddress?: boolean;
 }
 
-export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCustomer, initialAddressId, mode = "create" }: CustomerSearchProps) {
+export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCustomer, initialAddressId, mode = "create", hideAddress = false }: CustomerSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedTerm, setDebouncedTerm] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(initialCustomer?.id || null);
@@ -52,7 +53,7 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
       setSearchTerm(initialCustomer.phone ? formatPhone(initialCustomer.phone) : initialCustomer.name);
       
       const defaultAddress = initialCustomer.addresses?.find(a => a.isDefault) || initialCustomer.addresses?.[0];
-      if (defaultAddress) {
+      if (defaultAddress && !hideAddress) {
         setSelectedAddressId(defaultAddress.id);
       }
     }
@@ -107,11 +108,15 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
     setSelectedCustomerData(customer);
     onSelectCustomer(customer);
     
-    // Auto-select default address if available
-    const defaultAddress = customer.addresses?.find(a => a.isDefault) || customer.addresses?.[0];
-    if (defaultAddress) {
-      setSelectedAddressId(defaultAddress.id);
-      onSelectAddress(defaultAddress);
+    if (!hideAddress) {
+      const defaultAddress = customer.addresses?.find(a => a.isDefault) || customer.addresses?.[0];
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress.id);
+        onSelectAddress(defaultAddress);
+      } else {
+        setSelectedAddressId(null);
+        onSelectAddress(null);
+      }
     } else {
       setSelectedAddressId(null);
       onSelectAddress(null);
@@ -323,6 +328,7 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
             )}
           </div>
 
+          {!hideAddress && (
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-semibold text-slate-700 flex items-center gap-2">
@@ -535,6 +541,7 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
               </div>
             )}
           </div>
+          )}
         </div>
       )}
     </div>

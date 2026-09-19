@@ -66,6 +66,17 @@ export default function OrderPrintPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-[80mm] mx-auto text-black bg-white min-h-screen text-[12px] print:p-0 print:m-0 print:w-full print:max-w-none" style={{ fontFamily: "monospace" }}>
+      <style>{`
+        @page {
+          margin: 0;
+        }
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+          }
+        }
+      `}</style>
       <div className="text-center mb-6">
         <h1 className="font-bold text-base">{settings?.storeName || "Loja Pod"}</h1>
         <p className="text-xs">{(settings?.storeName || "lojapod").toLowerCase().replace(/ /g, "")}.store</p>
@@ -101,7 +112,15 @@ export default function OrderPrintPage() {
         <div className="flex justify-between mb-1 w-full gap-2 overflow-hidden">
           <span className="shrink-0">Frete</span>
           <span className="grow border-b border-dotted border-black relative top-[-4px] mx-1"></span>
-          <span className="shrink-0 font-bold">{formatCurrency(order.freight)}</span>
+          <span className="shrink-0 font-bold">
+            {order.deliveryModality === "STORE_PICKUP"
+              ? "Retirada na loja"
+              : order.freight === -1
+                ? "A combinar"
+                : order.freight === 0 || order.coupon?.type === "FREE_SHIPPING"
+                  ? "Grátis"
+                  : formatCurrency(order.freight)}
+          </span>
         </div>
         {discountAmount > 0 && (
           <div className="flex justify-between mb-1 w-full gap-2 overflow-hidden">
@@ -144,12 +163,21 @@ export default function OrderPrintPage() {
       </div>
 
       <div>
-        <p className="font-bold mb-1">Para entregar:</p>
-        <p>{order.street}, {order.number}</p>
-        <p>{order.neighborhood}</p>
-        <p>{order.city} - {order.state}</p>
-        <p>CEP: {order.cep}</p>
-        {order.complement && <p>Complemento: {order.complement}</p>}
+        {order.deliveryModality === "STORE_PICKUP" ? (
+          <>
+            <p className="font-bold mb-1">Retirada:</p>
+            <p className="font-bold">Retirada na Loja</p>
+          </>
+        ) : (
+          <>
+            <p className="font-bold mb-1">Para entregar:</p>
+            <p>{order.street}, {order.number}</p>
+            <p>{order.neighborhood}</p>
+            <p>{order.city} - {order.state}</p>
+            <p>CEP: {order.cep}</p>
+            {order.complement && <p>Complemento: {order.complement}</p>}
+          </>
+        )}
       </div>
     </div>
   );

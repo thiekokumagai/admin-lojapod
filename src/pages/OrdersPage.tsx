@@ -483,7 +483,14 @@ export default function OrdersPage() {
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-800 text-sm">{order.customerName}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-800 text-sm">{order.customerName}</span>
+                          {order.deliveryModality === "STORE_PICKUP" && (
+                            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 font-bold border-0 px-1.5 py-0 h-4 text-[9px]">
+                              Retirada
+                            </Badge>
+                          )}
+                        </div>
                         <span className="font-mono font-bold text-slate-400 text-xs">#{order.orderNumber} • {new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       <div className="flex flex-col items-end">
@@ -596,6 +603,11 @@ export default function OrdersPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-700">{order.customerName}</span>
+                          {order.deliveryModality === "STORE_PICKUP" && (
+                            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 font-bold border-0 px-1.5 py-0 h-5 text-[10px]">
+                              Retirada
+                            </Badge>
+                          )}
                           {order.observation && (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-1.5 py-0 h-5 text-[10px]" title={order.observation}>
                               OBS

@@ -42,6 +42,9 @@ export default function CreateOrderPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>(duplicateData?.items || []);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(duplicateData?.customer || null);
   const [selectedAddress, setSelectedAddress] = useState<CustomerAddress | null>(duplicateData?.address || null);
+  const [deliveryModality, setDeliveryModality] = useState<"DELIVERY" | "STORE_PICKUP">(
+    duplicateData?.deliveryModality === "STORE_PICKUP" ? "STORE_PICKUP" : "DELIVERY"
+  );
   
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [paymentMethod, setPaymentMethod] = useState(duplicateData?.paymentMethod || "");
@@ -61,21 +64,52 @@ export default function CreateOrderPage() {
 
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [creditInstallments, setCreditInstallments] = useState(1);
+  const effectiveItems = orderItems.map(item => {
+    if (paymentMethod !== "PIX" && paymentMethod !== "" && item.isPromo && item.oldPrice) {
+      return { ...item, price: item.oldPrice };
+    }
+    return item;
+  });
+
+  const subtotal = effectiveItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const nonPromoItemsTotal = effectiveItems.reduce((acc, item) => acc + (!item.isPromo ? item.price * item.quantity : 0), 0);
 
   useEffect(() => {
+    if (deliveryModality === "STORE_PICKUP") {
+      setDeliveryFee(0);
+      return;
+    }
+
+    const type = storeSettings?.deliveryType || "DISTANCE";
+    if (type === "NO_FEE") {
+      setDeliveryFee(0);
+      return;
+    }
+    if (type === "FIXED_FEE") {
+      setDeliveryFee(storeSettings?.deliveryFixedFee ? Number(storeSettings.deliveryFixedFee) : 0);
+      return;
+    }
+    if (type === "TO_COMBINE") {
+      setDeliveryFee(-1);
+      return;
+    }
+
+    // DISTANCE (padrão)
     if (selectedAddress) {
       const fullDest = formatFreightDestinationAddress(selectedAddress);
-      calculate(fullDest).then(res => {
-         if (res && !res.error && res.freightPrice !== null) {
-            setDeliveryFee(res.freightPrice);
-         } else {
-            setDeliveryFee(0);
-         }
+      calculate(fullDest, subtotal).then(res => {
+        if (res && !res.error && res.freightPrice !== null) {
+          setDeliveryFee(res.freightPrice);
+        } else if (res && res.freightPrice === null && !res.error) {
+          setDeliveryFee(-1);
+        } else {
+          setDeliveryFee(0);
+        }
       });
     } else {
       setDeliveryFee(0);
     }
-  }, [selectedAddress, calculate]);
+  }, [deliveryModality, selectedAddress, calculate, storeSettings?.deliveryType, storeSettings?.deliveryFixedFee, subtotal]);
 
   const pixDiscountPercent = useMemo(() => {
     const rule = storeSettings?.paymentRules?.find((r: any) => r.paymentMethod === 'pix' && r.type === 'discount');
@@ -112,15 +146,6 @@ export default function CreateOrderPage() {
     return options.sort((a, b) => a.value - b.value);
   }, [storeSettings]);
 
-  const effectiveItems = orderItems.map(item => {
-    if (paymentMethod !== "PIX" && paymentMethod !== "" && item.isPromo && item.oldPrice) {
-      return { ...item, price: item.oldPrice };
-    }
-    return item;
-  });
-
-  const subtotal = effectiveItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const nonPromoItemsTotal = effectiveItems.reduce((acc, item) => acc + (!item.isPromo ? item.price * item.quantity : 0), 0);
   const couponBaseTotal = (coupon && coupon.applyToPromotionalItems === false) ? nonPromoItemsTotal : subtotal;
 
   const discount = coupon ? (
@@ -132,7 +157,22 @@ export default function CreateOrderPage() {
   ) : 0;
   
   const totalAfterCoupon = Math.max(0, subtotal - discount);
-  const effectiveDeliveryFee = (coupon?.type === 'FREE_SHIPPING' && (coupon.applyToPromotionalItems !== false || nonPromoItemsTotal > 0)) ? 0 : deliveryFee;
+  const isFreeShippingBySettings = useMemo(() => {
+    if (!storeSettings?.freeShippingEnabled) return false;
+    const minVal = Number(storeSettings.freeShippingMinValue);
+    if (isNaN(minVal) || minVal <= 0) return false;
+    return subtotal > 0 && subtotal >= minVal;
+  }, [storeSettings?.freeShippingEnabled, storeSettings?.freeShippingMinValue, subtotal]);
+
+  const isFreeShippingByCoupon = useMemo(() => {
+    return coupon?.type === 'FREE_SHIPPING' && (coupon.applyToPromotionalItems !== false || nonPromoItemsTotal > 0);
+  }, [coupon, nonPromoItemsTotal]);
+
+  const isFreeShippingApplicable = isFreeShippingByCoupon || isFreeShippingBySettings;
+
+  const effectiveDeliveryFee = deliveryModality === "STORE_PICKUP" || isFreeShippingApplicable
+    ? 0
+    : (deliveryFee === -1 ? 0 : deliveryFee);
   const pixDiscountBase = Math.min(nonPromoItemsTotal, totalAfterCoupon);
   
   const pixDiscountAmount = paymentMethod === "PIX" ? pixDiscountBase * (pixDiscountPercent / 100) : 0;
@@ -150,7 +190,8 @@ export default function CreateOrderPage() {
   const parsedCustomTotal = parseFloat(customTotal.replace(/\./g, '').replace(',', '.'));
   const finalTotal = !isNaN(parsedCustomTotal) && customTotal.trim() !== "" ? parsedCustomTotal : total;
 
-  const isValid = (isBudgetMode || (!!selectedCustomer && !!selectedAddress)) && effectiveItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
+  const isAddressRequired = deliveryModality === "DELIVERY" && !isBudgetMode;
+  const isValid = (isBudgetMode || (!!selectedCustomer && (!isAddressRequired || !!selectedAddress))) && effectiveItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
 
   const handleSubmit = async () => {
     if (!isValid || (!isBudgetMode && !selectedCustomer)) return;
@@ -194,7 +235,7 @@ export default function CreateOrderPage() {
       }
 
       // Salva ou atualiza o endereço no banco para este cliente ao finalizar o pedido
-      if (finalCustomerId && !finalCustomerId.startsWith("temp_") && selectedAddress) {
+      if (deliveryModality !== "STORE_PICKUP" && finalCustomerId && !finalCustomerId.startsWith("temp_") && selectedAddress) {
         const isTempAddress = !selectedAddress.id || selectedAddress.id.startsWith("temp_") || selectedAddress.id === "endereco-pedido" || selectedAddress.id.startsWith("addr_");
         const payloadAddr = {
           street: selectedAddress.street,
@@ -225,13 +266,14 @@ export default function CreateOrderPage() {
         customerName: finalCustomerName,
         customerPhone: finalCustomerPhone,
         customerId: finalCustomerId && !finalCustomerId.startsWith("temp_") ? finalCustomerId : undefined,
+        deliveryModality: deliveryModality,
         itemsTotal: Number(subtotal.toFixed(2)),
-        freight: Number(effectiveDeliveryFee.toFixed(2)),
+        freight: deliveryModality === "STORE_PICKUP" || isFreeShippingApplicable ? 0 : (deliveryFee === -1 ? -1 : Number(deliveryFee.toFixed(2))),
         paymentDiscount: paymentMethod === 'PIX' ? Number(pixDiscountAmount.toFixed(2)) : 0,
         installmentSurcharge: (paymentMethod === 'Cartão de Crédito' || paymentMethod === 'Cartão de Débito') ? Number(creditInterestAmount.toFixed(2)) : 0,
         couponTitle: coupon?.title || undefined,
         couponDiscount: coupon?.type !== 'FREE_SHIPPING' ? Number(discount.toFixed(2)) : 0,
-        couponFreightDiscount: coupon?.type === 'FREE_SHIPPING' ? Number(deliveryFee.toFixed(2)) : 0,
+        couponFreightDiscount: isFreeShippingByCoupon ? (deliveryFee === -1 ? 0 : Number(deliveryFee.toFixed(2))) : 0,
         totalOrder: Number(finalTotal.toFixed(2)),
         totalReceived: isPaid ? Number(finalTotal.toFixed(2)) : 0,
         paymentType: paymentMethod === 'PIX' ? 'online' : 'entrega',
@@ -241,13 +283,13 @@ export default function CreateOrderPage() {
         showProductPrices: showProductPrices,
         amountProvided: paymentMethod === 'Dinheiro' && needsChange ? parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) : (paymentMethod === 'Dinheiro' ? finalTotal : undefined),
         changeAmount: paymentMethod === 'Dinheiro' && needsChange ? Math.max(0, parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) - finalTotal) : undefined,
-        street: selectedAddress?.street || "Local",
-        number: selectedAddress?.number || "S/N",
-        neighborhood: selectedAddress?.neighborhood || "Local",
-        city: selectedAddress?.city || storeSettings?.searchCity || "Campo Grande",
-        state: selectedAddress?.state || "MS",
-        cep: selectedAddress?.cep || "00000-000",
-        complement: selectedAddress?.complement || "",
+        street: deliveryModality === "STORE_PICKUP" ? (storeSettings?.street || "Retirada na loja") : (selectedAddress?.street || "Local"),
+        number: deliveryModality === "STORE_PICKUP" ? (storeSettings?.number || "S/N") : (selectedAddress?.number || "S/N"),
+        neighborhood: deliveryModality === "STORE_PICKUP" ? (storeSettings?.neighborhood || "Centro") : (selectedAddress?.neighborhood || "Local"),
+        city: deliveryModality === "STORE_PICKUP" ? (storeSettings?.city || storeSettings?.searchCity || "Campo Grande") : (selectedAddress?.city || storeSettings?.searchCity || "Campo Grande"),
+        state: deliveryModality === "STORE_PICKUP" ? (storeSettings?.state || "MS") : (selectedAddress?.state || "MS"),
+        cep: deliveryModality === "STORE_PICKUP" ? (storeSettings?.cep || "00000-000") : (selectedAddress?.cep || "00000-000"),
+        complement: deliveryModality === "STORE_PICKUP" ? "" : (selectedAddress?.complement || ""),
         observation: orderNote.trim() || undefined,
         items: effectiveItems.map(item => ({
           productId: item.productId,
@@ -470,7 +512,38 @@ export default function CreateOrderPage() {
                 <Label className="text-sm font-medium text-slate-600 cursor-pointer" onClick={() => setIsBudgetMode(!isBudgetMode)}>Modo Orçamento</Label>
               </div>
             </div>
-            
+            {/* Modalidade de Entrega */}
+            <div className="flex w-full gap-2 p-1 bg-slate-100 rounded-xl mb-4">
+              <button
+                type="button"
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                  deliveryModality === "DELIVERY"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                onClick={() => setDeliveryModality("DELIVERY")}
+              >
+                🚚 Entrega
+              </button>
+              <button
+                type="button"
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                  deliveryModality === "STORE_PICKUP"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                onClick={() => setDeliveryModality("STORE_PICKUP")}
+              >
+                🏪 Retirada na Loja
+              </button>
+            </div>
+
+            {deliveryModality === "STORE_PICKUP" && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2 mb-4">
+                <span className="text-base">🏪</span>
+                <span>Pedido para <strong>Retirada na Loja</strong> (sem taxa de frete).</span>
+              </div>
+            )}
             {isBudgetMode ? (
               <div className="space-y-4">
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700">
@@ -506,6 +579,7 @@ export default function CreateOrderPage() {
                 initialCustomer={selectedCustomer}
                 initialAddressId={selectedAddress?.id || null}
                 mode="create"
+                hideAddress={deliveryModality === "STORE_PICKUP"}
               />
             )}
 
@@ -529,7 +603,10 @@ export default function CreateOrderPage() {
             <h2 className="text-lg font-bold text-slate-800 mb-4">Resumo do Pedido</h2>
             <OrderSummary 
               subtotal={subtotal}
-              deliveryFee={effectiveDeliveryFee}
+              deliveryFee={deliveryFee}
+              deliveryModality={deliveryModality}
+              isFreeShipping={isFreeShippingApplicable}
+              deliveryType={deliveryModality === "STORE_PICKUP" ? undefined : storeSettings?.deliveryType}
               discount={discount}
               total={total}
               coupon={coupon}
