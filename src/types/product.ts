@@ -52,6 +52,13 @@ export type ProductResponse = {
   totalStock: number;
   primarySku: string | null;
   status: "active" | "inactive";
+  minStock?: number;
+  dailyRunRate?: number;
+  coverageDays?: number | null;
+  daysWithoutSales?: number;
+  growthPercentage?: number;
+  stockAlertState?: string;
+  lastStockAlertAt?: string | null;
   items?: ProductItem[];
 };
 

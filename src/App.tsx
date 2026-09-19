@@ -124,6 +124,7 @@ const App = () => (
                   <Route path="/financeiro/custos-fixos" element={<CustosFixosPage />} />
                   <Route path="/investimentos" element={<InvestmentsPage />} />
                   <Route path="/investimentos/simulacao" element={<PurchaseAnalysisPage />} />
+                  <Route path="/investimentos/analise-compras" element={<PurchaseAnalysisPage />} />
                   <Route path="/variacoes" element={<VariationPage />} />
                   <Route path="/variacoes/:id" element={<VariationDetailsPage />} />
                 </Route>

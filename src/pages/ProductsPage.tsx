@@ -63,7 +63,29 @@ export default function ProductsPage() {
   const products =
     filters.status === "all"
       ? rawProducts
-      : rawProducts.filter((p) => p.status === filters.status);
+      : rawProducts.filter((p) => {
+          if (filters.status === "active") return p.status === "active";
+          if (filters.status === "inactive") return p.status === "inactive";
+          if (filters.status === "critical") {
+            const min = p.minStock ?? 5;
+            return (
+              p.stockAlertState === "CRITICAL" ||
+              (p.totalStock > 0 && p.totalStock <= min) ||
+              (p.coverageDays !== null && p.coverageDays !== undefined && p.coverageDays <= 3 && p.totalStock > 0)
+            );
+          }
+          if (filters.status === "low_stock") {
+            const min = p.minStock ?? 5;
+            return p.totalStock > 0 && p.totalStock <= min;
+          }
+          if (filters.status === "stagnant") {
+            return (p.daysWithoutSales ?? 0) >= 45 && p.totalStock > 0;
+          }
+          if (filters.status === "out_of_stock") {
+            return p.totalStock === 0;
+          }
+          return p.status === filters.status;
+        });
 
   const categories = categoriesQuery.data ?? [];
   const isPageLoading = categoriesQuery.loading;

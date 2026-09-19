@@ -38,7 +38,7 @@ type SortDir = "asc" | "desc";
 
 export interface ProductListTableFilters {
   search: string;
-  status: "all" | "active" | "inactive";
+  status: "all" | "active" | "inactive" | "critical" | "low_stock" | "stagnant" | "out_of_stock";
   categoryId: string;
 }
 
@@ -414,6 +414,10 @@ export function ProductListTable({
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="active">Ativo</SelectItem>
             <SelectItem value="inactive">Inativo</SelectItem>
+            <SelectItem value="critical">🔴 Crítico (Prestes a acabar)</SelectItem>
+            <SelectItem value="low_stock">🟠 Abaixo do mínimo</SelectItem>
+            <SelectItem value="stagnant">📦 Sem giro (+45 dias)</SelectItem>
+            <SelectItem value="out_of_stock">⛔ Zerados / Sem estoque</SelectItem>
           </SelectContent>
         </Select>
 
