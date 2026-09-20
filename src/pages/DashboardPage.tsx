@@ -563,7 +563,28 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {row1Cards.map((card, idx) => {
+            const IconComponent = card.icon;
+            return (
+              <Card key={idx} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className={`p-3 rounded-xl ${card.color}`}>
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+                    {loading ? (
+                      <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
+                    ) : (
+                      <p className="text-xl font-bold text-foreground">{card.value}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>  
         {/* Row 2 - 4 items */}
         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
           {row2Cards.map((card, idx) => {
