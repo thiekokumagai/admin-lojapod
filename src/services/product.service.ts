@@ -44,6 +44,14 @@ type ProductApiResponse = {
   promotionalPrice?: string | null;
   costPrice?: string | null;
   isVisible?: boolean;
+  // Stock intelligence fields (computed by cron)
+  minStock?: number;
+  dailyRunRate?: number;
+  coverageDays?: number | null;
+  daysWithoutSales?: number;
+  growthPercentage?: number;
+  stockAlertState?: string;
+  lastStockAlertAt?: string | null;
 };
 
 type ProductItemApiResponse = {
@@ -96,6 +104,13 @@ function normalizeProduct(item: ProductApiResponse): ProductResponse {
     totalStock,
     primarySku,
     status,
+    minStock: item.minStock,
+    dailyRunRate: item.dailyRunRate,
+    coverageDays: item.coverageDays,
+    daysWithoutSales: item.daysWithoutSales,
+    growthPercentage: item.growthPercentage,
+    stockAlertState: item.stockAlertState,
+    lastStockAlertAt: item.lastStockAlertAt,
     items: (item.items as ProductItemApiResponse[] ?? []).map(normalizeProductItem),
   };
 }
