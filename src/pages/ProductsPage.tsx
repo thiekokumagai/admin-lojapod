@@ -67,16 +67,13 @@ export default function ProductsPage() {
           if (filters.status === "active") return p.status === "active";
           if (filters.status === "inactive") return p.status === "inactive";
           if (filters.status === "critical") {
-            const min = p.minStock ?? 5;
-            return (
-              p.stockAlertState === "CRITICAL" ||
-              (p.totalStock > 0 && p.totalStock <= min) ||
-              (p.coverageDays !== null && p.coverageDays !== undefined && p.coverageDays <= 3 && p.totalStock > 0)
-            );
+            return (p.coverageDays !== null && p.coverageDays !== undefined && p.coverageDays <= 3 && p.totalStock > 0);
           }
           if (filters.status === "low_stock") {
-            const min = p.minStock ?? 5;
-            return p.totalStock > 0 && p.totalStock <= min;
+            const dailyRunRate = p.dailyRunRate ?? 0;
+            const min = p.minStock ?? Math.max(3, Math.ceil(dailyRunRate * 7));
+            const isCritical = (p.coverageDays !== null && p.coverageDays !== undefined && p.coverageDays <= 3 && p.totalStock > 0);
+            return p.totalStock > 0 && p.totalStock <= min && !isCritical;
           }
           if (filters.status === "stagnant") {
             return (p.daysWithoutSales ?? 0) >= 45 && p.totalStock > 0;
