@@ -11,6 +11,7 @@ export interface OrderItem {
   quantity: number;
   variation: string | null;
   imageUrl?: string;
+  categoryName?: string;
 }
 
 export interface Order {

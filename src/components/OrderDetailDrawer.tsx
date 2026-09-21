@@ -722,6 +722,11 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                       {/* Product Name and Price */}
                       <div className="flex-1 flex items-start justify-between min-w-0 gap-3">
                         <div className="min-w-0 flex-1">
+                          {item.categoryName && (
+                            <span className="block text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-0.5">
+                              {item.categoryName}
+                            </span>
+                          )}
                           <span className="text-sm font-bold text-slate-700 leading-snug break-words block" title={item.productName}>
                             {item.productName}
                           </span>
