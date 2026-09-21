@@ -734,6 +734,19 @@ export default function ProductDetailsPage() {
         const value = Number(directStockValue) || 0;
         const directItem = savedItems.find((item) => item.options.length === 0);
 
+        if ((currentProduct?.variationIds?.length ?? 0) > 0) {
+          setSavingStep("Removendo variações antigas...");
+          try {
+            await removeVariationMutation.mutateAsync({
+              currentProductId: currentId!,
+              variationId: "all"
+            });
+          } catch (e) {
+            // Se falhar, podemos continuar e tentar salvar o item simples de qualquer forma
+            console.error("Erro ao remover variações:", e);
+          }
+        }
+
         if (!directItem) {
           setSavingStep("Criando controle de estoque...");
           await saveDirectStockMutation.mutateAsync({
