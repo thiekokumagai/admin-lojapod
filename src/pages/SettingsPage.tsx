@@ -4,7 +4,8 @@ import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
 import { PaymentRulesSettingsForm } from "@/components/settings/PaymentRulesSettingsForm";
 import { BusinessHoursSettingsForm } from "@/components/settings/BusinessHoursSettingsForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, QrCode, Percent, Truck, Clock } from "lucide-react";
+import { Store, QrCode, Percent, Truck, Clock, Globe } from "lucide-react";
+import DomainPage from "@/pages/DomainPage";
 
 export default function SettingsPage() {
   return (
@@ -17,7 +18,7 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="geral" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 h-auto p-1.5 bg-muted/60">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 h-auto p-1.5 bg-muted/60">
           <TabsTrigger value="geral" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Store className="h-4 w-4" />
             Identidade &amp; Endereço
@@ -37,6 +38,10 @@ export default function SettingsPage() {
           <TabsTrigger value="horarios" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Clock className="h-4 w-4" />
             Horários
+          </TabsTrigger>
+          <TabsTrigger value="dominio" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
+            <Globe className="h-4 w-4" />
+            Domínio Próprio
           </TabsTrigger>
         </TabsList>
 
@@ -58,6 +63,10 @@ export default function SettingsPage() {
 
         <TabsContent value="horarios" className="space-y-4 outline-none">
           <BusinessHoursSettingsForm />
+        </TabsContent>
+
+        <TabsContent value="dominio" className="space-y-4 outline-none">
+          <DomainPage />
         </TabsContent>
       </Tabs>
     </div>

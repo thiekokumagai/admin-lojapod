@@ -90,7 +90,7 @@ export const navSections = [
   {
     label: "Configuração",
     items: [
-      { title: "Configuração", url: "/configuracoes", icon: Settings },
+      { title: "Configurações", url: "/configuracoes", icon: Settings },
     ],
   },
 ];

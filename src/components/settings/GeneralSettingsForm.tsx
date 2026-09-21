@@ -10,7 +10,111 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key } from "lucide-react";
+import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key, ShieldCheck, RefreshCw, AlertCircle, Link2 } from "lucide-react";
+
+const STORE_CNAME = import.meta.env.VITE_STORE_CNAME || "cliente-lojapod-production.up.railway.app";
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors"
+      onClick={() => {
+        navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      title="Copiar"
+    >
+      {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
+function DnsInstructions({ domain }: { domain: string }) {
+  const hasDomain = domain && domain.trim().length > 0;
+  const cleanDomain = domain.replace(/^www\./, "").trim();
+  const isApex = hasDomain && !cleanDomain.includes(".") ? false : hasDomain && cleanDomain.split(".").length === 2;
+
+  return (
+    <div className="p-3 bg-white border rounded-lg text-xs space-y-3 text-slate-600">
+      <p className="font-semibold text-slate-800">
+        📋 Como apontar seu domínio para a loja:
+      </p>
+
+      {/* Opção CNAME (www ou subdomínio) */}
+      <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 space-y-2">
+        <p className="font-bold text-indigo-800 font-sans">
+          ✅ Opção 1 — Recomendada (CNAME para <code>www</code> ou subdomínio)
+        </p>
+        <p className="text-slate-600 font-sans">Acesse o painel do seu provedor (Registro.br, Cloudflare, GoDaddy…) e crie o registro:</p>
+        <div className="grid grid-cols-3 gap-2 mt-1">
+          <div className="bg-white rounded border p-2 space-y-0.5">
+            <p className="text-[10px] font-sans text-slate-500 uppercase font-bold">Tipo</p>
+            <p className="font-mono font-bold text-slate-800 flex items-center">
+              CNAME
+              <CopyButton value="CNAME" />
+            </p>
+          </div>
+          <div className="bg-white rounded border p-2 space-y-0.5">
+            <p className="text-[10px] font-sans text-slate-500 uppercase font-bold">Nome / Host</p>
+            <p className="font-mono font-bold text-slate-800 flex items-center">
+              {hasDomain && domain.startsWith("www.") ? "www" : "www"}
+              <CopyButton value="www" />
+            </p>
+          </div>
+          <div className="bg-white rounded border p-2 space-y-0.5">
+            <p className="text-[10px] font-sans text-slate-500 uppercase font-bold">Aponta para (Alvo)</p>
+            <p className="font-mono font-bold text-indigo-700 break-all flex items-center gap-1">
+              {STORE_CNAME}
+              <CopyButton value={STORE_CNAME} />
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Opção A (domínio raiz) */}
+      <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 space-y-2">
+        <p className="font-bold text-amber-800 font-sans">
+          ⚠️ Opção 2 — Domínio Raiz (<code>@</code> / sem www)
+        </p>
+        <p className="text-slate-600 font-sans">
+          Se quiser que <strong>{hasDomain ? cleanDomain : "sualoja.com.br"}</strong> funcione sem o www,
+          use um registro <strong>CNAME</strong> no nome <code>@</code> (se seu provedor suportar CNAME flatten/ALIAS)
+          ou peça ao suporte da LojaPod o IP para criar um registro A.
+        </p>
+        <div className="grid grid-cols-3 gap-2 mt-1">
+          <div className="bg-white rounded border p-2 space-y-0.5">
+            <p className="text-[10px] font-sans text-slate-500 uppercase font-bold">Tipo</p>
+            <p className="font-mono font-bold text-slate-800">CNAME</p>
+          </div>
+          <div className="bg-white rounded border p-2 space-y-0.5">
+            <p className="text-[10px] font-sans text-slate-500 uppercase font-bold">Nome / Host</p>
+            <p className="font-mono font-bold text-slate-800 flex items-center">
+              @
+              <CopyButton value="@" />
+            </p>
+          </div>
+          <div className="bg-white rounded border p-2 space-y-0.5">
+            <p className="text-[10px] font-sans text-slate-500 uppercase font-bold">Aponta para (Alvo)</p>
+            <p className="font-mono font-bold text-indigo-700 break-all flex items-center gap-1">
+              {STORE_CNAME}
+              <CopyButton value={STORE_CNAME} />
+            </p>
+          </div>
+        </div>
+        <p className="text-[10px] text-amber-700 font-sans">
+          ⚡ Cloudflare suporta CNAME para raiz (@). No Registro.br, use o "ALIAS" ou registre apenas o www e redirecione.
+        </p>
+      </div>
+
+      <p className="text-slate-500 font-sans">
+        🕐 Após salvar o domínio acima e apontar o DNS, aguarde até <strong>24 horas</strong> para propagação e clique em <strong>"Testar Apontamento DNS"</strong> para confirmar.
+      </p>
+    </div>
+  );
+}
 
 export function GeneralSettingsForm() {
   const { data: settings, isLoading } = useSettings();
@@ -29,6 +133,9 @@ export function GeneralSettingsForm() {
   const [copiedToken, setCopiedToken] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [subdomain, setSubdomain] = useState("");
+  const [customDomain, setCustomDomain] = useState("");
+  const [isVerifyingDns, setIsVerifyingDns] = useState(false);
+  const [dnsResult, setDnsResult] = useState<{ isConfigured?: boolean; message?: string; recordType?: string; records?: string[] } | null>(null);
 
   // Endereço
   const [cep, setCep] = useState("");
@@ -75,6 +182,7 @@ export function GeneralSettingsForm() {
             if (storeData) {
               if (storeData.adminEmail) setAdminEmail(storeData.adminEmail);
               if (storeData.subdomain) setSubdomain(storeData.subdomain);
+              if (storeData.customDomain) setCustomDomain(storeData.customDomain);
             }
           })
           .catch(() => {});
@@ -328,6 +436,38 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
     toast({ title: "Banner removido." });
   };
 
+  const handleVerifyDns = async () => {
+    const storeId = (settings as any)?.storeId;
+    if (!storeId) return;
+
+    try {
+      setIsVerifyingDns(true);
+      const res = await apiFetch(`/stores/${storeId}/verify-dns`, { method: "POST" });
+      const data = await res.json();
+      setDnsResult(data);
+      if (data.isConfigured) {
+        toast({
+          title: "DNS Verificado!",
+          description: data.message || "Seu domínio próprio está apontado corretamente.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "DNS Pendente",
+          description: data.message || "Apontamento DNS ainda não localizado.",
+        });
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro na verificação",
+        description: err.message || "Não foi possível testar o DNS.",
+      });
+    } finally {
+      setIsVerifyingDns(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!storeName.trim()) {
       toast({
@@ -357,6 +497,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
           body: JSON.stringify({
             title: storeName,
             subdomain,
+            customDomain: customDomain.trim() ? customDomain.trim() : null,
             adminEmail,
           }),
         });
@@ -408,6 +549,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
   }
 
   return (
+    <>
     <Card>
       <CardContent className="p-5 space-y-6">
         <div className="flex items-center justify-between">
@@ -731,5 +873,81 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         </div>
       </CardContent>
     </Card>
+
+    {/* Seção separada: Domínio Próprio */}
+    <Card className="border-indigo-100">
+      <CardContent className="p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-indigo-600" />
+            <div>
+              <h2 className="font-semibold text-base">Domínio Próprio</h2>
+              <p className="text-xs text-muted-foreground">Conecte seu domínio (ex: sualoja.com.br) à sua loja</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {customDomain && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleVerifyDns}
+                disabled={isVerifyingDns}
+                className="text-xs gap-1.5 h-8"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isVerifyingDns ? "animate-spin" : ""}`} />
+                {isVerifyingDns ? "Testando DNS..." : "Testar DNS"}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={updateSettingsMutation.isPending}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white h-8"
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {updateSettingsMutation.isPending ? "Salvando..." : "Salvar Domínio"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-medium text-sm">Seu domínio registrado</Label>
+          <div className="relative max-w-lg">
+            <Link2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={customDomain}
+              onChange={(e) => setCustomDomain(e.target.value.toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, ''))}
+              placeholder="ex: minhaloja.com.br ou www.minhaloja.com.br"
+              className="pl-9 font-mono text-sm"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Informe o domínio registrado no Registro.br, Cloudflare, GoDaddy, Hostinger, etc.
+          </p>
+        </div>
+
+        {/* Resultado do Teste DNS */}
+        {dnsResult && (
+          <div className={`p-3 rounded-lg text-xs flex items-start gap-2 border ${
+            dnsResult.isConfigured
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-amber-50 text-amber-800 border-amber-200"
+          }`}>
+            {dnsResult.isConfigured
+              ? <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              : <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />}
+            <div>
+              <p className="font-semibold">{dnsResult.isConfigured ? "DNS Detectado com Sucesso!" : "Apontamento DNS Pendente"}</p>
+              <p>{dnsResult.message}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Instruções de Apontamento DNS */}
+        <DnsInstructions domain={customDomain} />
+      </CardContent>
+    </Card>
+    </>
   );
 }
