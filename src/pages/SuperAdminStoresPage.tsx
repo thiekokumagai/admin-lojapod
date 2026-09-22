@@ -2,16 +2,7 @@ import { useEffect, useState } from 'react';
 import { storesService, Store } from '../services/stores.service';
 import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil, Trash2, Power, AlertTriangle } from 'lucide-react';
 
-function getStoreUrl(subdomain: string): string {
-  if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
-  const hostname = window.location.hostname;
-  const port = window.location.port ? `:${window.location.port}` : '';
-  const protocol = window.location.protocol;
-  if (hostname.includes('localhost')) {
-    return `${protocol}//${subdomain}.localhost${port}`;
-  }
-  return `${protocol}//${subdomain}.lojapod.com`;
-}
+import { getStoreUrl } from '../utils/store-url';
 
 export default function SuperAdminStoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -207,14 +198,14 @@ export default function SuperAdminStoresPage() {
                     </span>
                   </div>
                   <a
-                    href={getStoreUrl(store.subdomain)}
+                    href={getStoreUrl(store.subdomain, store.customDomain)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mt-1 w-fit hover:bg-indigo-100 transition"
                     title="Abrir vitrine da loja em nova aba"
                   >
                     <Globe className="h-3.5 w-3.5" />
-                    <span>{store.subdomain}.lojapod.com</span>
+                    <span>{store.customDomain || `${store.subdomain}.lojapod.com`}</span>
                     <ExternalLink className="h-3 w-3 ml-0.5 opacity-75" />
                   </a>
                 </div>

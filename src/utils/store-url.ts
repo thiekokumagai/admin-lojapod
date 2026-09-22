@@ -1,4 +1,7 @@
-export function getStoreUrl(subdomain?: string): string {
+export function getStoreUrl(subdomain?: string, customDomain?: string | null): string {
+  if (customDomain) {
+    return `https://${customDomain}`;
+  }
   if (!subdomain) return '#';
   if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
   

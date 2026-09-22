@@ -3,6 +3,7 @@ import { apiFetch } from './api';
 export interface Store {
   id: string;
   subdomain: string;
+  customDomain?: string | null;
   title: string;
   adminEmail: string;
   isActive: boolean;

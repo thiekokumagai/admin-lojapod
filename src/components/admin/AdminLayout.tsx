@@ -25,6 +25,7 @@ export function AdminLayout() {
   const superAdmin = isSuperAdmin();
   const { data: settings } = useSettings();
   const [subdomain, setSubdomain] = useState<string>("");
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [renewalWarning, setRenewalWarning] = useState<{ daysLeft: number } | null>(null);
 
@@ -61,6 +62,7 @@ export function AdminLayout() {
         .then((res) => res.json())
         .then((data) => {
           if (data?.subdomain) setSubdomain(data.subdomain);
+          if (data?.customDomain) setCustomDomain(data.customDomain);
         })
         .catch(() => {});
     }
@@ -110,7 +112,7 @@ export function AdminLayout() {
                 <>
                   {subdomain && (
                     <a
-                      href={getStoreUrl(subdomain)}
+                      href={getStoreUrl(subdomain, customDomain)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"

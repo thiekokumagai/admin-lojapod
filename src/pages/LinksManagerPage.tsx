@@ -39,6 +39,7 @@ export default function LinksManagerPage() {
   const [links, setLinks] = useState<MarketingLink[]>([]);
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [subdomain, setSubdomain] = useState<string>("");
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings && settings.marketingLinks) {
@@ -52,6 +53,7 @@ export default function LinksManagerPage() {
           .then((res) => res.json())
           .then((data) => {
             if (data?.subdomain) setSubdomain(data.subdomain);
+            if (data?.customDomain) setCustomDomain(data.customDomain);
           })
           .catch(() => {});
       });
@@ -171,7 +173,7 @@ export default function LinksManagerPage() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-initial rounded-xl">
-            <a href={subdomain ? `${getStoreUrl(subdomain)}/links` : '#'} target="_blank" rel="noreferrer">
+            <a href={subdomain || customDomain ? `${getStoreUrl(subdomain, customDomain)}/links` : '#'} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1.5 h-4 w-4" />
               Ver Página
             </a>

@@ -4,16 +4,7 @@ import { storesService, Store } from "../services/stores.service";
 import { billingService, BillingOverview, BillingSubscription } from "../services/billing.service";
 import { Store as StoreIcon, Package, ShoppingBag, Users, Plus, ArrowRight, ShieldCheck, Globe, Loader2, ExternalLink, DollarSign, WalletCards, TrendingUp } from "lucide-react";
 
-function getStoreUrl(subdomain: string): string {
-  if (typeof window === 'undefined') return `https://${subdomain}.lojapod.com`;
-  const hostname = window.location.hostname;
-  const port = window.location.port ? `:${window.location.port}` : '';
-  const protocol = window.location.protocol;
-  if (hostname.includes('localhost')) {
-    return `${protocol}//${subdomain}.localhost${port}`;
-  }
-  return `${protocol}//${subdomain}.lojapod.com`;
-}
+import { getStoreUrl } from "../utils/store-url";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -181,14 +172,14 @@ export default function SuperAdminDashboardPage() {
                     <td className="py-3.5 px-4 font-semibold text-slate-900">{store.title}</td>
                     <td className="py-3.5 px-4">
                       <a
-                        href={getStoreUrl(store.subdomain)}
+                        href={getStoreUrl(store.subdomain, store.customDomain)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded font-mono hover:bg-indigo-100 transition"
                         title="Abrir vitrine da loja em nova aba"
                       >
                         <Globe className="h-3 w-3" />
-                        {store.subdomain}.lojapod.com
+                        {store.customDomain || `${store.subdomain}.lojapod.com`}
                         <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-75" />
                       </a>
                     </td>

@@ -61,6 +61,7 @@ export default function CategoriesPage() {
     null,
   );
   const [subdomain, setSubdomain] = useState<string>("");
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
 
   const [open, setOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -118,6 +119,7 @@ export default function CategoriesPage() {
           .then((res) => res.json())
           .then((data) => {
             if (data?.subdomain) setSubdomain(data.subdomain);
+            if (data?.customDomain) setCustomDomain(data.customDomain);
           })
           .catch(() => {});
       });
@@ -343,7 +345,7 @@ export default function CategoriesPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleCopyLink = (category: CategoryList) => {
-    const baseUrl = subdomain ? getStoreUrl(subdomain) : (import.meta.env.VITE_STORE_URL || window.location.origin.replace("admin.", ""));
+    const baseUrl = subdomain || customDomain ? getStoreUrl(subdomain, customDomain) : (import.meta.env.VITE_STORE_URL || window.location.origin.replace("admin.", ""));
     const slug = category.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
     const link = `${baseUrl}/${slug}`;
     navigator.clipboard.writeText(link);
