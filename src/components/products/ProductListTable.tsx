@@ -8,13 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +24,14 @@ import {
 import { ArrowUpDown, Trash2, EyeOff, Eye, X, Copy, Plus, Minus } from "lucide-react";
 import type { ProductResponse } from "@/types/product";
 import { buildImageUrl } from "@/utils/image-url";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const PAGE_SIZE = 30;
 
@@ -174,26 +176,26 @@ function InlineStockEditor({ stock, onAdd, onSub }: { stock: number; onAdd: () =
   };
 
   return (
-    <div className="flex items-center gap-1 bg-muted px-1 py-0.5 rounded border inline-flex">
-      <button 
-        type="button" 
+    <div className="flex items-center gap-1">
+      <Button 
+        variant="outline"
+        size="icon"
+        className="h-6 w-6 rounded-sm"
         onClick={(e) => { e.stopPropagation(); void handleUpdate('sub'); }}
         disabled={isPending || stock <= 0}
-        className="w-4 h-4 flex items-center justify-center rounded-sm hover:bg-background text-muted-foreground disabled:opacity-50"
       >
         <Minus className="h-3 w-3" />
-      </button>
-      <span className="font-semibold text-foreground text-[11px] min-w-[20px] text-center">
-        {isPending ? <Loader2 className="h-3 w-3 animate-spin mx-auto" /> : stock}
-      </span>
-      <button 
-        type="button" 
+      </Button>
+      <span className="font-semibold text-sm w-8 text-center"> {isPending ? <Loader2 className="h-3 w-3 animate-spin mx-auto" /> : stock}</span>
+      <Button 
+        variant="outline"
+        size="icon"
         onClick={(e) => { e.stopPropagation(); void handleUpdate('add'); }}
         disabled={isPending}
-        className="w-4 h-4 flex items-center justify-center rounded-sm hover:bg-background text-muted-foreground disabled:opacity-50"
+        className="h-6 w-6 rounded-sm"
       >
         <Plus className="h-3 w-3" />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -243,7 +245,7 @@ export function ProductListTable({
   const [searchValue, setSearchValue] = useState(filters.search || "");
   const navigate = useNavigate();
   const loaderRef = useRef<HTMLDivElement>(null);
-
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   useEffect(() => {
     const loader = loaderRef.current;
     if (!loader) return;
@@ -334,48 +336,49 @@ export function ProductListTable({
 
   return (
     <div className="space-y-4">
-      {/* Bulk action bar */}
+      {/* Bulk action bar (Fixed Floating Toolbar) */}
       {selectedIds.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border bg-muted/50 p-3 sm:px-4 sm:py-2.5">
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <span className="text-sm font-medium">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-900/95 text-white backdrop-blur-md shadow-2xl p-3.5 sm:px-6 sm:py-3.5 w-[92%] sm:w-auto min-w-[320px] max-w-2xl animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center justify-between sm:justify-start gap-4">
+            <span className="text-sm font-bold text-white whitespace-nowrap">
               {selectedIds.length} selecionado{selectedIds.length > 1 ? "s" : ""}
             </span>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-7 text-xs text-muted-foreground hover:text-foreground sm:hidden px-2"
+              className="h-7 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700 border-slate-700 px-2.5 rounded-lg"
               onClick={() => onSelectionChange([])}
             >
+              <X className="h-3.5 w-3.5 mr-1" />
               Desmarcar
             </Button>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 sm:flex-initial gap-1.5 px-2.5 sm:px-3"
+              className="flex-1 sm:flex-initial gap-1.5 px-3 font-semibold text-slate-100 bg-slate-800 hover:bg-slate-700 border-slate-700 hover:text-white"
               onClick={() => onBulkEnable(selectedIds)}
               disabled={isBulkPending}
             >
-              <Eye className="h-3.5 w-3.5 shrink-0" />
+              <Eye className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
               <span>Ativar</span>
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 sm:flex-initial gap-1.5 px-2.5 sm:px-3"
+              className="flex-1 sm:flex-initial gap-1.5 px-3 font-semibold text-slate-100 bg-slate-800 hover:bg-slate-700 border-slate-700 hover:text-white"
               onClick={() => onBulkDisable(selectedIds)}
               disabled={isBulkPending}
             >
-              <EyeOff className="h-3.5 w-3.5 shrink-0" />
+              <EyeOff className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               <span>Desativar</span>
             </Button>
             <Button
               size="sm"
               variant="destructive"
-              className="flex-1 sm:flex-initial gap-1.5 px-2.5 sm:px-3"
-              onClick={() => onBulkDelete(selectedIds)}
+              className="flex-1 sm:flex-initial gap-1.5 px-3 font-bold bg-rose-600 hover:bg-rose-500 text-white"
+              onClick={() => setIsConfirmDeleteOpen(true)}
               disabled={isBulkPending}
             >
               <Trash2 className="h-3.5 w-3.5 shrink-0" />
@@ -384,7 +387,47 @@ export function ProductListTable({
           </div>
         </div>
       )}
-
+      {/* Dialog Modal de Confirmação para Exclusão em Massa */}
+      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <DialogContent className="sm:max-w-md rounded-xl p-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-rose-600">
+              <Trash2 className="h-5 w-5" />
+              Confirmar Exclusão de Produtos
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600">
+              Tem certeza que deseja excluir <strong>{selectedIds.length}</strong> produto{selectedIds.length > 1 ? "s" : ""} selecionado{selectedIds.length > 1 ? "s" : ""}? Esta ação é irreversível e removerá permanentemente os itens do catálogo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-4 flex flex-row gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setIsConfirmDeleteOpen(false)}
+              disabled={isBulkPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onBulkDelete(selectedIds);
+                setIsConfirmDeleteOpen(false);
+              }}
+              disabled={isBulkPending}
+              className="gap-2 font-bold"
+            >
+              {isBulkPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Excluindo...
+                </>
+              ) : (
+                "Sim, Excluir Produtos"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Filters */}
       <div className="flex flex-col md:flex-row flex-wrap gap-3 items-start md:items-center w-full">
         <div className="flex items-center gap-2 w-full md:w-auto">

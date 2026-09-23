@@ -262,6 +262,63 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
     return acc;
   }, {});
 
+  // Cálculo de faturamento, custo e lucro por categoria
+  const categoryStatsMap: Record<string, { categoryName: string; totalRevenue: number; totalCost: number; totalQuantity: number }> = {};
+
+  orders.forEach((order: any) => {
+    if (!order.items || !Array.isArray(order.items)) return;
+
+    // Fator de ajuste proporcional do pedido (ex: descontos em PIX, cupons, troco ou ajuste manual do total)
+    const itemsSum = order.items.reduce((sum: number, i: any) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
+    const orderReceived = Number(order.totalReceived) || 0;
+    const adjustmentFactor = itemsSum > 0 ? (orderReceived / itemsSum) : 1;
+
+    order.items.forEach((item: any) => {
+      const rawCategoryName =
+        item.product?.category?.title ||
+        item.product?.categoryName ||
+        item.category?.title ||
+        item.categoryName ||
+        item.productCategory ||
+        "Geral";
+
+      const categoryName = (rawCategoryName && rawCategoryName.trim() !== "" && rawCategoryName !== "Sem Categoria")
+        ? rawCategoryName
+        : "Geral";
+
+      if (!categoryStatsMap[categoryName]) {
+        categoryStatsMap[categoryName] = {
+          categoryName,
+          totalRevenue: 0,
+          totalCost: 0,
+          totalQuantity: 0,
+        };
+      }
+      const qty = Number(item.quantity) || 1;
+      const originalPriceSum = (Number(item.price) || 0) * qty;
+      const effectiveRevenue = originalPriceSum * adjustmentFactor;
+      const unitCost = Number(item.product?.costPrice ?? item.costPrice ?? 0);
+
+      categoryStatsMap[categoryName].totalRevenue += effectiveRevenue;
+      categoryStatsMap[categoryName].totalCost += unitCost * qty;
+      categoryStatsMap[categoryName].totalQuantity += qty;
+    });
+  });
+
+  const totalCategoriesRevenue = Object.values(categoryStatsMap).reduce((sum, cat) => sum + cat.totalRevenue, 0);
+
+  const categoryStatsList = Object.values(categoryStatsMap).map((cat) => {
+    const profit = cat.totalRevenue - cat.totalCost;
+    const marginPercent = cat.totalRevenue > 0 ? (profit / cat.totalRevenue) * 100 : 0;
+    const sharePercent = totalCategoriesRevenue > 0 ? (cat.totalRevenue / totalCategoriesRevenue) * 100 : 0;
+    return {
+      ...cat,
+      profit,
+      marginPercent,
+      sharePercent,
+    };
+  }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
   const startStr = cashRegister.startDate.split("T")[0];
   const endStr = cashRegister.endDate.split("T")[0];
   const isActiveRegister = todayStr >= startStr && todayStr <= endStr;
@@ -548,8 +605,9 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
 
       <Tabs defaultValue="pedidos" className="w-full">
         <TabsList className="mb-6 bg-slate-100 p-1 w-full overflow-x-auto flex whitespace-nowrap justify-start md:w-fit md:inline-flex">
-          <TabsTrigger value="pedidos" className="font-semibold">Pedidos Recebidos</TabsTrigger>
+          <TabsTrigger value="pedidos" className="font-semibold">Pedidos Recebidos</TabsTrigger>          
           <TabsTrigger value="movimentacoes" className="font-semibold">Movimentações Manuais</TabsTrigger>
+          <TabsTrigger value="categorias" className="font-semibold">Lucro por Categoria</TabsTrigger>    
         </TabsList>
 
         <TabsContent value="pedidos" className="animate-in fade-in duration-300 focus-visible:outline-none focus-visible:ring-0">
@@ -695,6 +753,8 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                 </CardContent>
               </Card>
 
+              
+
               {/* Resumo por Método (Geral) */}
               <Card className="border-slate-200">
                 <CardHeader className="bg-slate-50/50 border-b py-4">
@@ -722,6 +782,123 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                   </div>
                 </CardContent>
               </Card>
+              {/* Resumo por Categoria (Lucro & Margem) */}
+              <Card className="border-emerald-100 bg-emerald-50/10">
+                <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-4">
+                  <CardTitle className="text-base font-bold text-emerald-800 flex items-center justify-between">
+                    <span>Desempenho por Categoria</span>
+                    <span className="text-xs text-emerald-600 font-normal">Caixa Atual</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="space-y-4">
+                    {categoryStatsList.map((cat) => (
+                      <div key={cat.categoryName} className="border-b border-emerald-100/60 pb-3 last:border-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center text-sm font-bold text-slate-800">
+                          <span>{cat.categoryName}</span>
+                          <span className={`text-sm font-black ${cat.profit >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                            Lucro: {currencyFormatter.format(cat.profit)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-slate-500">
+                          <span>Faturamento: <strong>{currencyFormatter.format(cat.totalRevenue)}</strong></span>
+                          <span className={`font-bold ${cat.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            Margem: {cat.marginPercent.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-slate-400">
+                          <span>{cat.totalQuantity} item(ns) vendidos</span>
+                          <span>Participação: {cat.sharePercent.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                    {categoryStatsList.length === 0 && (
+                      <div className="text-center py-4 text-emerald-600/70 text-xs font-medium">Sem vendas de produtos registradas.</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="categorias" className="animate-in fade-in duration-300 focus-visible:outline-none focus-visible:ring-0">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-slate-700 text-base">Relatório de Desempenho e Lucro por Categoria</h3>
+                <p className="text-xs text-slate-500">Agrupamento dos produtos vendidos neste caixa por categoria de produto</p>
+              </div>
+            </div>
+
+            {/* Visualização Mobile */}
+            <div className="grid md:hidden gap-3 p-4 bg-slate-50/30">
+              {categoryStatsList.map((cat) => (
+                <div key={cat.categoryName} className="border rounded-lg p-4 flex flex-col gap-2 bg-white shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-slate-900 text-sm">{cat.categoryName}</span>
+                    <span className={`font-black text-sm ${cat.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {currencyFormatter.format(cat.profit)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs border-t pt-2 mt-1 text-slate-600">
+                    <div>Faturamento: <strong>{currencyFormatter.format(cat.totalRevenue)}</strong></div>
+                    <div>Custo: <strong>{currencyFormatter.format(cat.totalCost)}</strong></div>
+                    <div>Itens: <strong>{cat.totalQuantity} un.</strong></div>
+                    <div>Margem: <strong className={cat.profit >= 0 ? "text-emerald-600" : "text-rose-600"}>{cat.marginPercent.toFixed(1)}%</strong></div>
+                  </div>
+                </div>
+              ))}
+              {categoryStatsList.length === 0 && (
+                <div className="text-center py-8 text-gray-500 border rounded-lg bg-white">Nenhum produto vendido neste período.</div>
+              )}
+            </div>
+
+            {/* Visualização Desktop */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow className="bg-slate-50/30">
+                    <TableHead>Categoria</TableHead>
+                    <TableHead className="text-center">Qtd Vendida</TableHead>
+                    <TableHead className="text-right">Faturamento</TableHead>
+                    <TableHead className="text-right text-indigo-700">Custo Total</TableHead>
+                    <TableHead className="text-right text-emerald-700">Lucro (R$)</TableHead>
+                    <TableHead className="text-right">Margem %</TableHead>
+                    <TableHead className="text-right">Participação %</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categoryStatsList.map((cat) => (
+                    <TableRow key={cat.categoryName} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="font-bold text-slate-800">{cat.categoryName}</TableCell>
+                      <TableCell className="text-center font-medium text-slate-600">{cat.totalQuantity} un.</TableCell>
+                      <TableCell className="text-right font-semibold text-slate-800">{currencyFormatter.format(cat.totalRevenue)}</TableCell>
+                      <TableCell className="text-right font-medium text-indigo-600">{currencyFormatter.format(cat.totalCost)}</TableCell>
+                      <TableCell className={`text-right font-black ${cat.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {currencyFormatter.format(cat.profit)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                          cat.marginPercent >= 0 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"
+                        }`}>
+                          {cat.marginPercent.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-slate-500">
+                        {cat.sharePercent.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {categoryStatsList.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        Nenhuma venda por categoria registrada neste caixa.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
         </TabsContent>
