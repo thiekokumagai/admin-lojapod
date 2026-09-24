@@ -235,7 +235,7 @@ export default function DomainPage() {
                           .replace(/^www\./, "")
                       )
                     }
-                    placeholder="sopod.com.br"
+                    placeholder="minhaloja.com.br"
                     className="pl-9 font-mono text-sm"
                     required
                   />
