@@ -18,10 +18,12 @@ export async function getOrders(
   endDate?: string,
   page?: number,
   limit?: number,
-  paymentStatus?: string
+  paymentStatus?: string,
+  orderNumber?: string
 ): Promise<PaginatedOrdersResponse> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
+  if (orderNumber) params.append("orderNumber", orderNumber);
   if (status && status !== "ALL") params.append("status", status);
   if (startDate) params.append("startDate", startDate);
   if (endDate) params.append("endDate", endDate);
