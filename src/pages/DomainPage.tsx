@@ -241,7 +241,7 @@ export default function DomainPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Insira sem <code>https://</code> e sem <code>www</code>. Exemplo: <code className="bg-slate-100 px-1 py-0.5 rounded">sopod.com.br</code>
+                  Insira sem <code>https://</code> e sem <code>www</code>. Exemplo: <code className="bg-slate-100 px-1 py-0.5 rounded">minhaloja.com.br</code>
                 </p>
               </div>
 
