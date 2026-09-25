@@ -152,7 +152,7 @@ function InlinePriceInput({ value, onSave }: InlinePriceInputProps) {
         e.stopPropagation();
         setIsEditing(true);
       }}
-      className="group flex items-center justify-start gap-1.5 h-8 px-2 rounded hover:bg-muted border border-transparent hover:border-muted-foreground/20 cursor-text text-left select-none font-semibold text-foreground"
+      className="group flex items-center justify-start gap-1.5 h-8 px-2 rounded hover:bg-muted border border-transparent hover:border-muted-foreground/20 cursor-text text-left select-none font-semibold"
     >
       <span>{value !== undefined ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}` : "R$ —"}</span>
       <span className="opacity-0 group-hover:opacity-100 text-muted-foreground/60 transition-opacity text-[10px]">
@@ -499,7 +499,7 @@ export function ProductListTable({
           <div className="text-center py-8 text-muted-foreground border rounded-md">Nenhum produto encontrado.</div>
         ) : (
           sorted.map((product) => (
-            <div key={product.id} className="border rounded-md p-4 flex flex-col gap-3 relative bg-card shadow-sm cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/produtos/${product.id}`)}>
+            <div key={product.id} className={`border rounded-md p-4 flex flex-col gap-3 relative bg-card shadow-sm cursor-pointer hover:bg-muted/50 ${product.status !== 'active' ? 'text-muted-foreground' : ''}`} onClick={() => navigate(`/produtos/${product.id}`)}>
               <div className="absolute top-2 right-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   id={`select-mobile-${product.id}`}
@@ -527,7 +527,7 @@ export function ProductListTable({
                   <div className="h-16 w-16 aspect-square rounded-md bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-16 min-h-16">—</div>
                 )}
                 <div className="flex flex-col flex-1 min-w-0 pr-16">
-                  <span className="font-bold text-foreground text-sm leading-tight">{product.title}</span>
+                  <span className={`font-bold text-sm leading-tight ${product.status !== 'active' ? 'text-muted-foreground' : 'text-foreground'}`}>{product.title}</span>
                   <span className="text-xs text-muted-foreground truncate">{getCategoryName(product.categoryId)}</span>
                   <div className="mt-1 flex items-center gap-2">
                     {product.status === "active" ? (
@@ -567,10 +567,10 @@ export function ProductListTable({
                     <InlineStockEditor stock={product.items[0].stock} onAdd={() => onUpdateStock(product.items![0].id, 'ADD', 1)} onSub={() => onUpdateStock(product.items![0].id, 'SUBTRACT', 1)} />
                     </div>
                   ) : (
-                    <span className="font-semibold text-foreground text-sm">{product.totalStock}</span>
+                    <span className={`font-semibold text-sm ${product.status !== 'active' ? 'text-muted-foreground' : 'text-foreground'}`}>{product.totalStock}</span>
                   )
                 ) : (
-                  <div className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                  <div className={`flex flex-col gap-1 text-[11px] ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
                     {product.items?.map((item) => {
                        const optionLabel = item.options.map((o) => o.optionValue).join("/");
                        return (
@@ -579,7 +579,7 @@ export function ProductListTable({
                            {onUpdateStock ? (
                              <InlineStockEditor stock={item.stock} onAdd={() => onUpdateStock(item.id, 'ADD', 1)} onSub={() => onUpdateStock(item.id, 'SUBTRACT', 1)} />
                            ) : (
-                             <span className="font-semibold text-foreground">{item.stock}</span>
+                             <span className={`font-semibold ${product.status !== 'active' ? 'text-muted-foreground' : 'text-foreground'}`}>{item.stock}</span>
                            )}
                          </div>
                        );
@@ -653,7 +653,7 @@ export function ProductListTable({
               sorted.map((product) => (
                 <TableRow
                   key={product.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={`cursor-pointer hover:bg-muted/50 ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}
                   data-state={selectedIds.includes(product.id) ? "selected" : undefined}
                   onClick={() => navigate(`/produtos/${product.id}`)}
                 >
@@ -681,7 +681,7 @@ export function ProductListTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium hover:underline">
+                    <span className={`font-medium hover:underline ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
                       {product.title}
                     </span>
                   </TableCell>
@@ -733,11 +733,11 @@ export function ProductListTable({
                           onSub={() => onUpdateStock(product.items![0].id, 'SUBTRACT', 1)}
                         />
                       ) : (
-                        <span className="font-semibold text-foreground">{product.totalStock}</span>
+                        <span className={`font-semibold ${product.status !== 'active' ? 'text-muted-foreground' : 'text-foreground'}`}>{product.totalStock}</span>
                       )
                     ) : (
                       <div className="space-y-1">                        
-                        <div className="flex flex-col gap-1 text-[11px] text-muted-foreground max-w-[220px]">
+                        <div className={`flex flex-col gap-1 text-[11px] max-w-[220px] ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
                           {product.items?.map((item) => {
                              const optionLabel = item.options.map((o) => o.optionValue).join("/");
                              return (
@@ -750,7 +750,7 @@ export function ProductListTable({
                                      onSub={() => onUpdateStock(item.id, 'SUBTRACT', 1)}
                                    />
                                  ) : (
-                                   <span className="font-semibold text-foreground">{item.stock}</span>
+                                   <span className={`font-semibold ${product.status !== 'active' ? 'text-muted-foreground' : 'text-foreground'}`}>{item.stock}</span>
                                  )}
                                </div>
                              );
