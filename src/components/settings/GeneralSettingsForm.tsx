@@ -129,6 +129,9 @@ export function GeneralSettingsForm() {
   const [phone, setPhone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [pixelId, setPixelId] = useState("");
+  const [facebookPixelEnabled, setFacebookPixelEnabled] = useState(false);
+  const [facebookConversionsToken, setFacebookConversionsToken] = useState("");
+  const [facebookConversionsApiEnabled, setFacebookConversionsApiEnabled] = useState(false);
   const [printToken, setPrintToken] = useState("");
   const [copiedToken, setCopiedToken] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
@@ -173,6 +176,9 @@ export function GeneralSettingsForm() {
       setPhone(cleanVal(settings.phone, ["(67) 99999-9999", "67999999999", "6799999-9999"]));
       setInstagram(settings.instagram || "");
       setPixelId(settings.pixelId || "");
+      setFacebookPixelEnabled(!!settings.facebookPixelEnabled);
+      setFacebookConversionsToken(settings.facebookConversionsToken || "");
+      setFacebookConversionsApiEnabled(!!settings.facebookConversionsApiEnabled);
 
       const storeId = (settings as any).storeId;
       if (storeId) {
@@ -513,6 +519,9 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         phone,
         instagram,
         pixelId,
+        facebookPixelEnabled,
+        facebookConversionsToken: facebookConversionsToken || null,
+        facebookConversionsApiEnabled,
         cep,
         street,
         number,
@@ -717,13 +726,60 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
                 placeholder="Ex: @sualoja"
               />
             </div>
-            <div>
-              <Label className="font-medium">Identificação do Pixel</Label>
-              <Input
-                value={pixelId}
-                onChange={(e) => setPixelId(e.target.value)}
-                placeholder="Ex: 123456789012345"
-              />
+          </div>
+
+          {/* Meta (Facebook) */}
+          <div className="p-4 bg-slate-50 border rounded-xl space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700">Meta (Facebook)</h3>
+            <p className="text-xs text-muted-foreground -mt-2">Otimize os resultados dos seus anúncios, enviando eventos da navegação dos usuários em sua loja.</p>
+
+            {/* Pixel toggle + ID sempre visível */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="facebook-pixel-enabled"
+                  checked={facebookPixelEnabled}
+                  onCheckedChange={setFacebookPixelEnabled}
+                />
+                <Label htmlFor="facebook-pixel-enabled" className="font-medium cursor-pointer">Pixel</Label>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Identificação do Pixel</Label>
+                <Input
+                  value={pixelId}
+                  onChange={(e) => setPixelId(e.target.value)}
+                  placeholder="Ex: 968087525680420"
+                  className="mt-1"
+                  disabled={!facebookPixelEnabled}
+                />
+              </div>
+            </div>
+
+            {/* Conversions API toggle + Token sempre visível */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="facebook-capi-enabled"
+                  checked={facebookConversionsApiEnabled}
+                  onCheckedChange={setFacebookConversionsApiEnabled}
+                />
+                <Label htmlFor="facebook-capi-enabled" className="font-medium cursor-pointer">API de Conversões</Label>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  Token da API de Conversões
+                  <span title="Token do Meta para envio de eventos server-side via Conversions API" className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted text-muted-foreground text-[10px] font-bold cursor-help">?</span>
+                </Label>
+                <Input
+                  value={facebookConversionsToken}
+                  onChange={(e) => setFacebookConversionsToken(e.target.value)}
+                  placeholder="Ex: EAATEOiZAha9oBSe..."
+                  type="text"
+                  autoComplete="off"
+                  className="mt-1"
+                  disabled={!facebookConversionsApiEnabled}
+                />
+              </div>
             </div>
           </div>
 
