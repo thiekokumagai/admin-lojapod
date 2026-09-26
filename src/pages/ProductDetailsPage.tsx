@@ -150,6 +150,7 @@ export default function ProductDetailsPage() {
   const [stockObservation, setStockObservation] = useState("");
   const [hasVariations, setHasVariations] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [savingStep, setSavingStep] = useState<string | null>(null);
 
   const productForm = useForm<ProductDetailsFormValues>({
@@ -285,6 +286,7 @@ export default function ProductDetailsPage() {
       setSelectedVariationIds(product.variationIds ?? []);
       setSelectedOptionsByVariation(getSelectedOptionsMap(product));
       setIsVisible(product.status === "active");
+      setIsFeatured(Boolean(product.isFeatured));
       navigate(`/produtos/${product.id}`, { replace: true });
       toast({ title: "Produto criado" });
     },
@@ -303,6 +305,7 @@ export default function ProductDetailsPage() {
       setSelectedVariationIds(productQuery.data.variationIds ?? []);
       setSelectedOptionsByVariation(getSelectedOptionsMap(productQuery.data));
       setIsVisible(productQuery.data.status === "active");
+      setIsFeatured(Boolean(productQuery.data.isFeatured));
       setHasVariations((product.variationIds?.length ?? 0) > 0);
       productForm.reset({
         title: product.title,
@@ -666,6 +669,7 @@ export default function ProductDetailsPage() {
     const formValues = {
       ...rawValues,
       isVisible,
+      isFeatured,
       descriptionFormated: rawValues.description?.replace(/<[^>]*>/g, "").trim() ?? "",
     };
 
@@ -816,6 +820,16 @@ export default function ProductDetailsPage() {
         </div>
 
         <div className="flex items-center gap-6">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="product-featured"
+              checked={isFeatured}
+              onCheckedChange={setIsFeatured}
+            />
+            <Label htmlFor="product-featured" className="cursor-pointer font-semibold flex items-center gap-1">
+              Destaque
+            </Label>
+          </div>
           <div className="flex items-center space-x-2">
             <Switch
               id="product-active"

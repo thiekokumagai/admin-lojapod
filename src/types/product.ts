@@ -25,6 +25,7 @@ export type ProductListParams = {
   limit?: number;
   search?: string;
   categoryId?: string;
+  isFeatured?: boolean;
 };
 
 export type ProductListMeta = {
@@ -52,6 +53,7 @@ export type ProductResponse = {
   totalStock: number;
   primarySku: string | null;
   status: "active" | "inactive";
+  isFeatured?: boolean;
   minStock?: number;
   dailyRunRate?: number;
   coverageDays?: number | null;
@@ -87,6 +89,7 @@ export type CreateProductPayload = {
   promotionalPrice?: number;
   costPrice?: number;
   isVisible?: boolean;
+  isFeatured?: boolean;
 };
 
 export type CreateProductItemPayload = {

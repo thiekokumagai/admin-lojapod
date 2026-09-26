@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowUpDown, Trash2, EyeOff, Eye, X, Copy, Plus, Minus } from "lucide-react";
+import { ArrowUpDown, Trash2, EyeOff, Eye, Star, X, Copy, Plus, Minus } from "lucide-react";
 import type { ProductResponse } from "@/types/product";
 import { buildImageUrl } from "@/utils/image-url";
 import {
@@ -40,7 +40,7 @@ type SortDir = "asc" | "desc";
 
 export interface ProductListTableFilters {
   search: string;
-  status: "all" | "active" | "inactive" | "critical" | "low_stock" | "stagnant" | "out_of_stock";
+  status: "all" | "active" | "inactive" | "featured" | "critical" | "low_stock" | "stagnant" | "out_of_stock";
   categoryId: string;
 }
 
@@ -213,6 +213,8 @@ interface ProductListTableProps {
   onSelectionChange: (ids: string[]) => void;
   onBulkDisable: (ids: string[]) => void;
   onBulkEnable: (ids: string[]) => void;
+  onBulkFeatured?: (ids: string[]) => void;
+  onBulkRemoveFeatured?: (ids: string[]) => void;
   onBulkDelete: (ids: string[]) => void;
   isBulkPending: boolean;
   onUpdateProduct?: (id: string, values: { price?: number; promotionalPrice?: number; costPrice?: number }) => Promise<void>;
@@ -233,6 +235,8 @@ export function ProductListTable({
   onSelectionChange,
   onBulkDisable,
   onBulkEnable,
+  onBulkFeatured,
+  onBulkRemoveFeatured,
   onBulkDelete,
   isBulkPending,
   onUpdateProduct,
@@ -457,6 +461,7 @@ export function ProductListTable({
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="active">Ativo</SelectItem>
             <SelectItem value="inactive">Inativo</SelectItem>
+            <SelectItem value="featured">⭐ Em Destaque</SelectItem>
             <SelectItem value="critical">🔴 Crítico (Prestes a acabar)</SelectItem>
             <SelectItem value="low_stock">🟠 Abaixo do mínimo</SelectItem>
             <SelectItem value="stagnant">📦 Sem giro (+45 dias)</SelectItem>
@@ -529,11 +534,14 @@ export function ProductListTable({
                 <div className="flex flex-col flex-1 min-w-0 pr-16">
                   <span className={`font-bold text-sm leading-tight ${product.status !== 'active' ? 'text-muted-foreground' : 'text-foreground'}`}>{product.title}</span>
                   <span className="text-xs text-muted-foreground truncate">{getCategoryName(product.categoryId)}</span>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                     {product.status === "active" ? (
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 py-0 text-[10px]">Ativo</Badge>
                     ) : (
                       <Badge variant="secondary" className="py-0 text-[10px]">Inativo</Badge>
+                    )}
+                    {product.isFeatured && (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 py-0 text-[10px] font-semibold">⭐ Destaque</Badge>
                     )}
                   </div>
                 </div>
@@ -681,9 +689,16 @@ export function ProductListTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className={`font-medium hover:underline ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
-                      {product.title}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`font-medium hover:underline ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
+                        {product.title}
+                      </span>
+                      {product.isFeatured && (
+                        <span className="text-amber-500 text-sm font-bold shrink-0" title="Produto em Destaque">
+                          ⭐
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5">

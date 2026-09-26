@@ -66,6 +66,7 @@ export default function ProductsPage() {
       : rawProducts.filter((p) => {
           if (filters.status === "active") return p.status === "active";
           if (filters.status === "inactive") return p.status === "inactive";
+          if (filters.status === "featured") return Boolean(p.isFeatured);
           if (filters.status === "critical") {
             return (p.coverageDays !== null && p.coverageDays !== undefined && p.coverageDays <= 3 && p.totalStock > 0);
           }
