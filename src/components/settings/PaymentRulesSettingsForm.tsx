@@ -31,12 +31,10 @@ export function PaymentRulesSettingsForm() {
       passedToCustomer: true,
     };
     setRules((prev) => [...prev, newRule]);
-    toast({ title: "Nova regra adicionada!" });
   };
 
   const handleRemoveRule = (id: string) => {
     setRules((prev) => prev.filter((r) => r.id !== id));
-    toast({ title: "Regra removida." });
   };
 
   const handleUpdateRule = <K extends keyof PaymentRule>(
@@ -167,16 +165,6 @@ export function PaymentRulesSettingsForm() {
               Adicione regras de desconto, taxas e juros de parcelas para as formas de pagamento.
             </p>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            <Button size="sm" variant="outline" onClick={handleAddRule} className="flex-1 md:flex-none">
-              <Plus className="h-4 w-4 mr-1" />
-              Nova Regra
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending} className="flex-1 md:flex-none">
-              <Save className="h-4 w-4 mr-1" />
-              {updateSettingsMutation.isPending ? "Salvando..." : "Salvar"}
-            </Button>
-          </div>
         </div>
 
         {rules.length === 0 ? (
@@ -197,16 +185,7 @@ export function PaymentRulesSettingsForm() {
             </div>
 
             <div className="space-y-3">
-              {[...rules].sort((a, b) => {
-                const methodOrder: Record<string, number> = { pix: 1, cash: 2, debit: 3, credit: 4 };
-                const orderA = methodOrder[a.paymentMethod] || 99;
-                const orderB = methodOrder[b.paymentMethod] || 99;
-                if (orderA !== orderB) return orderA - orderB;
-                if (a.paymentMethod === "credit" && b.paymentMethod === "credit") {
-                  return (a.parcelaMin || 0) - (b.parcelaMin || 0);
-                }
-                return 0;
-              }).map((rule) => (
+              {rules.map((rule) => (
                 <div
                   key={rule.id}
                   className="grid grid-cols-2 sm:grid-cols-12 gap-4 p-4 rounded-lg border bg-slate-50/50 sm:bg-transparent sm:p-0 sm:border-none sm:rounded-none items-start sm:items-center relative"

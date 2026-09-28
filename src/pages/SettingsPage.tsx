@@ -18,7 +18,7 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="geral" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 h-auto p-1.5 bg-muted/60">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-2 h-auto p-1.5 bg-muted/60">
           <TabsTrigger value="geral" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Store className="h-4 w-4" />
             Identidade &amp; Endereço
@@ -26,10 +26,6 @@ export default function SettingsPage() {
           <TabsTrigger value="recebimentos" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <QrCode className="h-4 w-4" />
             Opções de Recebimento
-          </TabsTrigger>
-          <TabsTrigger value="taxas" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
-            <Percent className="h-4 w-4" />
-            Descontos &amp; Taxas
           </TabsTrigger>
           <TabsTrigger value="entrega" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Truck className="h-4 w-4" />
@@ -49,11 +45,8 @@ export default function SettingsPage() {
           <GeneralSettingsForm />
         </TabsContent>
 
-        <TabsContent value="recebimentos" className="space-y-4 outline-none">
+        <TabsContent value="recebimentos" className="space-y-6 outline-none">
           <PaymentSettingsForm />
-        </TabsContent>
-
-        <TabsContent value="taxas" className="space-y-4 outline-none">
           <PaymentRulesSettingsForm />
         </TabsContent>
 
