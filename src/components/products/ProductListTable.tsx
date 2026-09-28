@@ -24,6 +24,7 @@ import {
 import { ArrowUpDown, Trash2, EyeOff, Eye, Star, X, Copy, Plus, Minus } from "lucide-react";
 import type { ProductResponse } from "@/types/product";
 import { buildImageUrl } from "@/utils/image-url";
+import { calculateProfitMargin, formatCurrency } from "@/utils/formatters";
 import {
   Dialog,
   DialogContent,
@@ -547,7 +548,11 @@ export function ProductListTable({
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-2 mt-2 bg-muted/30 p-2 rounded-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="grid grid-cols-3 gap-2 mt-2 bg-muted/30 p-2 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground font-semibold">Preço Custo</span>
+                  <InlinePriceInput value={product.costPrice} onSave={async (newCost) => { if (onUpdateProduct) await onUpdateProduct(product.id, { costPrice: newCost }); }} />
+                </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-muted-foreground font-semibold">Preço Venda</span>
                   <InlinePriceInput value={product.price} onSave={async (newPrice) => { if (onUpdateProduct) await onUpdateProduct(product.id, { price: newPrice }); }} />
@@ -561,9 +566,23 @@ export function ProductListTable({
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-muted-foreground font-semibold">Preço Custo</span>
-                  <InlinePriceInput value={product.costPrice} onSave={async (newCost) => { if (onUpdateProduct) await onUpdateProduct(product.id, { costPrice: newCost }); }} />
+                <div className="flex flex-col justify-center">
+                  <span className="text-[10px] text-muted-foreground font-semibold">Lucro (%)</span>
+                  {(() => {
+                    const profitCalc = calculateProfitMargin(product.price, product.costPrice);
+                    return profitCalc.hasProfitInfo ? (
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-extrabold ${profitCalc.isNegative ? "text-rose-600" : "text-emerald-600"}`}>
+                          {profitCalc.marginPercentage.toFixed(1)}%
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-medium truncate">
+                          {formatCurrency(profitCalc.profit)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    );
+                  })()}
                 </div>
               </div>
               
@@ -626,6 +645,7 @@ export function ProductListTable({
                   Nome <ArrowUpDown className="h-3.5 w-3.5" />
                 </button>
               </TableHead>
+              <TableHead>Custo</TableHead>
               <TableHead>
                 <button
                   type="button"
@@ -635,7 +655,7 @@ export function ProductListTable({
                   Preço <ArrowUpDown className="h-3.5 w-3.5" />
                 </button>
               </TableHead>
-              <TableHead>Custo</TableHead>
+              <TableHead>Lucro (%)</TableHead>
               <TableHead>Categoria</TableHead>
 
               <TableHead>Estoque</TableHead>
@@ -646,98 +666,121 @@ export function ProductListTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   Carregando produtos...
                 </TableCell>
               </TableRow>
             ) : sorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
 
             ) : (
-              sorted.map((product) => (
-                <TableRow
-                  key={product.id}
-                  className={`cursor-pointer hover:bg-muted/50 ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}
-                  data-state={selectedIds.includes(product.id) ? "selected" : undefined}
-                  onClick={() => navigate(`/produtos/${product.id}`)}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      id={`select-${product.id}`}
-                      className="rounded-none !rounded-none"
-                      style={{ borderRadius: "0px" }}
-                      checked={selectedIds.includes(product.id)}
-                      onCheckedChange={() => toggleOne(product.id)}
-                      aria-label={`Selecionar ${product.title}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {product.images[0] ? (
-                      <img
-                        src={buildImageUrl(product.images[0].url)}
-                        alt={product.title}
-                        className={`h-16 w-16 aspect-square rounded-none object-cover border min-w-16 min-h-16 block ${product.status !== 'active' ? 'opacity-50' : ''}`}
+              sorted.map((product) => {
+                const profitCalc = calculateProfitMargin(product.price, product.costPrice);
+                return (
+                  <TableRow
+                    key={product.id}
+                    className={`cursor-pointer hover:bg-muted/50 ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}
+                    data-state={selectedIds.includes(product.id) ? "selected" : undefined}
+                    onClick={() => navigate(`/produtos/${product.id}`)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        id={`select-${product.id}`}
+                        className="rounded-none !rounded-none"
+                        style={{ borderRadius: "0px" }}
+                        checked={selectedIds.includes(product.id)}
+                        onCheckedChange={() => toggleOne(product.id)}
+                        aria-label={`Selecionar ${product.title}`}
                       />
-                    ) : (
-                      <div className="h-16 w-16 aspect-square rounded-none bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-16 min-h-16">
-                        —
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`font-medium hover:underline ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
-                        {product.title}
-                      </span>
-                      {product.isFeatured && (
-                        <span className="text-amber-500 text-sm font-bold shrink-0" title="Produto em Destaque">
-                          ⭐
-                        </span>
+                    </TableCell>
+                    <TableCell>
+                      {product.images[0] ? (
+                        <img
+                          src={buildImageUrl(product.images[0].url)}
+                          alt={product.title}
+                          className={`h-16 w-16 aspect-square rounded-none object-cover border min-w-16 min-h-16 block ${product.status !== 'active' ? 'opacity-50' : ''}`}
+                        />
+                      ) : (
+                        <div className="h-16 w-16 aspect-square rounded-none bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-16 min-h-16">
+                          —
+                        </div>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-medium hover:underline ${product.status !== 'active' ? 'text-muted-foreground' : ''}`}>
+                          {product.title}
+                        </span>
+                        {product.isFeatured && (
+                          <span className="text-amber-500 text-sm font-bold shrink-0" title="Produto em Destaque">
+                            ⭐
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <InlinePriceInput
-                        value={product.price}
-                        onSave={async (newPrice) => {
+                        value={product.costPrice}
+                        onSave={async (newCost) => {
                           if (onUpdateProduct) {
-                            await onUpdateProduct(product.id, { price: newPrice });
+                            await onUpdateProduct(product.id, { costPrice: newCost });
                           }
                         }}
                       />
-                      {product.promotionalPrice !== undefined && product.promotionalPrice > 0 && (
-                        <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2">
-                          <span className="shrink-0 mr-1">Promo:</span>
-                          <InlinePriceInput
-                            value={product.promotionalPrice}
-                            onSave={async (newPromo) => {
-                              if (onUpdateProduct) {
-                                await onUpdateProduct(product.id, { promotionalPrice: newPromo });
-                              }
-                            }}
-                          />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <InlinePriceInput
+                          value={product.price}
+                          onSave={async (newPrice) => {
+                            if (onUpdateProduct) {
+                              await onUpdateProduct(product.id, { price: newPrice });
+                            }
+                          }}
+                        />
+                        {product.promotionalPrice !== undefined && product.promotionalPrice > 0 && (
+                          <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2">
+                            <span className="shrink-0 mr-1">Promo:</span>
+                            <InlinePriceInput
+                              value={product.promotionalPrice}
+                              onSave={async (newPromo) => {
+                                if (onUpdateProduct) {
+                                  await onUpdateProduct(product.id, { promotionalPrice: newPromo });
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {profitCalc.hasProfitInfo ? (
+                        <div className="flex flex-col">
+                          <Badge
+                            variant="outline"
+                            className={`w-fit font-bold text-xs ${
+                              profitCalc.isNegative
+                                ? "border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                                : "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                            }`}
+                          >
+                            {profitCalc.marginPercentage.toFixed(1)}%
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground mt-0.5 font-medium">
+                            {formatCurrency(profitCalc.profit)}
+                          </span>
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs font-medium">-</span>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <InlinePriceInput
-                      value={product.costPrice}
-                      onSave={async (newCost) => {
-                        if (onUpdateProduct) {
-                          await onUpdateProduct(product.id, { costPrice: newCost });
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {getCategoryName(product.categoryId)}
-                  </TableCell>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {getCategoryName(product.categoryId)}
+                    </TableCell>
 
                   <TableCell>
                     {product.variations.length === 0 ? (
@@ -800,8 +843,9 @@ export function ProductListTable({
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              );
+            })
+          )}
 
           </TableBody>
         </Table>

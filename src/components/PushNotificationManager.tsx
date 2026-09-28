@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 import { apiFetch } from '@/services/api';
 import { toast } from 'sonner';
 
@@ -22,19 +21,15 @@ export function PushNotificationManager() {
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(r) {
-      if (r) {
-        setSwRegistration(r);
-      }
-    },
-    onRegisterError(error) {
-      console.error('SW registration error', error);
-    },
-  });
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((r) => {
+        if (r) setSwRegistration(r);
+      }).catch((error) => {
+        console.error('SW registration error', error);
+      });
+    }
+  }, []);
 
   const subscribeToPush = async (registration: ServiceWorkerRegistration) => {
     try {

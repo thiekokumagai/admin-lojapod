@@ -1,32 +1,24 @@
 import { useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function PWAUpdatePrompt() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const {
-    needRefresh: [needRefresh],
+    needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(swScriptUrl, registration) {
-      if (registration) {
-        // Checar por atualizações no servidor a cada 20s e ao focar/reabrir o app
-        const checkUpdate = async () => {
-          if (!navigator.onLine) return;
-          try {
-            // Bypass HTTP cache para garantir que pega o sw.js atualizado do servidor
-            await fetch(swScriptUrl, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
-            await registration.update();
-          } catch (e) {
-            console.debug('Erro na checagem de SW:', e);
+    onRegisteredSW(_swScriptUrl, registration) {
+      if (!import.meta.env.DEV && registration) {
+        // Checar por atualizações no servidor periodicamente (a cada 1h)
+        const interval = setInterval(() => {
+          if (navigator.onLine) {
+            registration.update().catch(() => {});
           }
-        };
-
-        const interval = setInterval(checkUpdate, 20000);
-        window.addEventListener("focus", checkUpdate);
-        window.addEventListener("online", checkUpdate);
+        }, 60 * 60 * 1000);
+        return () => clearInterval(interval);
       }
     },
     onRegisterError(error) {
@@ -34,11 +26,16 @@ export function PWAUpdatePrompt() {
     },
   });
 
+  const handleClose = () => {
+    setNeedRefresh(false);
+  };
+
   const handleReload = async () => {
     if (isUpdating) return;
     setIsUpdating(true);
 
     try {
+      setNeedRefresh(false);
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.addEventListener(
           "controllerchange",
@@ -51,10 +48,10 @@ export function PWAUpdatePrompt() {
 
       await updateServiceWorker(true);
 
-      // Fallback de segurança caso controllerchange não dispare em até 600ms
+      // Fallback de segurança caso controllerchange não dispare
       setTimeout(() => {
         window.location.reload();
-      }, 600);
+      }, 800);
     } catch (e) {
       console.error("Erro ao atualizar PWA:", e);
       window.location.reload();
@@ -69,17 +66,25 @@ export function PWAUpdatePrompt() {
         <span className="font-bold text-foreground">Nova versão disponível! 🎉</span>
         <span className="text-muted-foreground text-xs">Uma atualização do app foi encontrada.</span>
       </div>
-      <Button 
-        size="sm" 
-        onClick={handleReload} 
-        disabled={isUpdating}
-        className="gap-2 shrink-0 font-medium px-4"
-      >
-        <RefreshCw className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`} />
-        {isUpdating ? "Atualizando..." : "Atualizar"}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button 
+          size="sm" 
+          onClick={handleReload} 
+          disabled={isUpdating}
+          className="gap-2 shrink-0 font-medium px-4"
+        >
+          <RefreshCw className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`} />
+          {isUpdating ? "Atualizando..." : "Atualizar"}
+        </Button>
+        <button
+          type="button"
+          onClick={handleClose}
+          className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+          title="Fechar"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
-
-
