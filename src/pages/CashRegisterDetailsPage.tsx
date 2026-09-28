@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Landmark, Plus, ArrowUpRight, ArrowDownRight, Trash2, ShoppingBag, TrendingUp, Calendar, Package, RefreshCw, FileDown } from "lucide-react";
+import { ArrowLeft, Landmark, Plus, ArrowUpRight, ArrowDownRight, Trash2, ShoppingBag, TrendingUp, Calendar, Package, RefreshCw, FileDown, Users, Award, Eye } from "lucide-react";
+import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { io } from "socket.io-client";
@@ -77,6 +78,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
   const [txAmount, setTxAmount] = useState("");
   const [txDescription, setTxDescription] = useState("");
   const [txCategory, setTxCategory] = useState<string>("MOTOBOY");
+  const [selectedOrderIdForDrawer, setSelectedOrderIdForDrawer] = useState<string | null>(null);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["cash-register-summary", id],
@@ -318,6 +320,85 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
       sharePercent,
     };
   }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+  // Cálculo de produtos mais vendidos no caixa (agrupados por produto e variação: nome, variação, categoria, quantidade total, valor total)
+  const productStatsMap: Record<string, { title: string; variation: string | null; categoryName: string; totalQuantity: number; totalValue: number }> = {};
+  orders.forEach((order: any) => {
+    if (!order.items || !Array.isArray(order.items)) return;
+    const itemsSum = order.items.reduce((sum: number, i: any) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
+    const orderReceived = Number(order.totalReceived) || 0;
+    const adjustmentFactor = itemsSum > 0 ? (orderReceived / itemsSum) : 1;
+
+    order.items.forEach((item: any) => {
+      const baseTitle = item.productName || item.product?.title || item.productTitle || item.title || "Produto Desconhecido";
+      const variation = item.variation && item.variation.trim() !== "" ? item.variation.trim() : null;
+      const key = variation ? `${baseTitle} (${variation})` : baseTitle;
+
+      const rawCategoryName =
+        item.categoryName ||
+        item.product?.category?.title ||
+        item.product?.categoryName ||
+        item.category?.title ||
+        "Geral";
+      const categoryName = (rawCategoryName && rawCategoryName.trim() !== "" && rawCategoryName !== "Sem Categoria")
+        ? rawCategoryName
+        : "Geral";
+
+      const qty = Number(item.quantity) || 1;
+      const effectiveValue = ((Number(item.price) || 0) * qty) * adjustmentFactor;
+
+      if (!productStatsMap[key]) {
+        productStatsMap[key] = {
+          title: baseTitle,
+          variation,
+          categoryName,
+          totalQuantity: 0,
+          totalValue: 0,
+        };
+      }
+      productStatsMap[key].totalQuantity += qty;
+      productStatsMap[key].totalValue += effectiveValue;
+    });
+  });
+
+  const topSellingProducts = Object.values(productStatsMap).sort((a, b) => {
+    if (b.totalQuantity !== a.totalQuantity) {
+      return b.totalQuantity - a.totalQuantity;
+    }
+    return b.totalValue - a.totalValue;
+  });
+
+  // Cálculo de clientes que mais compraram (Nome, último pedido, quantidade de pedidos, valor total) ordenado por valor maior para o menor
+  const customerStatsMap: Record<string, { customerName: string; orderCount: number; totalSpent: number; lastOrderDate: Date | null; customerOrders: any[] }> = {};
+  orders.forEach((order: any) => {
+    const rawName = order.customerName || order.customer?.name || "Cliente Não Identificado";
+    const key = rawName.trim().toLowerCase();
+    const orderValue = Number(order.totalReceived) || 0;
+    const orderDate = order.paymentDate ? new Date(order.paymentDate) : (order.createdAt ? new Date(order.createdAt) : null);
+
+    if (!customerStatsMap[key]) {
+      customerStatsMap[key] = {
+        customerName: rawName,
+        orderCount: 0,
+        totalSpent: 0,
+        lastOrderDate: orderDate,
+        customerOrders: [],
+      };
+    }
+
+    customerStatsMap[key].orderCount += 1;
+    customerStatsMap[key].totalSpent += orderValue;
+    customerStatsMap[key].customerOrders.push(order);
+
+    if (orderDate && (!customerStatsMap[key].lastOrderDate || orderDate > customerStatsMap[key].lastOrderDate!)) {
+      customerStatsMap[key].lastOrderDate = orderDate;
+    }
+  });
+
+  const topCustomers = Object.values(customerStatsMap).map((c) => ({
+    ...c,
+    customerOrders: [...c.customerOrders].sort((a, b) => new Date(b.createdAt || b.paymentDate).getTime() - new Date(a.createdAt || a.paymentDate).getTime()),
+  })).sort((a, b) => b.totalSpent - a.totalSpent);
 
   const startStr = cashRegister.startDate.split("T")[0];
   const endStr = cashRegister.endDate.split("T")[0];
@@ -606,6 +687,8 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
       <Tabs defaultValue="pedidos" className="w-full">
         <TabsList className="mb-6 bg-slate-100 p-1 w-full overflow-x-auto flex whitespace-nowrap justify-start md:w-fit md:inline-flex">
           <TabsTrigger value="pedidos" className="font-semibold">Pedidos Recebidos</TabsTrigger>          
+          <TabsTrigger value="mais-vendidos" className="font-semibold">Produtos Mais Vendidos</TabsTrigger>
+          <TabsTrigger value="top-clientes" className="font-semibold">Top Clientes</TabsTrigger>
           <TabsTrigger value="movimentacoes" className="font-semibold">Movimentações Manuais</TabsTrigger>
           <TabsTrigger value="categorias" className="font-semibold">Lucro por Categoria</TabsTrigger>    
         </TabsList>
@@ -903,6 +986,241 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
           </div>
         </TabsContent>
 
+        <TabsContent value="mais-vendidos" className="animate-in fade-in duration-300 focus-visible:outline-none focus-visible:ring-0">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-slate-700 text-base flex items-center gap-2">
+                  <Package className="h-5 w-5 text-amber-500" />
+                  Produtos Mais Vendidos no Caixa
+                </h3>
+                <p className="text-xs text-slate-500">Listagem de produtos agrupados da maior quantidade para a menor quantidade vendida</p>
+              </div>
+            </div>
+
+            {/* Mobile View */}
+            <div className="grid md:hidden gap-3 p-4 bg-slate-50/30">
+              {topSellingProducts.map((prod, idx) => (
+                <div key={idx} className="border rounded-lg p-4 flex flex-col gap-2 bg-white shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black text-slate-600">
+                          {idx + 1}
+                        </span>
+                        {prod.title}
+                      </span>
+                      {prod.variation && (
+                        <span className="ml-7 inline-flex items-center w-fit rounded bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 border border-indigo-200">
+                          {prod.variation}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-black text-sm text-emerald-600">
+                      {currencyFormatter.format(prod.totalValue)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs border-t pt-2 mt-1 text-slate-600">
+                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                      {prod.categoryName}
+                    </span>
+                    <span>Qtd Vendida: <strong className="font-bold text-slate-900 text-sm">{prod.totalQuantity} un.</strong></span>
+                  </div>
+                </div>
+              ))}
+              {topSellingProducts.length === 0 && (
+                <div className="text-center py-8 text-gray-500 border rounded-lg bg-white">Nenhum produto vendido neste caixa.</div>
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table className="min-w-[650px]">
+                <TableHeader>
+                  <TableRow className="bg-slate-50/30">
+                    <TableHead className="w-12 text-center">#</TableHead>
+                    <TableHead>Produto</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead className="text-center">Quantidade Vendida</TableHead>
+                    <TableHead className="text-right">Valor Total Vendido</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topSellingProducts.map((prod, idx) => (
+                    <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="text-center font-bold text-slate-400">{idx + 1}</TableCell>
+                      <TableCell className="font-bold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span>{prod.title}</span>
+                          {prod.variation && (
+                            <span className="inline-flex items-center rounded bg-indigo-50 px-2 py-0.5 text-xs font-bold text-indigo-700 border border-indigo-200">
+                              {prod.variation}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 border border-slate-200">
+                          {prod.categoryName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          {prod.totalQuantity} un.
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-black text-emerald-600">
+                        {currencyFormatter.format(prod.totalValue)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {topSellingProducts.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        Nenhum produto vendido neste caixa.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="top-clientes" className="animate-in fade-in duration-300 focus-visible:outline-none focus-visible:ring-0">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-slate-700 text-base flex items-center gap-2">
+                  <Award className="h-5 w-5 text-indigo-500" />
+                  Clientes que Mais Compraram no Caixa
+                </h3>
+                <p className="text-xs text-slate-500">Ranking dos clientes ordenado do maior valor total de compras para o menor</p>
+              </div>
+            </div>
+
+            {/* Mobile View */}
+            <div className="grid md:hidden gap-3 p-4 bg-slate-50/30">
+              {topCustomers.map((cust, idx) => (
+                <div key={idx} className="border rounded-lg p-4 flex flex-col gap-3 bg-white shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-black text-indigo-700">
+                        {idx + 1}
+                      </span>
+                      {cust.customerName}
+                    </span>
+                    <span className="font-black text-sm text-indigo-600">
+                      {currencyFormatter.format(cust.totalSpent)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs border-t pt-2 text-slate-600">
+                    <div>Total de Pedidos: <strong className="text-slate-900">{cust.orderCount}</strong></div>
+                    <div>Último Pedido: <strong>{cust.lastOrderDate ? format(new Date(cust.lastOrderDate), "dd/MM/yyyy HH:mm") : "-"}</strong></div>
+                  </div>
+
+                  <div className="border-t pt-2 space-y-2">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Lista de Pedidos ({cust.customerOrders.length}):</span>
+                    <div className="space-y-1.5">
+                      {cust.customerOrders.map((ord: any) => (
+                        <div
+                          key={ord.id}
+                          onClick={() => setSelectedOrderIdForDrawer(ord.id)}
+                          className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs hover:bg-indigo-50/60 hover:border-indigo-200 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900">#{ord.orderNumber}</span>
+                            <span className="text-slate-500 text-[11px]">
+                              {ord.paymentDate ? format(new Date(ord.paymentDate), "dd/MM HH:mm") : "-"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-emerald-600">
+                              {currencyFormatter.format(ord.totalReceived)}
+                            </span>
+                            <Eye className="h-3.5 w-3.5 text-indigo-600" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {topCustomers.length === 0 && (
+                <div className="text-center py-8 text-gray-500 border rounded-lg bg-white">Nenhum cliente registrado neste caixa.</div>
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table className="min-w-[750px]">
+                <TableHeader>
+                  <TableRow className="bg-slate-50/30">
+                    <TableHead className="w-12 text-center">#</TableHead>
+                    <TableHead>Nome do Cliente</TableHead>
+                    <TableHead className="text-center">Qtd Pedidos</TableHead>
+                    <TableHead className="text-center">Último Pedido</TableHead>
+                    <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead className="w-[320px]">Lista de Pedidos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topCustomers.map((cust, idx) => (
+                    <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="text-center font-bold text-slate-400">{idx + 1}</TableCell>
+                      <TableCell className="font-bold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-slate-400 shrink-0" />
+                          <span>{cust.customerName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center font-semibold text-slate-700">
+                        {cust.orderCount}
+                      </TableCell>
+                      <TableCell className="text-center text-xs text-slate-500">
+                        {cust.lastOrderDate ? format(new Date(cust.lastOrderDate), "dd/MM/yyyy HH:mm") : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-black text-indigo-600">
+                        {currencyFormatter.format(cust.totalSpent)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 my-1 max-h-40 overflow-y-auto pr-1">
+                          {cust.customerOrders.map((ord: any) => (
+                            <div
+                              key={ord.id}
+                              onClick={() => setSelectedOrderIdForDrawer(ord.id)}
+                              className="flex items-center justify-between px-2 py-1 rounded bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-xs cursor-pointer transition-colors"
+                              title={`Clique para abrir o pedido #${ord.orderNumber}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-800">#{ord.orderNumber}</span>
+                                <span className="text-[11px] text-slate-400">
+                                  {ord.paymentDate ? format(new Date(ord.paymentDate), "dd/MM HH:mm") : "-"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 font-bold text-emerald-600">
+                                <span>{currencyFormatter.format(ord.totalReceived)}</span>
+                                <Eye className="h-3.5 w-3.5 text-indigo-600" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {topCustomers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        Nenhum cliente registrado neste caixa.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </TabsContent>
+
         <TabsContent value="movimentacoes" className="animate-in fade-in duration-300 focus-visible:outline-none focus-visible:ring-0">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center">
@@ -1111,6 +1429,13 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Drawer de Detalhes do Pedido ao clicar no cliente ou pedido */}
+      <OrderDetailDrawer
+        orderId={selectedOrderIdForDrawer}
+        isOpen={!!selectedOrderIdForDrawer}
+        onClose={() => setSelectedOrderIdForDrawer(null)}
+      />
     </div>
   );
 }
