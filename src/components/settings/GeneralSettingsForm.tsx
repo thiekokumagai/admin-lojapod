@@ -137,7 +137,12 @@ export function GeneralSettingsForm() {
   const [adminEmail, setAdminEmail] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
+  const [templateId, setTemplateId] = useState<'classic' | 'menu-express' | 'urban' | 'urban'>('classic');
+  const [primaryColor, setPrimaryColor] = useState('#dc2626');
+  const [secondaryColor, setSecondaryColor] = useState('#18181b');
+  const [priceColor, setPriceColor] = useState('#16a34a');
   const [isVerifyingDns, setIsVerifyingDns] = useState(false);
+
   const [dnsResult, setDnsResult] = useState<{ isConfigured?: boolean; message?: string; recordType?: string; records?: string[] } | null>(null);
 
   // Endereço
@@ -168,6 +173,10 @@ export function GeneralSettingsForm() {
       };
 
       setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod"]));
+      setTemplateId((settings as any).templateId || "classic");
+      setPrimaryColor((settings as any).primaryColor || "#dc2626");
+      setSecondaryColor((settings as any).secondaryColor || "#18181b");
+      setPriceColor((settings as any).priceColor || "#16a34a");
       setLogoUrl(settings.logoUrl || null);
       setWhiteLogoUrl(settings.whiteLogoUrl || null);
       setFaviconUrl(settings.faviconUrl || null);
@@ -511,6 +520,10 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
 
       await updateSettingsMutation.mutateAsync({
         storeName,
+        templateId,
+        primaryColor,
+        secondaryColor,
+        priceColor,
         logoUrl,
         whiteLogoUrl,
         faviconUrl,
@@ -567,6 +580,133 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
             <Save className="h-4 w-4 mr-1" />
             {updateSettingsMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
+        </div>
+
+        {/* Seleção de Template de Layout */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Template &amp; Paleta de Cores</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div
+              onClick={() => setTemplateId("classic")}
+              className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                templateId === "classic"
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-muted-foreground/50 bg-white"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-sm">Template Classic</span>
+                {templateId === "classic" && (
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-semibold">Ativo</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Layout e-commerce padrão com barra de busca topo, navegação em grade e hero de destaque.
+              </p>
+            </div>
+
+            <div
+              onClick={() => setTemplateId("menu-express")}
+              className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                templateId === "menu-express"
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-muted-foreground/50 bg-white"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-sm">Template Menu Express</span>
+                {templateId === "menu-express" && (
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-semibold">Ativo</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Layout estilo cardápio digital/vitrine rápida com abas horizontais fixas e resumo flutuante.
+              </p>
+            </div>
+
+            <div
+              onClick={() => setTemplateId("urban")}
+              className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                templateId === "urban" || templateId === "urban"
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-muted-foreground/50 bg-white"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-sm">Template Urban (Sidebar)</span>
+                {(templateId === "urban" || templateId === "urban") && (
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-semibold">Ativo</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Layout escuro moderno com navegação lateral (desktop), drawer de categorias e cards horizontais com ação rápida.
+              </p>
+            </div>
+          </div>
+
+          {/* Color Pickers */}
+          <div className="p-4 bg-slate-50 border rounded-xl space-y-4">
+            <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Cores Personalizadas da Loja</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label className="font-medium text-xs">Cor Primária (Botões &amp; Destaques)</Label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="h-9 w-12 rounded border cursor-pointer p-0.5 bg-white"
+                  />
+                  <Input
+                    type="text"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="font-mono text-xs uppercase"
+                    placeholder="#DC2626"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="font-medium text-xs">Cor dos Preços (Catálogo &amp; Cards)</Label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <input
+                    type="color"
+                    value={priceColor}
+                    onChange={(e) => setPriceColor(e.target.value)}
+                    className="h-9 w-12 rounded border cursor-pointer p-0.5 bg-white"
+                  />
+                  <Input
+                    type="text"
+                    value={priceColor}
+                    onChange={(e) => setPriceColor(e.target.value)}
+                    className="font-mono text-xs uppercase"
+                    placeholder="#16A34A"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="font-medium text-xs">Cor Secundária (Textos &amp; Contrastes)</Label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <input
+                    type="color"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="h-9 w-12 rounded border cursor-pointer p-0.5 bg-white"
+                  />
+                  <Input
+                    type="text"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="font-mono text-xs uppercase"
+                    placeholder="#18181B"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Identidade Visual */}

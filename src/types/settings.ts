@@ -73,6 +73,11 @@ export interface StoreSettings {
   paymentRules: PaymentRule[];
   installmentRules?: InstallmentRule[] | null;
   
+  templateId?: 'classic' | 'menu-express' | 'urban' | 'urban';
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  priceColor?: string | null;
+
   createdAt?: string;
   updatedAt?: string;
 }
