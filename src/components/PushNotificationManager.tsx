@@ -37,12 +37,19 @@ export function PushNotificationManager() {
         toast.error('Este navegador não suporta notificações push.');
         return;
       }
-      const permission = await Notification.requestPermission();
+      
+      let permission = Notification.permission;
+      if (permission !== 'granted') {
+        permission = await Notification.requestPermission();
+      }
+      
       setShowBanner(false);
+      
       if (permission === 'granted') {
         const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
-          console.warn('VITE_VAPID_PUBLIC_KEY not found.');
+          console.warn('VITE_VAPID_PUBLIC_KEY não encontrada no ambiente.');
+          toast.error('Chave VAPID pública não configurada no frontend.');
           return;
         }
 
@@ -58,11 +65,11 @@ export function PushNotificationManager() {
         });
         toast.success('Notificações ativadas com sucesso!');
       } else {
-        toast.error('Permissão para notificações negada.');
+        toast.error(`Permissão para notificações negada (status: ${permission}).`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error subscribing to push notifications:', error);
-      toast.error('Erro ao ativar notificações.');
+      toast.error(`Erro ao ativar notificações: ${error?.message || error}`);
     }
   };
 
