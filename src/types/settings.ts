@@ -77,6 +77,7 @@ export interface StoreSettings {
   primaryColor?: string | null;
   secondaryColor?: string | null;
   priceColor?: string | null;
+  defaultProductSort?: string | null;
 
   createdAt?: string;
   updatedAt?: string;

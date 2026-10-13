@@ -9,8 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key, ShieldCheck, RefreshCw, AlertCircle, Link2 } from "lucide-react";
+import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key, ShieldCheck, RefreshCw, AlertCircle, Link2, ArrowUpDown } from "lucide-react";
 
 const STORE_CNAME = import.meta.env.VITE_STORE_CNAME || "cliente-lojapod-production.up.railway.app";
 
@@ -138,6 +145,7 @@ export function GeneralSettingsForm() {
   const [subdomain, setSubdomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
   const [templateId, setTemplateId] = useState<'classic' | 'menu-express' | 'urban' | 'urban'>('classic');
+  const [defaultProductSort, setDefaultProductSort] = useState<string>('newest');
   const [primaryColor, setPrimaryColor] = useState('#dc2626');
   const [secondaryColor, setSecondaryColor] = useState('#18181b');
   const [priceColor, setPriceColor] = useState('#16a34a');
@@ -174,6 +182,7 @@ export function GeneralSettingsForm() {
 
       setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod"]));
       setTemplateId((settings as any).templateId || "classic");
+      setDefaultProductSort((settings as any).defaultProductSort || "newest");
       setPrimaryColor((settings as any).primaryColor || "#dc2626");
       setSecondaryColor((settings as any).secondaryColor || "#18181b");
       setPriceColor((settings as any).priceColor || "#16a34a");
@@ -521,6 +530,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
       await updateSettingsMutation.mutateAsync({
         storeName,
         templateId,
+        defaultProductSort,
         primaryColor,
         secondaryColor,
         priceColor,
@@ -642,6 +652,33 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               <p className="text-xs text-muted-foreground">
                 Layout escuro moderno com navegação lateral (desktop), drawer de categorias e cards horizontais com ação rápida.
               </p>
+            </div>
+          </div>
+
+          {/* Ordenação Padrão do Catálogo */}
+          <div className="p-4 bg-slate-50 border rounded-xl space-y-3">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-primary" />
+              <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Ordenação Padrão dos Produtos</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Define a ordem inicial que os produtos aparecem para o cliente na vitrine (produtos em destaque e promoção continuam fixos no topo). O cliente ainda poderá alternar a ordenação livremente na loja.
+            </p>
+            <div className="max-w-xs">
+              <Select value={defaultProductSort} onValueChange={setDefaultProductSort}>
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder="Selecione a ordenação padrão" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Novidades (Mais recentes)</SelectItem>
+                  <SelectItem value="category">Por Categoria</SelectItem>
+                  <SelectItem value="a-z">Alfabética (A-Z)</SelectItem>
+                  <SelectItem value="z-a">Alfabética (Z-A)</SelectItem>
+                  <SelectItem value="lowest-price">Menor Preço</SelectItem>
+                  <SelectItem value="highest-price">Maior Preço</SelectItem>
+                  <SelectItem value="default">Mais Vendidos</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
