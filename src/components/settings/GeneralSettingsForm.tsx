@@ -165,6 +165,10 @@ export function GeneralSettingsForm() {
   const [exchangePolicy, setExchangePolicy] = useState("");
   const [enableExchangePolicy, setEnableExchangePolicy] = useState(false);
 
+  // Estoque e Disponibilidade
+  const [autoHideOutOfStock, setAutoHideOutOfStock] = useState(true);
+  const [enableStockAlertNotification, setEnableStockAlertNotification] = useState(true);
+
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingWhiteLogo, setIsUploadingWhiteLogo] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
@@ -230,6 +234,8 @@ export function GeneralSettingsForm() {
       setHideAddress(!!settings.hideAddress);
       setExchangePolicy(settings.exchangePolicy || "");
       setEnableExchangePolicy(!!settings.enableExchangePolicy);
+      setAutoHideOutOfStock(settings.autoHideOutOfStock !== undefined ? !!settings.autoHideOutOfStock : true);
+      setEnableStockAlertNotification(settings.enableStockAlertNotification !== undefined ? !!settings.enableStockAlertNotification : true);
     }
   }, [settings]);
 
@@ -555,6 +561,8 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         hideAddress,
         exchangePolicy,
         enableExchangePolicy,
+        autoHideOutOfStock,
+        enableStockAlertNotification,
       });
 
       toast({
@@ -1071,6 +1079,50 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               Ocultar endereço físico na loja pública
             </Label>
           </div>
+
+        {/* Estoque e Disponibilidade */}
+        <div className="space-y-4 pt-4 border-t">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Estoque e Disponibilidade
+          </h3>
+          <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label
+                  className="font-medium text-sm cursor-pointer select-none"
+                  onClick={() => setAutoHideOutOfStock(!autoHideOutOfStock)}
+                >
+                  Ocultar produtos esgotados automaticamente
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Quando o estoque zerar após uma venda, desativa a visibilidade do produto na loja. Se desativado, o produto continua visível com o selo de esgotado.
+                </p>
+              </div>
+              <Switch
+                checked={autoHideOutOfStock}
+                onCheckedChange={setAutoHideOutOfStock}
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 pt-3 border-t">
+              <div className="space-y-0.5">
+                <Label
+                  className="font-medium text-sm cursor-pointer select-none"
+                  onClick={() => setEnableStockAlertNotification(!enableStockAlertNotification)}
+                >
+                  Habilitar botão &quot;Avise-me quando chegar&quot;
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Permite que os clientes deixem o WhatsApp para serem avisados quando produtos ou variações esgotadas voltarem ao estoque.
+                </p>
+              </div>
+              <Switch
+                checked={enableStockAlertNotification}
+                onCheckedChange={setEnableStockAlertNotification}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Política de Trocas */}
         <div className="space-y-4 pt-4 border-t">

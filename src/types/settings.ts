@@ -79,6 +79,10 @@ export interface StoreSettings {
   priceColor?: string | null;
   defaultProductSort?: string | null;
 
+  // Estoque e Disponibilidade
+  autoHideOutOfStock?: boolean;
+  enableStockAlertNotification?: boolean;
+
   createdAt?: string;
   updatedAt?: string;
 }
