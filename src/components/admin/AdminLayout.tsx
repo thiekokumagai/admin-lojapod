@@ -74,6 +74,19 @@ export function AdminLayout() {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     });
 
+    socket.on('loyalty.reward_redeemed', (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+
+      toast.success(
+        `🎁 BRINDE RESGATADO! O cliente ${data.customerName || data.customerPhone} resgatou: ${data.rewardTitle}. Favor separar o brinde!`,
+        {
+          duration: 10000,
+        }
+      );
+    });
+
     return () => {
       socket.disconnect();
     };

@@ -18,7 +18,11 @@ import {
   Check, 
   Loader2,
   Repeat,
-  MapPin
+  MapPin,
+  Gift,
+  DollarSign,
+  Percent,
+  Sparkles
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { OrderStatus } from "@/types/order";
@@ -113,28 +117,26 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
         }
 
         setCouponDiscount(initialDiscount);
-        setManualDiscount(0);
-        setSurcharge(0);
+        let initialManualDiscount = order.receiptDiscount || 0;
+        let initialSurcharge = order.receiptSurcharge || 0;
         const method = order.paymentMethod || "";
         const baseTotal = order.itemsTotal + order.freight;
         let initialPixDiscount = order.paymentDiscount || 0;
         let initialCardSurcharge = order.installmentSurcharge || 0;
         let inst = order.installments || 1;
         
-        const totalDiscount = initialDiscount;
+        const totalDiscount = initialDiscount + initialManualDiscount;
         const amountForFee = baseTotal - totalDiscount;
         const productDiscount = (order.coupon?.type === 'FREE_SHIPPING') ? 0 : totalDiscount;
         const baseForPix = Math.max(0, order.itemsTotal - productDiscount);
 
-        const initialCalculated = Math.round((baseTotal + initialCardSurcharge - initialPixDiscount - totalDiscount) * 100) / 100;
+        const initialCalculated = Math.round((baseTotal + initialCardSurcharge + initialSurcharge - initialPixDiscount - totalDiscount) * 100) / 100;
         const diff = Math.round((order.totalOrder - initialCalculated) * 100) / 100;
         
-        let initialSurcharge = 0;
-        let initialManualDiscount = 0;
         if (diff > 0) {
-          initialSurcharge = diff;
+          initialSurcharge += diff;
         } else if (diff < 0) {
-          initialManualDiscount = Math.abs(diff);
+          initialManualDiscount += Math.abs(diff);
         }
 
         setSurcharge(initialSurcharge);
@@ -642,7 +644,31 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
               {/* Order summary card with main data */}
               <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl font-bold text-slate-800 tracking-tight">Pedido #{order.orderNumber}</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xl font-bold text-slate-800 tracking-tight">Pedido #{order.orderNumber}</span>
+                    {order.loyaltyRedemption && (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold shadow-xs ${
+                        order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                          ? "bg-emerald-500 text-white animate-pulse"
+                          : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                          ? "bg-emerald-600 text-white"
+                          : "bg-amber-500 text-white"
+                      }`}>
+                        {order.loyaltyRedemption.rewardType === 'CASHBACK' ? (
+                          <Percent className="w-3.5 h-3.5" />
+                        ) : order.loyaltyRedemption.rewardType === 'POINTS_DISCOUNT' ? (
+                          <DollarSign className="w-3.5 h-3.5" />
+                        ) : (
+                          <Gift className="w-3.5 h-3.5" />
+                        )}
+                        {order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                          ? `BRINDE: ${order.loyaltyRedemption.rewardTitle}`
+                          : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                          ? `FIDELIDADE: ${order.loyaltyRedemption.rewardTitle}`
+                          : `FIDELIDADE: ${order.loyaltyRedemption.rewardTitle}`}
+                      </span>
+                    )}
+                  </div>
                   <Select 
                     value={localStatus || order.status} 
                     onValueChange={handleStatusChange}
@@ -745,6 +771,69 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                       </div>
                     </div>
                   ))}
+                  {order.loyaltyRedemption && (
+                    <div className={`flex items-center gap-3 p-3 rounded-xl border ${
+                      order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                        ? "bg-emerald-50 border-emerald-200"
+                        : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                        ? "bg-emerald-50 border-emerald-300"
+                        : "bg-amber-50 border-amber-300"
+                    }`}>
+                      <div className={`w-14 h-14 rounded-lg flex items-center justify-center shrink-0 shadow-xs ${
+                        order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                          ? "bg-emerald-500 text-white"
+                          : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                          ? "bg-emerald-600 text-white"
+                          : "bg-amber-500 text-white"
+                      }`}>
+                        {order.loyaltyRedemption.rewardType === 'CASHBACK' ? (
+                          <Percent className="w-7 h-7" />
+                        ) : order.loyaltyRedemption.rewardType === 'POINTS_DISCOUNT' ? (
+                          <DollarSign className="w-7 h-7" />
+                        ) : (
+                          <Gift className="w-7 h-7" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
+                            order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                              ? "text-emerald-800 bg-emerald-200/80"
+                              : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                              ? "text-emerald-900 bg-emerald-200"
+                              : "text-amber-900 bg-amber-200"
+                          }`}>
+                            {order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                              ? "Brinde de Fidelidade"
+                              : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                              ? "Cashback Fidelidade"
+                              : "Desconto por Pontos"}
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-slate-800 block mt-0.5">
+                          {order.loyaltyRedemption.rewardTitle}
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium block">
+                          {order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                            ? "Entregar brinde físico junto com este pedido 🎁"
+                            : "Desconto aplicado diretamente no total do pedido"}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xs font-extrabold px-2 py-1 rounded-lg border shadow-2xs ${
+                          order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                            ? "text-emerald-700 bg-white border-emerald-200"
+                            : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                            ? "text-emerald-700 bg-white border-emerald-300"
+                            : "text-amber-700 bg-white border-amber-300"
+                        }`}>
+                          {order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                            ? "GRÁTIS"
+                            : "APLICADO"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -766,6 +855,41 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                           : formatCurrency(order.freight)}
                   </span>
                 </div>
+                {order.loyaltyRedemption && (
+                  <div className={`flex justify-between font-bold items-center px-2 py-1.5 rounded-lg border ${
+                    order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                      ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                      : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                      ? "text-emerald-800 bg-emerald-50 border-emerald-300"
+                      : "text-amber-800 bg-amber-50 border-amber-300"
+                  }`}>
+                    <span className="flex items-center gap-1.5">
+                      {order.loyaltyRedemption.rewardType === 'CASHBACK' ? (
+                        <Percent className="w-4 h-4 text-emerald-600" />
+                      ) : order.loyaltyRedemption.rewardType === 'POINTS_DISCOUNT' ? (
+                        <DollarSign className="w-4 h-4 text-amber-600" />
+                      ) : (
+                        <Gift className="w-4 h-4 text-emerald-600" />
+                      )}
+                      {order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                        ? `Brinde Fidelidade (${order.loyaltyRedemption.rewardTitle})`
+                        : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                        ? `Cashback Utilizado (${order.loyaltyRedemption.rewardTitle})`
+                        : `Desconto Fidelidade (${order.loyaltyRedemption.rewardTitle})`}
+                    </span>
+                    <span className={`text-xs uppercase px-2 py-0.5 rounded font-extrabold ${
+                      order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                        ? "bg-emerald-600 text-white"
+                        : order.loyaltyRedemption.rewardType === 'CASHBACK'
+                        ? "bg-emerald-700 text-white"
+                        : "bg-amber-600 text-white"
+                    }`}>
+                      {order.loyaltyRedemption.rewardType === 'FREE_PRODUCT' || order.loyaltyRedemption.rewardType === 'HYBRID'
+                        ? "Grátis"
+                        : "Desconto"}
+                    </span>
+                  </div>
+                )}
                 {order.coupon && (
                   <div className="flex justify-between text-violet-600 font-bold items-center bg-violet-50/30 px-1 py-0.5 rounded border border-violet-100">
                     <span>Cupom Aplicado</span>
@@ -796,7 +920,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                   </div>
                 )}
                 <div className="flex justify-between text-slate-500 items-center">
-                  <span>Desconto Recebimento</span>
+                  <span>Desconto Fidelidade / Recebimento</span>
                   {isPaid ? (
                     <span className="font-semibold text-slate-700 pr-1">{formatCurrency(manualDiscount)}</span>
                   ) : (

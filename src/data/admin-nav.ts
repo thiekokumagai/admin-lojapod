@@ -17,6 +17,7 @@ import {
   CreditCard,
   Layers,
   BellRing,
+  Award,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -74,6 +75,7 @@ export const navSections = [
     label: "Vendas",
     items: [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingBag },
+      { title: "Cartão Fidelidade", url: "/fidelidade", icon: Award },
       { title: "Mapa de Entregas", url: "/mapa-entregas", icon: MapPin },
       { title: "Motoboys", url: "/motoboys", icon: Bike },
       { title: "Clientes", url: "/clientes", icon: Users },

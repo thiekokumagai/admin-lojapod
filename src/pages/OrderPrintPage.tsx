@@ -101,6 +101,14 @@ export default function OrderPrintPage() {
             <span className="shrink-0">{formatCurrency(item.price * item.quantity)}</span>
           </div>
         ))}
+        {order.loyaltyRedemption && (
+          <div className="flex justify-between mb-1 w-full gap-2 overflow-hidden font-bold">
+            <span className="shrink-0">🎁 1x</span>
+            <span className="shrink-0">BRINDE: {order.loyaltyRedemption.rewardTitle}</span>
+            <span className="grow border-b border-dotted border-black relative top-[-4px] mx-1"></span>
+            <span className="shrink-0">GRÁTIS</span>
+          </div>
+        )}
       </div>
 
       <div className="mb-4">

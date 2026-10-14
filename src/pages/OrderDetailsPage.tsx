@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { 
   ArrowLeft, Send, Copy, Printer, Edit,
-  User, Phone, MapPin, CreditCard, Check, Loader2, Repeat 
+  User, Phone, MapPin, CreditCard, Check, Loader2, Repeat, Gift 
 } from "lucide-react";
 import { useState } from "react";
 import { customersService } from "@/services/customers.service";
@@ -323,8 +323,15 @@ export default function OrderDetailsPage() {
           <div className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-2xl font-bold text-slate-800 tracking-tight block">Pedido #{order.orderNumber}</span>
-                <span className="text-sm text-slate-500 font-medium">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-2xl font-bold text-slate-800 tracking-tight block">Pedido #{order.orderNumber}</span>
+                  {order.loyaltyRedemption && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500 text-white shadow-xs animate-pulse">
+                      <Gift className="w-3.5 h-3.5" /> BRINDE: {order.loyaltyRedemption.rewardTitle}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm text-slate-500 font-medium mt-1 block">
                   {formattedDate(order.createdAt)}
                 </span>
               </div>
@@ -381,6 +388,29 @@ export default function OrderDetailsPage() {
                   </div>
                 </div>
               ))}
+              {order.loyaltyRedemption && (
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200 mt-2">
+                  <div className="w-16 h-16 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Gift className="w-8 h-8" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-200/80 px-2 py-0.5 rounded">
+                      Brinde de Fidelidade
+                    </span>
+                    <span className="text-sm font-bold text-slate-800 block mt-1">
+                      {order.loyaltyRedemption.rewardTitle}
+                    </span>
+                    <span className="text-xs text-emerald-600 font-semibold block">
+                      Entregar junto com este pedido 🎁
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-extrabold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+                      GRÁTIS
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -509,7 +539,7 @@ export default function OrderDetailsPage() {
               ) : null}
               {order.receiptDiscount ? (
                 <div className="flex justify-between text-rose-600">
-                  <span>Desconto Recebimento</span>
+                  <span>Desconto Fidelidade / Recebimento</span>
                   <span>-R$ {order.receiptDiscount.toFixed(2)}</span>
                 </div>
               ) : null}

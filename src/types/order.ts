@@ -53,6 +53,12 @@ export interface Order {
     title: string;
     type: string;
   };
+  loyaltyRedemption?: {
+    id: string;
+    rewardTitle: string;
+    rewardType: string;
+    status: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];

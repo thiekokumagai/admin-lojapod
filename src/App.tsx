@@ -45,6 +45,7 @@ const SuspendedStorePage = lazy(() => import("@/pages/SuspendedStorePage"));
 const ImportacaoPage = lazy(() => import("@/pages/ImportacaoPage"));
 const DomainPage = lazy(() => import("@/pages/DomainPage"));
 const StockNotificationsPage = lazy(() => import("@/pages/StockNotificationsPage"));
+const LoyaltyPage = lazy(() => import("@/pages/LoyaltyPage"));
 
 function RouteFallback() {
   return (
@@ -106,6 +107,7 @@ const App = () => (
                   <Route path="/pedidos/novo" element={<CreateOrderPage />} />
                   <Route path="/pedidos/:id/editar" element={<EditOrderPage />} />
                   <Route path="/pedidos/:id" element={<OrderDetailsPage />} />
+                  <Route path="/fidelidade" element={<LoyaltyPage />} />
                   <Route path="/mapa-entregas" element={<DeliveryMapPage />} />
                   <Route path="/entregas/rotas" element={<DeliveryMapPage />} />
                   <Route path="/motoboys" element={<CouriersPage />} />
