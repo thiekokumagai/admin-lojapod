@@ -93,11 +93,19 @@ export default function StockNotificationsPage() {
   };
 
   const filteredItems = notifications.filter((item) => {
-    const matchesSearch =
-      item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.customerPhone.includes(searchTerm) ||
-      item.productTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.variationName && item.variationName.toLowerCase().includes(searchTerm.toLowerCase()));
+    const rawSearch = searchTerm.trim().toLowerCase();
+    const cleanSearchPhone = rawSearch.replace(/\D/g, "");
+    const cleanCustomerPhone = item.customerPhone.replace(/\D/g, "");
+
+    const matchesName = item.customerName.toLowerCase().includes(rawSearch);
+    const matchesPhone =
+      item.customerPhone.toLowerCase().includes(rawSearch) ||
+      (cleanSearchPhone.length > 0 && cleanCustomerPhone.includes(cleanSearchPhone));
+    const matchesProduct =
+      item.productTitle.toLowerCase().includes(rawSearch) ||
+      (item.variationName && item.variationName.toLowerCase().includes(rawSearch));
+
+    const matchesSearch = !rawSearch || matchesName || matchesPhone || matchesProduct;
 
     const matchesStatus =
       statusFilter === "ALL" || item.status === statusFilter;
@@ -114,7 +122,7 @@ export default function StockNotificationsPage() {
   const totalPending = notifications.filter((n) => n.status === "PENDING").length;
   const hasFilters = Boolean(searchTerm || statusFilter !== "ALL" || availabilityFilter !== "ALL");
 
-  const clearFilters = () => {
+  const handleClearFilters = () => {
     setSearchTerm("");
     setStatusFilter("ALL");
     setAvailabilityFilter("ALL");
@@ -169,50 +177,63 @@ export default function StockNotificationsPage() {
         </Card>
       </div>
 
-      {/* Barra de Filtros e Busca Padronizada */}
-      <div className="flex flex-col md:flex-row flex-wrap gap-3 items-start md:items-center w-full">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Toolbar / Filtros exatamente como em Pedidos */}
+      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm">
+        {/* Input de Busca de Cliente ou Telefone */}
+        <div className="relative w-full sm:flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Buscar cliente, telefone ou produto..."
+            type="text"
+            placeholder="Buscar por cliente ou telefone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-full"
+            className="pl-10 h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium placeholder:text-slate-400"
           />
         </div>
 
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as any)}
-        >
-          <SelectTrigger className="w-full md:w-44">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todos os status</SelectItem>
-            <SelectItem value="PENDING">Pendentes</SelectItem>
-            <SelectItem value="NOTIFIED">Notificados</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Dropdown de Status */}
+        <div className="w-full sm:w-48">
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as any)}
+          >
+            <SelectTrigger className="h-11 border-slate-200 focus:ring-violet-600 rounded-xl font-semibold text-slate-700">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="ALL" className="font-semibold rounded-md">Todos os status</SelectItem>
+              <SelectItem value="PENDING" className="font-semibold rounded-md">Pendentes</SelectItem>
+              <SelectItem value="NOTIFIED" className="font-semibold rounded-md">Notificados</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select
-          value={availabilityFilter}
-          onValueChange={(v) => setAvailabilityFilter(v as any)}
-        >
-          <SelectTrigger className="w-full md:w-52">
-            <SelectValue placeholder="Estoque" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todo estoque</SelectItem>
-            <SelectItem value="IN_STOCK">🟢 Em Estoque (&gt; 0)</SelectItem>
-            <SelectItem value="OUT_OF_STOCK">🔴 Sem Estoque (0)</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Dropdown de Estoque */}
+        <div className="w-full sm:w-52">
+          <Select
+            value={availabilityFilter}
+            onValueChange={(v) => setAvailabilityFilter(v as any)}
+          >
+            <SelectTrigger className="h-11 border-slate-200 focus:ring-emerald-600 rounded-xl font-semibold text-slate-700">
+              <SelectValue placeholder="Status de Estoque" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="ALL" className="font-semibold rounded-md">Todo estoque</SelectItem>
+              <SelectItem value="IN_STOCK" className="font-semibold rounded-md">🟢 Em Estoque (&gt; 0)</SelectItem>
+              <SelectItem value="OUT_OF_STOCK" className="font-semibold rounded-md">🔴 Sem Estoque (0)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full md:w-auto">
-            <X className="h-3.5 w-3.5 mr-1" />
-            Limpar filtros
+          <Button
+            variant="ghost"
+            onClick={handleClearFilters}
+            className="h-11 px-3 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-xl transition-colors sm:ml-auto shrink-0"
+            title="Limpar Filtros"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Limpar
           </Button>
         )}
       </div>
