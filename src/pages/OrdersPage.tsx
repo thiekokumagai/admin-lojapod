@@ -619,8 +619,11 @@ export default function OrdersPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-700">{order.customerName}</span>
                           {order.loyaltyRedemption && (
-                            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold border-0 px-2 py-0.5 text-[11px] animate-pulse flex items-center gap-1 shadow-xs">
-                              🎁 BRINDE: {order.loyaltyRedemption.rewardTitle}
+                            <Badge 
+                              className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100 font-semibold px-1.5 py-0 h-5 text-[10px] flex items-center gap-1 shrink-0"
+                              title={`Fidelidade: ${order.loyaltyRedemption.rewardTitle}`}
+                            >
+                              🎁 <span className="max-w-[120px] truncate">{order.loyaltyRedemption.rewardTitle}</span>
                             </Badge>
                           )}
                           {order.deliveryModality === "STORE_PICKUP" && (

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { io } from "socket.io-client";
 import {
   Award,
   Search,
@@ -68,7 +69,7 @@ const PROGRAM_TYPES: {
     desc: "O cliente acumula compras válidas e ganha um produto/brinde ao completar a cartela.",
     example: "Ex: A cada 10 compras, ganha 1 Pod Descartável.",
   },
-  /*
+  
   {
     id: "POINTS_DISCOUNT",
     title: "Desconto por Pontos",
@@ -100,7 +101,7 @@ const PROGRAM_TYPES: {
     icon: Layers,
     desc: "O cliente junta pontos e escolhe se prefere trocar por desconto ou pelo produto brinde.",
     example: "Ex: Escolher entre R$ 25 de desconto ou 1 Brinde.",
-  },*/
+  },
 ];
 
 export default function LoyaltyPage() {
@@ -114,6 +115,7 @@ export default function LoyaltyPage() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configForm, setConfigForm] = useState<Partial<LoyaltyProgram>>({});
   const [minOrderDisplay, setMinOrderDisplay] = useState("R$ 0,00");
+  const [pointsRedemptionDisplay, setPointsRedemptionDisplay] = useState("R$ 0,05");
 
   // Modal de Ajuste Manual de Selos
   const [isAdjustOpen, setIsAdjustOpen] = useState(false);
@@ -122,6 +124,28 @@ export default function LoyaltyPage() {
   const [adjustName, setAdjustName] = useState("");
   const [adjustCount, setAdjustCount] = useState<number>(1);
   const [adjustReason, setAdjustReason] = useState("");
+
+  useEffect(() => {
+    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, "") || "http://localhost:3000";
+    const socket = io(socketUrl);
+
+    const refreshLoyalty = () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-program"] });
+    };
+
+    socket.on("loyalty.refresh", refreshLoyalty);
+    socket.on("loyalty.card_updated", refreshLoyalty);
+    socket.on("loyalty.reward_delivered", refreshLoyalty);
+    socket.on("loyalty.reward_redeemed", refreshLoyalty);
+    socket.on("order.updated", refreshLoyalty);
+    socket.on("order.new", refreshLoyalty);
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [queryClient]);
 
   // Query das Configurações do Programa
   const { data: program } = useQuery({
@@ -214,10 +238,19 @@ export default function LoyaltyPage() {
     setConfigForm((prev) => ({ ...prev, minOrderValue: cents }));
   };
 
+  const handlePointsRedemptionChange = (text: string) => {
+    const digits = text.replace(/\D/g, "");
+    const cents = Number(digits) / 100;
+    setPointsRedemptionDisplay(formatBRL(cents));
+    setConfigForm((prev) => ({ ...prev, pointsRedemptionValue: cents }));
+  };
+
   const handleOpenConfig = () => {
     if (program) {
       const minVal = Number(program.minOrderValue) || 0;
+      const pointVal = Number(program.pointsRedemptionValue) || 0.05;
       setMinOrderDisplay(formatBRL(minVal));
+      setPointsRedemptionDisplay(formatBRL(pointVal));
       setConfigForm({
         isActive: program.isActive,
         type: program.type || "FREE_PRODUCT",
@@ -227,7 +260,8 @@ export default function LoyaltyPage() {
         rewardText: program.rewardText || "Prêmio Especial",
         rewardCouponCode: program.rewardCouponCode || "",
         pointsPerReal: Number(program.pointsPerReal) || 1,
-        pointsRedemptionValue: Number(program.pointsRedemptionValue) || 0.05,
+        pointsRedemptionValue: pointVal,
+        minPointsToRedeem: Number(program.minPointsToRedeem) || 0,
         cashbackPercent: Number(program.cashbackPercent) || 5,
         progressiveTiers: Array.isArray(program.progressiveTiers) && program.progressiveTiers.length > 0
           ? program.progressiveTiers
@@ -253,6 +287,7 @@ export default function LoyaltyPage() {
       rewardCouponCode: configForm.rewardCouponCode || undefined,
       pointsPerReal: Number(configForm.pointsPerReal) || 1,
       pointsRedemptionValue: Number(configForm.pointsRedemptionValue) || 0.05,
+      minPointsToRedeem: Number(configForm.minPointsToRedeem) || 0,
       cashbackPercent: Number(configForm.cashbackPercent) || 5,
       progressiveTiers: configForm.progressiveTiers || [],
     });
@@ -513,6 +548,37 @@ export default function LoyaltyPage() {
                                   equivale a {formatBRL((Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05))}
                                 </span>
                               </div>
+                            ) : program?.type === "PROGRESSIVE_DISCOUNT" ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="font-bold text-slate-900 text-sm">
+                                  {card.currentStamps} {card.currentStamps === 1 ? "pedido" : "pedidos"}
+                                </div>
+                                <span className="text-[11px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  {(() => {
+                                    const tiers = Array.isArray(program?.progressiveTiers) ? [...program.progressiveTiers].sort((a: any, b: any) => a.minOrders - b.minOrders) : [];
+                                    const qualified = tiers.filter((t: any) => card.currentStamps >= t.minOrders);
+                                    const current = qualified.length > 0 ? qualified[qualified.length - 1] : null;
+                                    return current ? `${current.discountPercent}% OFF Ativo` : "Sem desconto ainda";
+                                  })()}
+                                </span>
+                              </div>
+                            ) : program?.type === "HYBRID" ? (
+                              <div className="flex flex-col items-center gap-1.5">
+                                <div className="font-bold text-slate-900 text-sm">
+                                  {card.currentStamps} <span className="text-slate-400 font-normal">/ {maxStamps} selos</span>
+                                </div>
+                                <div className="w-28 bg-slate-100 h-2 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full transition-all duration-300 ${
+                                      card.currentStamps >= maxStamps ? "bg-emerald-500" : "bg-primary"
+                                    }`}
+                                    style={{ width: `${progressPct}%` }}
+                                  />
+                                </div>
+                                <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                  {card.pointsBalance} pts ({formatBRL((Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05))})
+                                </span>
+                              </div>
                             ) : (
                               <div className="flex flex-col items-center gap-1.5">
                                 <div className="font-bold text-slate-900 text-sm">
@@ -613,7 +679,7 @@ export default function LoyaltyPage() {
                   ) : (
                     redemptions.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-4 text-xs text-slate-500">
+                        <td className="px-5 py-3 text-xs text-slate-500">
                           {new Date(item.createdAt).toLocaleString("pt-BR", {
                             day: "2-digit",
                             month: "2-digit",
@@ -622,36 +688,40 @@ export default function LoyaltyPage() {
                             timeZone: "America/Campo_Grande",
                           })}
                         </td>
-                        <td className="px-5 py-4">
-                          <div className="font-semibold text-slate-900">{item.customerName || "Cliente"}</div>
-                          <div className="text-xs text-slate-500">{formatPhoneNumber(item.customerPhone)}</div>
+                        <td className="px-5 py-3">
+                          <div className="font-semibold text-slate-900 text-xs sm:text-sm">{item.customerName || "Cliente"}</div>
+                          <div className="text-[11px] text-slate-500">{formatPhoneNumber(item.customerPhone)}</div>
                         </td>
-                        <td className="px-5 py-4">
-                          <span className={`font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 w-fit ${
-                            item.rewardType === 'FREE_PRODUCT' || item.rewardType === 'HYBRID'
-                              ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                              : item.rewardType === 'CASHBACK'
-                              ? "text-emerald-800 bg-emerald-50 border-emerald-300"
-                              : "text-amber-800 bg-amber-50 border-amber-300"
-                          }`}>
-                            {item.rewardType === 'CASHBACK' ? '💸' : item.rewardType === 'POINTS_DISCOUNT' ? '💰' : '🎁'} {item.rewardTitle}
+                        <td className="px-5 py-3">
+                          <span 
+                            className={`font-semibold text-xs px-2 py-0.5 rounded-md border inline-flex items-center gap-1 max-w-[240px] truncate ${
+                              item.rewardType === 'FREE_PRODUCT' || item.rewardType === 'HYBRID'
+                                ? "text-emerald-700 bg-emerald-50/80 border-emerald-200"
+                                : item.rewardType === 'CASHBACK'
+                                ? "text-emerald-800 bg-emerald-50/80 border-emerald-300"
+                                : "text-amber-800 bg-amber-50/80 border-amber-300"
+                            }`}
+                            title={item.rewardTitle}
+                          >
+                            <span>{item.rewardType === 'CASHBACK' ? '💸' : item.rewardType === 'POINTS_DISCOUNT' ? '💰' : '🎁'}</span>
+                            <span className="truncate">{item.rewardTitle}</span>
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-xs font-mono font-bold text-slate-600">
+                        <td className="px-5 py-3 text-xs font-mono font-bold text-slate-600">
                           {item.order ? `#${item.order.orderNumber}` : "Resgate Avulso"}
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-5 py-3 text-center">
                           {item.status === "PENDING_DELIVERY" ? (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 animate-pulse">
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
                               ⏳ Separar Brinde
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
                               ✅ {item.rewardType === 'POINTS_DISCOUNT' || item.rewardType === 'CASHBACK' ? 'Aplicado' : 'Entregue'}
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-5 py-3 text-right">
                           {item.status === "PENDING_DELIVERY" && (
                             <Button
                               size="sm"
@@ -729,21 +799,25 @@ export default function LoyaltyPage() {
             {(configForm.type === "FREE_PRODUCT" || configForm.type === "HYBRID") && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-slate-50 rounded-xl border">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Selos p/ Ganhar Brinde</Label>
+                  <Label className="text-xs font-semibold flex items-center h-5">Selos p/ Ganhar Brinde</Label>
                   <Input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={configForm.stampsRequired || 10}
-                    onChange={(e) => setConfigForm((prev) => ({ ...prev, stampsRequired: Number(e.target.value) }))}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={configForm.stampsRequired !== undefined ? String(configForm.stampsRequired) : "10"}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      setConfigForm((prev) => ({ ...prev, stampsRequired: val ? parseInt(val, 10) : 0 }));
+                    }}
                     className="h-10 rounded-xl bg-white"
+                    placeholder="Ex: 10"
                     required
                   />
                   <p className="text-[11px] text-slate-400">Ex: 10 pedidos para completar.</p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Descrição do Brinde</Label>
+                  <Label className="text-xs font-semibold flex items-center h-5">Descrição do Brinde</Label>
                   <Input
                     placeholder="Ex: Ganhe 1 Pod Ignite"
                     value={configForm.rewardText || ""}
@@ -805,12 +879,14 @@ export default function LoyaltyPage() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="text-xs text-slate-500">A partir de</span>
                         <Input
-                          type="number"
-                          min="1"
-                          value={tier.minOrders}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={tier.minOrders !== undefined ? String(tier.minOrders) : ""}
                           onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
                             const updated = [...(configForm.progressiveTiers || [])];
-                            updated[idx] = { ...updated[idx], minOrders: Number(e.target.value) };
+                            updated[idx] = { ...updated[idx], minOrders: val ? parseInt(val, 10) : 0 };
                             setConfigForm((prev) => ({ ...prev, progressiveTiers: updated }));
                           }}
                           className="h-8 w-16 text-center font-bold rounded-lg text-xs"
@@ -822,14 +898,13 @@ export default function LoyaltyPage() {
                         <span className="text-xs text-slate-500">Ganha</span>
                         <div className="relative w-20">
                           <Input
-                            type="number"
-                            step="0.5"
-                            min="1"
-                            max="50"
-                            value={tier.discountPercent}
+                            type="text"
+                            inputMode="decimal"
+                            value={tier.discountPercent !== undefined ? String(tier.discountPercent) : ""}
                             onChange={(e) => {
+                              const val = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
                               const updated = [...(configForm.progressiveTiers || [])];
-                              updated[idx] = { ...updated[idx], discountPercent: Number(e.target.value) };
+                              updated[idx] = { ...updated[idx], discountPercent: val === "" ? 0 : Number(val) };
                               setConfigForm((prev) => ({ ...prev, progressiveTiers: updated }));
                             }}
                             className="h-8 pr-6 text-center font-bold rounded-lg text-emerald-700 text-xs"
@@ -863,12 +938,13 @@ export default function LoyaltyPage() {
                 <Label className="text-xs font-semibold text-emerald-900">Porcentagem de Cashback (%)</Label>
                 <div className="relative w-40">
                   <Input
-                    type="number"
-                    step="0.5"
-                    min="1"
-                    max="50"
-                    value={configForm.cashbackPercent || 5}
-                    onChange={(e) => setConfigForm((prev) => ({ ...prev, cashbackPercent: Number(e.target.value) }))}
+                    type="text"
+                    inputMode="decimal"
+                    value={configForm.cashbackPercent !== undefined ? String(configForm.cashbackPercent) : "5"}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                      setConfigForm((prev) => ({ ...prev, cashbackPercent: val === "" ? 0 : Number(val) }));
+                    }}
                     className="h-10 rounded-xl bg-white pr-8 font-bold"
                   />
                   <Percent className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -878,30 +954,55 @@ export default function LoyaltyPage() {
             )}
 
             {(configForm.type === "POINTS_DISCOUNT" || configForm.type === "HYBRID") && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-amber-50/50 rounded-xl border border-amber-200/60">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-amber-900">Pontos por R$ 1 Gasto</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    value={configForm.pointsPerReal || 1}
-                    onChange={(e) => setConfigForm((prev) => ({ ...prev, pointsPerReal: Number(e.target.value) }))}
-                    className="h-10 rounded-xl bg-white"
-                  />
+              <div className="p-3.5 bg-amber-50/50 rounded-xl border border-amber-200/60 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-amber-900 flex items-center h-5">Pontos por R$ 1 Gasto</Label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={configForm.pointsPerReal !== undefined ? String(configForm.pointsPerReal) : "1"}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                        setConfigForm((prev) => ({ ...prev, pointsPerReal: val === "" ? 0 : Number(val) }));
+                      }}
+                      className="h-10 rounded-xl bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-amber-900 flex items-center h-5">Valor de Cada 1 Ponto (R$)</Label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      value={pointsRedemptionDisplay}
+                      onChange={(e) => handlePointsRedemptionChange(e.target.value)}
+                      className="h-10 rounded-xl bg-white font-semibold"
+                    />
+                    <p className="text-[11px] text-amber-700">Ex: R$ 0,05 = 100 pontos valem R$ 5,00 de desconto.</p>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-amber-900">Valor de Cada 1 Ponto (R$)</Label>
+                <div className="space-y-1.5 pt-1 border-t border-amber-200/60">
+                  <Label className="text-xs font-semibold text-amber-900 flex items-center justify-between">
+                    <span>Mínimo de Pontos para Resgate</span>
+                    <span className="text-[11px] text-amber-700 font-normal">0 = sem mínimo</span>
+                  </Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    value={configForm.pointsRedemptionValue || 0.05}
-                    onChange={(e) => setConfigForm((prev) => ({ ...prev, pointsRedemptionValue: Number(e.target.value) }))}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={configForm.minPointsToRedeem !== undefined ? String(configForm.minPointsToRedeem) : "0"}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      setConfigForm((prev) => ({ ...prev, minPointsToRedeem: val ? parseInt(val, 10) : 0 }));
+                    }}
                     className="h-10 rounded-xl bg-white"
+                    placeholder="Ex: 100 (equivale a R$ 5,00)"
                   />
-                  <p className="text-[11px] text-amber-700">Ex: 0.05 significa que 100 pontos valem R$ 5,00 de desconto.</p>
+                  <p className="text-[11px] text-amber-700">
+                    O cliente só poderá aplicar o desconto se tiver atingido essa pontuação mínima.
+                  </p>
                 </div>
               </div>
             )}
@@ -909,7 +1010,7 @@ export default function LoyaltyPage() {
             {/* Regras Gerais: Valor Mínimo e Validade */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Valor Mínimo do Pedido (R$)</Label>
+                <Label className="text-xs font-semibold flex items-center h-5">Valor Mínimo do Pedido (R$)</Label>
                 <Input
                   type="text"
                   value={minOrderDisplay}
@@ -920,16 +1021,20 @@ export default function LoyaltyPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-500" /> Validade do Ciclo (em Dias)
+                <Label className="text-xs font-semibold flex items-center gap-1.5 h-5">
+                  <Clock className="w-4 h-4 text-amber-500 shrink-0" /> Validade do Ciclo (em Dias)
                 </Label>
                 <Input
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={configForm.validityDays || 30}
-                  onChange={(e) => setConfigForm((prev) => ({ ...prev, validityDays: Number(e.target.value) }))}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={configForm.validityDays !== undefined ? String(configForm.validityDays) : "30"}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    setConfigForm((prev) => ({ ...prev, validityDays: val ? parseInt(val, 10) : 0 }));
+                  }}
                   className="h-10 rounded-xl"
+                  placeholder="Ex: 30"
                   required
                 />
               </div>

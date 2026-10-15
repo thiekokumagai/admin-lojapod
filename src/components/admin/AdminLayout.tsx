@@ -74,6 +74,28 @@ export function AdminLayout() {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     });
 
+    socket.on('order.updated', () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
+    });
+
+    socket.on('loyalty.refresh', () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-program"] });
+    });
+
+    socket.on('loyalty.card_updated', () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
+    });
+
+    socket.on('loyalty.reward_delivered', () => {
+      queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
+    });
+
     socket.on('loyalty.reward_redeemed', (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
       queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
