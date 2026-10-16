@@ -370,24 +370,24 @@ export default function LoyaltyPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Award className="h-7 w-7 text-primary" /> Programa de Fidelidade
+            <Award className="h-7 w-7 text-primary shrink-0" /> Programa de Fidelidade
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Fidelize seus clientes com produto grátis, cashback, pontos por desconto ou progressivo.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Button
             onClick={() => handleOpenAdjust()}
             variant="outline"
-            className="h-11 rounded-xl border-slate-200 gap-2 font-medium"
+            className="h-11 rounded-xl border-slate-200 gap-2 font-medium justify-center"
           >
             <Plus className="w-4 h-4 text-emerald-600" /> Ajustar Pontos/Selos
           </Button>
           <Button
             onClick={handleOpenConfig}
-            className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white gap-2 font-medium shadow-sm"
+            className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white gap-2 font-medium shadow-sm justify-center"
           >
             <Settings className="w-4 h-4" /> Configurar Regras
           </Button>
@@ -395,8 +395,8 @@ export default function LoyaltyPage() {
       </div>
 
       {/* Banner de Status e Modo Ativo */}
-      <div className="p-5 rounded-2xl border bg-white shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="p-4 sm:p-5 rounded-2xl border bg-white shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4">
           <div
             className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
               program?.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
@@ -405,7 +405,7 @@ export default function LoyaltyPage() {
             <currentProgramType.icon className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold text-slate-900">
                 Modo: <span className="text-primary">{currentProgramType.title}</span> ({currentProgramType.badge})
               </h2>
@@ -423,7 +423,7 @@ export default function LoyaltyPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-between md:justify-start">
           <Switch
             checked={!!program?.isActive}
             onCheckedChange={(val) => updateProgramMutation.mutate({ isActive: val })}
@@ -437,25 +437,27 @@ export default function LoyaltyPage() {
 
       {/* Navegação por Abas: Clientes e Resgates Pendentes */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-slate-100/80 p-1 rounded-xl">
-          <TabsTrigger value="cards" className="rounded-lg font-semibold text-xs sm:text-sm gap-2">
-            <User className="w-4 h-4" /> Clientes Participantes ({cardsData?.total || 0})
-          </TabsTrigger>
-          <TabsTrigger value="gifts" className="rounded-lg font-semibold text-xs sm:text-sm gap-2 relative">
-            <Gift className="w-4 h-4 text-emerald-600" /> Brindes para Entregar
-            {pendingRedemptionsCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 bg-emerald-500 text-white rounded-full text-[10px] font-extrabold animate-pulse">
-                {pendingRedemptionsCount}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto pb-1">
+          <TabsList className="bg-slate-100/80 p-1 rounded-xl w-full sm:w-auto inline-flex">
+            <TabsTrigger value="cards" className="flex-1 sm:flex-initial rounded-lg font-semibold text-xs sm:text-sm gap-2 whitespace-nowrap">
+              <User className="w-4 h-4" /> Clientes Participantes ({cardsData?.total || 0})
+            </TabsTrigger>
+            <TabsTrigger value="gifts" className="flex-1 sm:flex-initial rounded-lg font-semibold text-xs sm:text-sm gap-2 relative whitespace-nowrap">
+              <Gift className="w-4 h-4 text-emerald-600" /> Brindes para Entregar
+              {pendingRedemptionsCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 bg-emerald-500 text-white rounded-full text-[10px] font-extrabold animate-pulse">
+                  {pendingRedemptionsCount}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ABA 1: Clientes e Cartões */}
         <TabsContent value="cards" className="space-y-4">
           {/* Toolbar de Busca e Filtros */}
           <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative w-full sm:w-96">
+            <div className="relative w-full sm:flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Buscar por cliente ou telefone..."
@@ -476,7 +478,7 @@ export default function LoyaltyPage() {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 min-w-[170px] text-sm font-medium">
+                <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[170px] text-sm font-medium">
                   <SelectValue placeholder="Status do Cartão" />
                 </SelectTrigger>
                 <SelectContent>
@@ -490,8 +492,113 @@ export default function LoyaltyPage() {
             </div>
           </div>
 
-          {/* Tabela de Clientes */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          {/* Cards Mobile (Padronização de Layout da Loja) */}
+          <div className="grid md:hidden gap-3">
+            {isLoadingCards ? (
+              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6">
+                Carregando participantes...
+              </div>
+            ) : cardsData?.data?.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6">
+                Nenhum cliente encontrado com os filtros atuais.
+              </div>
+            ) : (
+              cardsData?.data.map((card) => {
+                const maxStamps = program?.stampsRequired || 10;
+                const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
+
+                return (
+                  <div
+                    key={card.id}
+                    className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-xs flex flex-col gap-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-sm truncate flex items-center gap-1.5">
+                          <User className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span>{card.customerName || "Cliente sem nome"}</span>
+                        </div>
+                        <div className="text-xs text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                          <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{formatPhoneNumber(card.customerPhone)}</span>
+                        </div>
+                      </div>
+                      <div className="shrink-0">
+                        {getStatusBadge(card.status)}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-3 border border-slate-100">
+                      <div className="flex-1">
+                        <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wider block mb-1">
+                          Progresso / Saldo
+                        </span>
+                        {program?.type === "CASHBACK" ? (
+                          <div className="font-bold text-emerald-600 text-sm">
+                            {formatBRL(Number(card.cashbackBalance) || 0)}
+                          </div>
+                        ) : program?.type === "POINTS_DISCOUNT" ? (
+                          <div className="font-bold text-amber-600 text-sm">
+                            {card.pointsBalance} pts
+                            <span className="block text-[10px] text-slate-400 font-normal">
+                              {formatBRL((Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05))}
+                            </span>
+                          </div>
+                        ) : program?.type === "PROGRESSIVE_DISCOUNT" ? (
+                          <div className="font-bold text-slate-900 text-sm">
+                            {card.currentStamps} pedidos
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="font-bold text-slate-900 text-sm">
+                              {card.currentStamps} <span className="text-slate-400 font-normal">/ {maxStamps} selos</span>
+                            </div>
+                            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-300 ${
+                                  card.currentStamps >= maxStamps ? "bg-emerald-500" : "bg-primary"
+                                }`}
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0 border-l border-slate-200 pl-3">
+                        <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wider block mb-0.5">
+                          Ciclos
+                        </span>
+                        <span className="font-bold text-slate-800 text-xs">
+                          {card.totalCompleted}x 🏆
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs text-slate-500">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>
+                          {card.expiresAt ? `Validade: ${formatDate(card.expiresAt)}` : "Sem validade definida"}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenAdjust(card)}
+                        className="h-8 rounded-lg text-xs font-semibold text-slate-700 hover:text-primary shrink-0"
+                      >
+                        Ajustar
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-600">
                 <thead className="bg-slate-50/80 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
@@ -650,7 +757,100 @@ export default function LoyaltyPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          {/* Cards Mobile para Brindes */}
+          <div className="grid md:hidden gap-3">
+            {isLoadingRedemptions ? (
+              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6">
+                Carregando resgates...
+              </div>
+            ) : redemptions.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6">
+                Nenhum brinde resgatado até o momento.
+              </div>
+            ) : (
+              redemptions.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-xs flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 text-sm truncate">
+                        {item.customerName || "Cliente"}
+                      </div>
+                      <div className="text-xs text-slate-500 font-mono">
+                        {formatPhoneNumber(item.customerPhone)}
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {item.status === "PENDING_DELIVERY" ? (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                          ⏳ Separar Brinde
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+                          ✅ {item.rewardType === 'POINTS_DISCOUNT' || item.rewardType === 'CASHBACK' ? 'Aplicado' : 'Entregue'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 rounded-xl flex flex-col gap-1.5 border border-slate-100 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Recompensa:</span>
+                      <span 
+                        className={`font-semibold px-2 py-0.5 rounded-md border inline-flex items-center gap-1 max-w-[200px] truncate ${
+                          item.rewardType === 'FREE_PRODUCT' || item.rewardType === 'HYBRID'
+                            ? "text-emerald-700 bg-emerald-50/80 border-emerald-200"
+                            : item.rewardType === 'CASHBACK'
+                            ? "text-emerald-800 bg-emerald-50/80 border-emerald-300"
+                            : "text-amber-800 bg-amber-50/80 border-amber-300"
+                        }`}
+                        title={item.rewardTitle}
+                      >
+                        <span>{item.rewardType === 'CASHBACK' ? '💸' : item.rewardType === 'POINTS_DISCOUNT' ? '💰' : '🎁'}</span>
+                        <span className="truncate">{item.rewardTitle}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-500 pt-1 border-t border-slate-200/60">
+                      <span>Pedido:</span>
+                      <span className="font-mono font-bold text-slate-700">
+                        {item.order ? `#${item.order.orderNumber}` : "Resgate Avulso"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                      <span>Data:</span>
+                      <span>
+                        {new Date(item.createdAt).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: "America/Campo_Grande",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {item.status === "PENDING_DELIVERY" && (
+                    <Button
+                      size="sm"
+                      onClick={() => deliverGiftMutation.mutate(item.id)}
+                      disabled={deliverGiftMutation.isPending}
+                      className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 mt-1"
+                    >
+                      <Check className="w-4 h-4" /> Marcar como Entregue
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-600">
                 <thead className="bg-slate-50/80 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">

@@ -109,6 +109,22 @@ export function AdminLayout() {
       );
     });
 
+    socket.on('stock_notification.new', (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["stock-notifications"] });
+
+      const varText = data?.variationName ? ` (${data.variationName})` : '';
+      toast.info(
+        `🔔 Novo "Avise-me quando chegar"! ${data?.customerName || 'Um cliente'} aguarda por "${data?.productTitle || 'um produto'}${varText}".`,
+        {
+          duration: 9000,
+          action: {
+            label: "Ver Avisos",
+            onClick: () => navigate("/avise-me"),
+          },
+        }
+      );
+    });
+
     return () => {
       socket.disconnect();
     };

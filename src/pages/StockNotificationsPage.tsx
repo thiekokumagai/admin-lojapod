@@ -238,145 +238,265 @@ export default function StockNotificationsPage() {
         )}
       </div>
 
-      {/* Tabela Padronizada */}
-      <div className="rounded-md border bg-card overflow-x-auto">
-        {isLoading ? (
-          <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
-            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-            Carregando lista de espera...
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
-            <Package className="h-8 w-8 opacity-40" />
-            Nenhuma solicitação de aviso encontrada.
-          </div>
-        ) : (
-          <Table className="min-w-[900px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto / Variação</TableHead>
-                <TableHead>Cliente / WhatsApp</TableHead>
-                <TableHead className="text-center">Estoque Atual</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.map((item) => {
-                const isReadyToNotify = item.isAvailable;
+      {/* Conteúdo: Mobile Cards vs Desktop Table */}
+      {isLoading ? (
+        <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2 bg-card rounded-2xl border">
+          <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+          Carregando lista de espera...
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2 bg-card rounded-2xl border">
+          <Package className="h-8 w-8 opacity-40" />
+          Nenhuma solicitação de aviso encontrada.
+        </div>
+      ) : (
+        <>
+          {/* Mobile Grid View (Cards Padronizados) */}
+          <div className="grid md:hidden gap-3">
+            {filteredItems.map((item) => {
+              const isReadyToNotify = item.isAvailable;
 
-                return (
-                  <TableRow key={item.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {item.productImage ? (
-                          <img
-                            src={buildImageUrl(item.productImage)}
-                            alt={item.productTitle}
-                            className="h-12 w-12 rounded-md object-cover border min-w-12 min-h-12 block"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-md bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-12 min-h-12">
-                            <Package className="h-5 w-5" />
-                          </div>
-                        )}
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm leading-tight text-foreground">{item.productTitle}</span>
-                          {item.variationName && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-medium">
-                              <Layers className="h-3 w-3" />
-                              {item.variationName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="font-semibold text-sm text-foreground">{item.customerName}</div>
-                      <div className="text-xs text-muted-foreground">{item.customerPhone}</div>
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      {item.currentStock > 0 ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-semibold text-xs border border-emerald-200">
-                          {item.currentStock} un disp.
-                        </Badge>
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-xs flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {item.productImage ? (
+                        <img
+                          src={buildImageUrl(item.productImage)}
+                          alt={item.productTitle}
+                          className="h-12 w-12 rounded-xl object-cover border shrink-0"
+                        />
                       ) : (
-                        <Badge variant="secondary" className="text-muted-foreground font-normal text-xs">
-                          Esgotado (0)
-                        </Badge>
+                        <div className="h-12 w-12 rounded-xl bg-slate-100 border flex items-center justify-center text-slate-400 shrink-0">
+                          <Package className="h-5 w-5" />
+                        </div>
                       )}
-                    </TableCell>
-
-                    <TableCell className="text-center">
+                      <div className="min-w-0">
+                        <span className="font-bold text-sm leading-tight text-slate-900 line-clamp-2 block">
+                          {item.productTitle}
+                        </span>
+                        {item.variationName && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-medium truncate">
+                            <Layers className="h-3 w-3 shrink-0" />
+                            {item.variationName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0">
                       {item.status === "NOTIFIED" ? (
-                        <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">
+                        <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50 text-[10px] px-2 py-0.5">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Notificado
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50">
+                        <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50 text-[10px] px-2 py-0.5">
                           Aguardando
                         </Badge>
                       )}
-                    </TableCell>
+                    </div>
+                  </div>
 
-                    <TableCell className="text-xs text-muted-foreground">
+                  <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-2 border border-slate-100 text-xs">
+                    <div>
+                      <div className="font-semibold text-slate-900">{item.customerName}</div>
+                      <div className="text-slate-500 font-mono text-[11px] mt-0.5">{item.customerPhone}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-0.5">
+                        Estoque
+                      </span>
+                      {item.currentStock > 0 ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-semibold text-[11px] border border-emerald-200 px-2 py-0.5">
+                          🟢 {item.currentStock} un
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-slate-500 font-normal text-[11px] px-2 py-0.5">
+                          🔴 Esgotado
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs text-slate-400">
+                    <span>
                       {new Date(item.createdAt).toLocaleDateString("pt-BR", {
                         day: "2-digit",
                         month: "2-digit",
-                        year: "2-digit",
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </TableCell>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!isReadyToNotify}
+                        onClick={() => handleOpenWhatsApp(item)}
+                        className={`h-9 px-3 gap-1.5 text-xs font-bold rounded-xl ${
+                          isReadyToNotify
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs"
+                            : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                        }`}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        WhatsApp
+                        <ArrowUpRight className="h-3 w-3 opacity-70" />
+                      </Button>
 
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          disabled={!isReadyToNotify}
-                          onClick={() => handleOpenWhatsApp(item)}
-                          className={`gap-1.5 text-xs font-bold ${
-                            isReadyToNotify
-                              ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                              : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
-                          }`}
-                          title={
-                            isReadyToNotify
-                              ? "Abrir WhatsApp com mensagem pronta"
-                              : "Estoque ainda zerado"
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-xl text-slate-400 hover:text-destructive hover:bg-rose-50"
+                        onClick={() => {
+                          if (window.confirm("Deseja realmente remover este aviso?")) {
+                            deleteMutation.mutate(item.id);
                           }
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          WhatsApp
-                          <ArrowUpRight className="h-3 w-3 opacity-70" />
-                        </Button>
+                        }}
+                        title="Remover solicitação"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => {
-                            if (window.confirm("Deseja realmente remover este aviso?")) {
-                              deleteMutation.mutate(item.id);
-                            }
-                          }}
-                          title="Remover solicitação"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          {/* Desktop Table View */}
+          <div className="hidden md:block rounded-2xl border bg-card overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <Table className="min-w-[900px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Produto / Variação</TableHead>
+                    <TableHead>Cliente / WhatsApp</TableHead>
+                    <TableHead className="text-center">Estoque Atual</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.map((item) => {
+                    const isReadyToNotify = item.isAvailable;
+
+                    return (
+                      <TableRow key={item.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {item.productImage ? (
+                              <img
+                                src={buildImageUrl(item.productImage)}
+                                alt={item.productTitle}
+                                className="h-12 w-12 rounded-md object-cover border min-w-12 min-h-12 block"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-md bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-12 min-h-12">
+                                <Package className="h-5 w-5" />
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="font-bold text-sm leading-tight text-foreground">{item.productTitle}</span>
+                              {item.variationName && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 font-medium">
+                                  <Layers className="h-3 w-3" />
+                                  {item.variationName}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="font-semibold text-sm text-foreground">{item.customerName}</div>
+                          <div className="text-xs text-muted-foreground">{item.customerPhone}</div>
+                        </TableCell>
+
+                        <TableCell className="text-center">
+                          {item.currentStock > 0 ? (
+                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-semibold text-xs border border-emerald-200">
+                              {item.currentStock} un disp.
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-muted-foreground font-normal text-xs">
+                              Esgotado (0)
+                            </Badge>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="text-center">
+                          {item.status === "NOTIFIED" ? (
+                            <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Notificado
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50">
+                              Aguardando
+                            </Badge>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(item.createdAt).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              disabled={!isReadyToNotify}
+                              onClick={() => handleOpenWhatsApp(item)}
+                              className={`gap-1.5 text-xs font-bold ${
+                                isReadyToNotify
+                                  ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                  : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                              }`}
+                              title={
+                                isReadyToNotify
+                                  ? "Abrir WhatsApp com mensagem pronta"
+                                  : "Estoque ainda zerado"
+                              }
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              WhatsApp
+                              <ArrowUpRight className="h-3 w-3 opacity-70" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => {
+                                if (window.confirm("Deseja realmente remover este aviso?")) {
+                                  deleteMutation.mutate(item.id);
+                                }
+                              }}
+                              title="Remover solicitação"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
