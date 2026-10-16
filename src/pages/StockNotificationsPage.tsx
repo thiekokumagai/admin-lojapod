@@ -34,7 +34,6 @@ import {
   Package,
   Layers,
   ArrowUpRight,
-  RefreshCw,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -48,7 +47,7 @@ export default function StockNotificationsPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "NOTIFIED">("ALL");
   const [availabilityFilter, setAvailabilityFilter] = useState<"ALL" | "IN_STOCK" | "OUT_OF_STOCK">("ALL");
 
-  const { data: notifications = [], isLoading, isFetching, refetch } = useQuery({
+  const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["stock-notifications"],
     queryFn: () => getStockNotifications(),
   });
@@ -131,22 +130,11 @@ export default function StockNotificationsPage() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Avise-me quando chegar</h1>
-          <p className="text-sm text-muted-foreground">
-            Acompanhe clientes interessados em itens esgotados e notifique-os via WhatsApp assim que o estoque estiver disponível.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="w-full sm:w-auto"
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Avise-me quando chegar</h1>
+        <p className="text-sm text-muted-foreground">
+          Acompanhe clientes interessados em itens esgotados e notifique-os via WhatsApp assim que o estoque estiver disponível.
+        </p>
       </div>
 
       {/* Cards de Resumo */}

@@ -125,6 +125,14 @@ export function AdminLayout() {
       );
     });
 
+    socket.on('stock_notification.updated', () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-notifications"] });
+    });
+
+    socket.on('stock_notification.deleted', () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-notifications"] });
+    });
+
     return () => {
       socket.disconnect();
     };
