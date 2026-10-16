@@ -96,33 +96,14 @@ export function AdminLayout() {
       queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
     });
 
-    socket.on('loyalty.reward_redeemed', (data: any) => {
+    socket.on('loyalty.reward_redeemed', () => {
       queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
       queryClient.invalidateQueries({ queryKey: ["loyalty-redemptions"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-
-      toast.success(
-        `🎁 BRINDE RESGATADO! O cliente ${data.customerName || data.customerPhone} resgatou: ${data.rewardTitle}. Favor separar o brinde!`,
-        {
-          duration: 10000,
-        }
-      );
     });
 
-    socket.on('stock_notification.new', (data: any) => {
+    socket.on('stock_notification.new', () => {
       queryClient.invalidateQueries({ queryKey: ["stock-notifications"] });
-
-      const varText = data?.variationName ? ` (${data.variationName})` : '';
-      toast.info(
-        `🔔 Novo "Avise-me quando chegar"! ${data?.customerName || 'Um cliente'} aguarda por "${data?.productTitle || 'um produto'}${varText}".`,
-        {
-          duration: 9000,
-          action: {
-            label: "Ver Avisos",
-            onClick: () => navigate("/avise-me"),
-          },
-        }
-      );
     });
 
     socket.on('stock_notification.updated', () => {
