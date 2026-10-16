@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { io } from "socket.io-client";
 import {
   getStockNotifications,
   markStockNotificationAsNotified,
@@ -48,10 +49,31 @@ export default function StockNotificationsPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "NOTIFIED">("ALL");
   const [availabilityFilter, setAvailabilityFilter] = useState<"ALL" | "IN_STOCK" | "OUT_OF_STOCK">("ALL");
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, refetch } = useQuery({
     queryKey: ["stock-notifications"],
     queryFn: () => getStockNotifications(),
   });
+
+  useEffect(() => {
+    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
+    const socket = io(socketUrl);
+
+    socket.on('stock_notification.new', () => {
+      refetch();
+    });
+
+    socket.on('stock_notification.updated', () => {
+      refetch();
+    });
+
+    socket.on('stock_notification.deleted', () => {
+      refetch();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [refetch]);
 
   const notifyMutation = useMutation({
     mutationFn: (id: string) => markStockNotificationAsNotified(id),
