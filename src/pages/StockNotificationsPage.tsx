@@ -35,6 +35,7 @@ import {
   Layers,
   ArrowUpRight,
   X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/hooks/useSettings";
@@ -229,7 +230,7 @@ export default function StockNotificationsPage() {
       {/* Conteúdo: Mobile Cards vs Desktop Table */}
       {isLoading ? (
         <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2 bg-card rounded-2xl border">
-          <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
           Carregando lista de espera...
         </div>
       ) : filteredItems.length === 0 ? (
