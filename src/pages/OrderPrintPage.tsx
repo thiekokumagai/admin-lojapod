@@ -92,6 +92,7 @@ export default function OrderPrintPage() {
         </div>
       </div>
 
+      <div className="mb-4">
         {order.items.map((item, idx) => (
           <div key={idx} className="mb-2">
             <div className="flex justify-between mb-0.5 w-full gap-2 overflow-hidden">

@@ -747,6 +747,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
 
                       {/* Product Name and Price */}
                       <div className="flex-1 flex items-start justify-between min-w-0 gap-3">
+                        <div className="min-w-0 flex-1">
                           {item.isCombo ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded uppercase tracking-wider mb-1">
                               Combo Especial
