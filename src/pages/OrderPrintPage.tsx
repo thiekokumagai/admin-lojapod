@@ -92,13 +92,25 @@ export default function OrderPrintPage() {
         </div>
       </div>
 
-      <div className="mb-4">
         {order.items.map((item, idx) => (
-          <div key={idx} className="flex justify-between mb-1 w-full gap-2 overflow-hidden">
-            <span className="shrink-0">{item.quantity}x</span>
-            <span className="shrink-0">{item.productName} {item.variation ? `(${item.variation})` : ''}</span>
-            <span className="grow border-b border-dotted border-black relative top-[-4px] mx-1"></span>
-            <span className="shrink-0">{formatCurrency(item.price * item.quantity)}</span>
+          <div key={idx} className="mb-2">
+            <div className="flex justify-between mb-0.5 w-full gap-2 overflow-hidden">
+              <span className="shrink-0">{item.quantity}x</span>
+              <span className="shrink-0 font-medium">
+                {item.isCombo ? `[COMBO] ` : ''}{item.productName} {item.variation ? `(${item.variation})` : ''}
+              </span>
+              <span className="grow border-b border-dotted border-black relative top-[-4px] mx-1"></span>
+              <span className="shrink-0">{formatCurrency(item.price * item.quantity)}</span>
+            </div>
+            {item.isCombo && item.comboSnapshot?.items && (
+              <div className="pl-4 text-[11px] text-gray-700 space-y-0.5">
+                {item.comboSnapshot.items.map((comp: any, cIdx: number) => (
+                  <div key={cIdx}>
+                    • {(comp.quantity || 1) * item.quantity}x {comp.productName}{comp.variation ? ` (${comp.variation})` : ''}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {order.loyaltyRedemption && (

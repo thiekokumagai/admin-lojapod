@@ -747,12 +747,15 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
 
                       {/* Product Name and Price */}
                       <div className="flex-1 flex items-start justify-between min-w-0 gap-3">
-                        <div className="min-w-0 flex-1">
-                          {item.categoryName && (
+                          {item.isCombo ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded uppercase tracking-wider mb-1">
+                              Combo Especial
+                            </span>
+                          ) : item.categoryName ? (
                             <span className="block text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-0.5">
                               {item.categoryName}
                             </span>
-                          )}
+                          ) : null}
                           <span className="text-sm font-bold text-slate-700 leading-snug break-words block" title={item.productName}>
                             {item.productName}
                           </span>
@@ -760,6 +763,24 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                             <span className="block text-xs text-slate-400 font-medium mt-0.5 break-words">
                               ({item.variation})
                             </span>
+                          )}
+
+                          {/* Se for combo, detalha os componentes sem alterar o total */}
+                          {item.isCombo && item.comboSnapshot?.items && (
+                            <div className="mt-2 pl-2.5 border-l-2 border-indigo-200 space-y-1">
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                                Itens inclusos:
+                              </span>
+                              {item.comboSnapshot.items.map((comp: any, cIdx: number) => (
+                                <div key={cIdx} className="text-xs text-slate-600 flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                  <span>
+                                    {comp.quantity * item.quantity}x {comp.productName}
+                                    {comp.variation ? ` (${comp.variation})` : ""}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0 self-start pt-0.5">

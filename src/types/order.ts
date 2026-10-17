@@ -12,6 +12,22 @@ export interface OrderItem {
   variation: string | null;
   imageUrl?: string;
   categoryName?: string;
+  comboId?: string | null;
+  isCombo?: boolean;
+  comboSnapshot?: {
+    comboId: string;
+    comboName: string;
+    comboPrice: number;
+    quantity: number;
+    items: Array<{
+      productId: string;
+      productItemId?: string | null;
+      quantity: number;
+      variation?: string | null;
+      productName: string;
+      productPrice: number;
+    }>;
+  } | null;
 }
 
 export interface Order {

@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Package,
+  Boxes,
   FolderTree,
   SlidersHorizontal,
   Ticket,
@@ -65,6 +66,7 @@ export const navSections = [
     label: "Catálogo",
     items: [
       { title: "Produtos", url: "/produtos", icon: Package },
+      { title: "Combos", url: "/combos", icon: Boxes },
       { title: "Avise-me quando chegar", url: "/avise-me", icon: BellRing },
       { title: "Categorias", url: "/categorias", icon: FolderTree },
       { title: "Variações", url: "/variacoes", icon: SlidersHorizontal },
