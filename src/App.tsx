@@ -19,6 +19,7 @@ const CouriersPage = lazy(() => import("@/pages/CouriersPage"));
 const CourierDetailsPage = lazy(() => import("@/pages/CourierDetailsPage"));
 const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const CombosPage = lazy(() => import("@/pages/CombosPage"));
+const ComboDetailsPage = lazy(() => import("@/pages/ComboDetailsPage"));
 const CustomersPage = lazy(() => import("@/pages/CustomersPage"));
 const CustomerDetailsPage = lazy(() => import("@/pages/CustomerDetailsPage"));
 const ProductDetailsPage = lazy(() => import("@/pages/ProductDetailsPage"));
@@ -118,6 +119,7 @@ const App = () => (
                   <Route path="/produtos" element={<ProductsPage />} />
                   <Route path="/produtos/:id" element={<ProductDetailsPage />} />
                   <Route path="/combos" element={<CombosPage />} />
+                  <Route path="/combos/:id" element={<ComboDetailsPage />} />
                   <Route path="/avise-me" element={<StockNotificationsPage />} />
                   <Route path="/categorias" element={<CategoriesPage />} />
                   <Route path="/cupons" element={<CouponsPage />} />

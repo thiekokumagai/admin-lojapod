@@ -96,13 +96,14 @@ export default function StockNotificationsPage() {
     const formattedPhone = rawPhone.length <= 11 ? `55${rawPhone}` : rawPhone;
 
     const storeName = settings?.storeName || "nossa loja";
-    const productDesc = item.variationName
+    const itemType = item.isCombo ? "combo" : "produto";
+    const productDesc = item.variationName && !item.isCombo
       ? `${item.productTitle} (${item.variationName})`
       : item.productTitle;
 
     const message = encodeURIComponent(
       `Olá ${item.customerName}! Tudo bem?\n\n` +
-      `Boas notícias: o produto que você estava aguardando em ${storeName} (*${productDesc}*) já chegou e está com estoque disponível!\n\n` +
+      `Boas notícias: o ${itemType} que você estava aguardando em ${storeName} (*${productDesc}*) já está disponível!\n\n` +
       `Acesse agora para garantir o seu antes que acabe! Qualquer dúvida estamos à disposição.`
     );
 

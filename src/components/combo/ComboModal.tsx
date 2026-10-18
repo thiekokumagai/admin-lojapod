@@ -190,11 +190,12 @@ export function ComboModal({
     let varText = selectedVariation;
     let itemId = selectedProductItemId;
 
-    if (!itemId && prod.items && prod.items.length === 1) {
+    if (itemId === "none") {
+      itemId = "";
+      varText = "";
+    } else if (!itemId && prod.items && prod.items.length === 1 && (!prod.items[0].options || prod.items[0].options.length === 0)) {
+      // Apenas produto simples sem opções pode herdar o itemId automaticamente
       itemId = prod.items[0].id;
-      if (!varText && prod.items[0].options?.length > 0) {
-        varText = prod.items[0].options.map((o) => o.optionValue).join(" - ");
-      }
     }
 
     setItems((prev) => [
@@ -477,11 +478,15 @@ export function ComboModal({
                               {prod?.title || "Produto"}
                             </h4>
                             <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                              {it.variation && (
-                                <span className="bg-slate-100 px-1.5 py-0.5 rounded font-medium text-slate-700">
+                              {it.variation ? (
+                                <span className="bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-medium text-indigo-700">
                                   {it.variation}
                                 </span>
-                              )}
+                              ) : prod?.items && prod.items.some((i) => i.options && i.options.length > 0) ? (
+                                <span className="bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-medium text-amber-700">
+                                  Cliente escolhe na loja
+                                </span>
+                              ) : null}
                               <span>
                                 {it.quantity}x de R$ {itemPrice.toFixed(2).replace(".", ",")}
                               </span>
@@ -771,25 +776,38 @@ export function ComboModal({
             </div>
 
             {/* Variações do produto se houver */}
-            {selectedProdForAdd && selectedProdForAdd.items && selectedProdForAdd.items.length > 0 && (
+            {selectedProdForAdd && selectedProdForAdd.items && selectedProdForAdd.items.length > 0 && selectedProdForAdd.items.some((i) => i.options && i.options.length > 0) && (
               <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Variação / Item do Produto
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Variação do Produto (Opcional)
+                  </Label>
+                  <span className="text-[11px] text-slate-500">
+                    Opcional
+                  </span>
+                </div>
                 <Select
-                  value={selectedProductItemId}
+                  value={selectedProductItemId || "none"}
                   onValueChange={(val) => {
-                    setSelectedProductItemId(val);
-                    const itm = selectedProdForAdd.items?.find((i) => i.id === val);
-                    if (itm && itm.options) {
-                      setSelectedVariation(itm.options.map((o) => o.optionValue).join(" - "));
+                    if (val === "none") {
+                      setSelectedProductItemId("");
+                      setSelectedVariation("");
+                    } else {
+                      setSelectedProductItemId(val);
+                      const itm = selectedProdForAdd.items?.find((i) => i.id === val);
+                      if (itm && itm.options) {
+                        setSelectedVariation(itm.options.map((o) => o.optionValue).join(" - "));
+                      }
                     }
                   }}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecione a variação (ex: sabor, mg)..." />
+                    <SelectValue placeholder="Selecione ou deixe para o cliente escolher..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">
+                      Sem variação específica (Cliente escolhe na loja)
+                    </SelectItem>
                     {selectedProdForAdd.items.map((itm) => {
                       const label = itm.options?.map((o) => o.optionValue).join(" - ") || "Padrão";
                       return (
@@ -800,6 +818,9 @@ export function ComboModal({
                     })}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-slate-500">
+                  Se você não escolher uma variação, o cliente poderá escolher pelo modal da loja ao comprar.
+                </p>
               </div>
             )}
 

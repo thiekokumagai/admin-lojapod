@@ -3,7 +3,8 @@ import { apiFetch } from "@/services/api";
 export interface StockNotificationItem {
   id: string;
   storeId: string;
-  productId: string;
+  productId?: string;
+  comboId?: string;
   productTitle: string;
   productImage: string | null;
   productItemId: string | null;
@@ -15,6 +16,7 @@ export interface StockNotificationItem {
   createdAt: string;
   currentStock: number;
   isAvailable: boolean;
+  isCombo?: boolean;
 }
 
 export async function getStockNotifications(filters?: {
