@@ -18,11 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Upload, Loader2, Search, Package, Sparkles } from "lucide-react";
+import { Plus, Trash2, Upload, Loader2, Search, Package, Sparkles, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { buildImageUrl } from "@/utils/image-url";
 import { getProducts } from "@/services/product.service";
 import { getCategories } from "@/services/category.service";
+import { RichTextEditor } from "@/components/ui/richtexteditor";
 import {
   comboService,
   type Combo,
@@ -70,7 +71,7 @@ export function ComboModal({
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedVariation, setSelectedVariation] = useState<string>("");
   const [selectedProductItemId, setSelectedProductItemId] = useState<string>("");
-  const [itemQuantity, setItemQuantity] = useState<number>(1);
+  const [itemQuantity, setItemQuantity] = useState<string>("1");
 
   useEffect(() => {
     if (isOpen) {
@@ -84,7 +85,11 @@ export function ComboModal({
       setName(comboToEdit.name);
       setDescription(comboToEdit.description || "");
       setCategoryId(comboToEdit.categoryId || "none");
-      setPrice(String(comboToEdit.price));
+      setPrice(
+        comboToEdit.price !== undefined && comboToEdit.price !== null
+          ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(comboToEdit.price))
+          : ""
+      );
       setIsActive(comboToEdit.isActive);
       setStartDate(comboToEdit.startDate ? comboToEdit.startDate.slice(0, 10) : "");
       setEndDate(comboToEdit.endDate ? comboToEdit.endDate.slice(0, 10) : "");
@@ -153,11 +158,14 @@ export function ComboModal({
   const originalTotalPrice = items.reduce((acc, it) => {
     const prod = availableProducts.find((p) => p.id === it.productId);
     if (!prod) return acc;
-    const pPrice = prod.promotionalPrice || prod.price || 0;
+    const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
+    const normal = prod.price ? Number(prod.price) : 0;
+    const pPrice = promo > 0 ? promo : normal;
     return acc + pPrice * it.quantity;
   }, 0);
 
-  const numericPrice = parseFloat(price.replace(",", ".")) || 0;
+  const priceDigits = price.replace(/\D/g, "");
+  const numericPrice = priceDigits ? Number(priceDigits) / 100 : 0;
   const discountSavings = Math.max(0, originalTotalPrice - numericPrice);
   const discountPct =
     originalTotalPrice > 0 && numericPrice > 0
@@ -169,7 +177,8 @@ export function ComboModal({
       toast.error("Selecione um produto.");
       return;
     }
-    if (itemQuantity < 1) {
+    const qtyNum = parseInt(itemQuantity.replace(/\D/g, ""), 10);
+    if (!qtyNum || qtyNum < 1) {
       toast.error("A quantidade deve ser de no mínimo 1.");
       return;
     }
@@ -193,7 +202,7 @@ export function ComboModal({
       {
         productId: selectedProductId,
         productItemId: itemId || undefined,
-        quantity: itemQuantity,
+        quantity: qtyNum,
         variation: varText || undefined,
       },
     ]);
@@ -202,7 +211,8 @@ export function ComboModal({
     setSelectedProductId("");
     setSelectedVariation("");
     setSelectedProductItemId("");
-    setItemQuantity(1);
+    setItemQuantity("1");
+    setProductSearch("");
     setIsAddItemOpen(false);
   };
 
@@ -223,7 +233,8 @@ export function ComboModal({
       return;
     }
 
-    const priceNum = parseFloat(price.replace(",", "."));
+    const priceDigits = price.replace(/\D/g, "");
+    const priceNum = priceDigits ? Number(priceDigits) / 100 : 0;
     if (isNaN(priceNum) || priceNum <= 0) {
       toast.error("Informe um preço de venda válido maior que zero.");
       return;
@@ -238,17 +249,21 @@ export function ComboModal({
         finalImageUrl = uploadRes.url;
       }
 
+      const cleanedDescription = description
+        ? description.replace(/<p><\/p>/g, "").trim()
+        : "";
+
       const payload = {
         name: name.trim(),
-        description: description.trim() || undefined,
+        description: cleanedDescription || undefined,
         imageUrl: finalImageUrl || undefined,
-        categoryId: categoryId === "none" ? undefined : categoryId,
+        categoryId: (!categoryId || categoryId === "none") ? null : categoryId,
         price: priceNum,
         isActive,
-        startDate: startDate ? new Date(startDate).toISOString() : undefined,
-        endDate: endDate ? new Date(endDate).toISOString() : undefined,
-        maxPerOrder: maxPerOrder ? parseInt(maxPerOrder, 10) : undefined,
-        maxTotalSales: maxTotalSales ? parseInt(maxTotalSales, 10) : undefined,
+        startDate: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : null,
+        endDate: endDate ? new Date(`${endDate}T23:59:59.999`).toISOString() : null,
+        maxPerOrder: maxPerOrder ? parseInt(maxPerOrder, 10) : null,
+        maxTotalSales: maxTotalSales ? parseInt(maxTotalSales, 10) : null,
         items,
       };
 
@@ -297,13 +312,10 @@ export function ComboModal({
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="combo-description">Descrição</Label>
-                <Textarea
-                  id="combo-description"
-                  placeholder="Descreva o que vem no combo ou detalhes da promoção..."
+                <Label htmlFor="combo-description">Descrição (Suporta formatação, negrito, etc.)</Label>
+                <RichTextEditor
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
+                  onChange={setDescription}
                 />
               </div>
 
@@ -326,13 +338,39 @@ export function ComboModal({
 
               <div className="space-y-2">
                 <Label htmlFor="combo-price">Preço de Venda (R$) *</Label>
-                <Input
-                  id="combo-price"
-                  placeholder="99,90"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">
+                    R$
+                  </span>
+                  <Input
+                    id="combo-price"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    className="pl-9"
+                    value={
+                      price
+                        ? new Intl.NumberFormat("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(Number(price.replace(/\D/g, "")) / 100)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      if (!digits) {
+                        setPrice("");
+                      } else {
+                        const formatted = new Intl.NumberFormat("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(Number(digits) / 100);
+                        setPrice(formatted);
+                      }
+                    }}
+                    required
+                  />
+                </div>
               </div>
 
               {/* Imagem do Combo */}
@@ -410,7 +448,9 @@ export function ComboModal({
                 <div className="space-y-2">
                   {items.map((it, idx) => {
                     const prod = availableProducts.find((p) => p.id === it.productId);
-                    const itemPrice = prod ? prod.promotionalPrice || prod.price || 0 : 0;
+                    const promo = prod?.promotionalPrice ? Number(prod.promotionalPrice) : 0;
+                    const normal = prod?.price ? Number(prod.price) : 0;
+                    const itemPrice = promo > 0 ? promo : normal;
                     const imgUrl = prod?.images?.[0]?.url;
 
                     return (
@@ -549,11 +589,14 @@ export function ComboModal({
                   <Label htmlFor="combo-max-order">Limite de unidades por pedido</Label>
                   <Input
                     id="combo-max-order"
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="Sem limite"
                     value={maxPerOrder}
-                    onChange={(e) => setMaxPerOrder(e.target.value)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      setMaxPerOrder(digits ? String(parseInt(digits, 10)) : "");
+                    }}
                   />
                 </div>
 
@@ -561,11 +604,14 @@ export function ComboModal({
                   <Label htmlFor="combo-max-sales">Limite total de vendas do combo</Label>
                   <Input
                     id="combo-max-sales"
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="Sem limite"
                     value={maxTotalSales}
-                    onChange={(e) => setMaxTotalSales(e.target.value)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      setMaxTotalSales(digits ? String(parseInt(digits, 10)) : "");
+                    }}
                   />
                 </div>
               </div>
@@ -594,56 +640,142 @@ export function ComboModal({
 
       {/* Submodal para adicionar item ao combo */}
       <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Adicionar Produto ao Combo</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label>Pesquisar Produto</Label>
+            {/* Campo unificado de busca com limpeza rápida e contagem */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="product-search-input">Buscar Produto *</Label>
+                {productSearch && (
+                  <span className="text-xs text-slate-500">
+                    {availableProducts.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
+                  </span>
+                )}
+              </div>
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Nome do produto..."
+                  id="product-search-input"
+                  placeholder="Digite o nome do produto..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 pr-8"
+                  autoFocus
                 />
+                {productSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setProductSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Produto *</Label>
-              <Select
-                value={selectedProductId}
-                onValueChange={(val) => {
-                  setSelectedProductId(val);
-                  setSelectedVariation("");
-                  setSelectedProductItemId("");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um produto..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-56">
-                  {availableProducts
-                    .filter((p) =>
+            {/* Lista visual de produtos com scroll */}
+            <div className="space-y-1">
+              <Label className="text-xs text-slate-500 font-medium">
+                {selectedProductId ? "Produto Selecionado" : "Selecione um produto da lista"}
+              </Label>
+              <div className="max-h-56 overflow-y-auto border rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+                {isLoadingProducts ? (
+                  <div className="p-6 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                    Carregando produtos...
+                  </div>
+                ) : (
+                  (() => {
+                    const filtered = availableProducts.filter((p) =>
                       p.title.toLowerCase().includes(productSearch.toLowerCase()),
-                    )
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.title} - R$ {(p.promotionalPrice || p.price || 0).toFixed(2).replace(".", ",")}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+                    );
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="p-6 text-center text-sm text-slate-500">
+                          Nenhum produto encontrado com "{productSearch}".
+                        </div>
+                      );
+                    }
+
+                    return filtered.map((prod) => {
+                      const isSelected = selectedProductId === prod.id;
+                      const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
+                      const normal = prod.price ? Number(prod.price) : 0;
+                      const prodPrice = promo > 0 ? promo : normal;
+                      const img = prod.images?.[0]?.url;
+
+                      return (
+                        <div
+                          key={prod.id}
+                          onClick={() => {
+                            setSelectedProductId(prod.id);
+                            setSelectedVariation("");
+                            setSelectedProductItemId("");
+                          }}
+                          className={`flex items-center justify-between p-2.5 cursor-pointer transition-colors text-left ${
+                            isSelected
+                              ? "bg-indigo-50 border-l-4 border-indigo-600"
+                              : "hover:bg-slate-100/80 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0 pr-2">
+                            <div className="w-9 h-9 rounded bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                              {img ? (
+                                <img
+                                  src={buildImageUrl(img)}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                  <Package className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className={`text-sm font-medium truncate ${isSelected ? "text-indigo-900 font-semibold" : "text-slate-800"}`}>
+                                {prod.title}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                R$ {prodPrice.toFixed(2).replace(".", ",")}
+                                {prod.items && prod.items.length > 1 && (
+                                  <span className="ml-2 text-indigo-600 font-medium">
+                                    • {prod.items.length} variações
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 flex items-center">
+                            {isSelected ? (
+                              <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border border-slate-300" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                )}
+              </div>
             </div>
 
             {/* Variações do produto se houver */}
             {selectedProdForAdd && selectedProdForAdd.items && selectedProdForAdd.items.length > 0 && (
-              <div className="space-y-2">
-                <Label>Variação / Item</Label>
+              <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Variação / Item do Produto
+                </Label>
                 <Select
                   value={selectedProductItemId}
                   onValueChange={(val) => {
@@ -654,8 +786,8 @@ export function ComboModal({
                     }
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a variação (ex: 35mg, sabor)..." />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecione a variação (ex: sabor, mg)..." />
                   </SelectTrigger>
                   <SelectContent>
                     {selectedProdForAdd.items.map((itm) => {
@@ -671,23 +803,44 @@ export function ComboModal({
               </div>
             )}
 
+            {/* Quantidade no Combo com inputMode e máscara de dígitos */}
             <div className="space-y-2">
               <Label htmlFor="item-qty">Quantidade no Combo *</Label>
               <Input
                 id="item-qty"
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
+                placeholder="1"
                 value={itemQuantity}
-                onChange={(e) => setItemQuantity(parseInt(e.target.value, 10) || 1)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "");
+                  setItemQuantity(digits ? String(parseInt(digits, 10)) : "");
+                }}
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddItemOpen(false)}>
+          <DialogFooter className="pt-4 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSelectedProductId("");
+                setSelectedVariation("");
+                setSelectedProductItemId("");
+                setProductSearch("");
+                setItemQuantity("1");
+                setIsAddItemOpen(false);
+              }}
+            >
               Cancelar
             </Button>
-            <Button type="button" onClick={handleAddItemToCombo} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button
+              type="button"
+              onClick={handleAddItemToCombo}
+              disabled={!selectedProductId}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
               Incluir no Combo
             </Button>
           </DialogFooter>

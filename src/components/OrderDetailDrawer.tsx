@@ -728,9 +728,9 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                     <div key={item.id} className="flex items-center gap-3 relative">
                       {/* Product Image */}
                       <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-slate-200/50">
-                        {item.imageUrl ? (
+                        {item.imageUrl || item.comboSnapshot?.comboImageUrl || item.comboSnapshot?.imageUrl ? (
                           <img
-                            src={buildImageUrl(item.imageUrl)}
+                            src={buildImageUrl(item.imageUrl || item.comboSnapshot?.comboImageUrl || item.comboSnapshot?.imageUrl)}
                             alt={item.productName}
                             className="w-full h-full object-cover"
                           />

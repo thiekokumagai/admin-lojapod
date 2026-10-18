@@ -43,7 +43,7 @@ export interface CreateComboPayload {
   name: string;
   description?: string;
   imageUrl?: string;
-  categoryId?: string;
+  categoryId?: string | null;
   price: number;
   isActive?: boolean;
   startDate?: string;
