@@ -43,6 +43,7 @@ export default function ComboDetailsPage() {
   const [categoryId, setCategoryId] = useState<string>("none");
   const [price, setPrice] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [maxPerOrder, setMaxPerOrder] = useState("");
@@ -109,6 +110,7 @@ export default function ComboDetailsPage() {
           : ""
       );
       setIsActive(combo.isActive);
+      setIsFeatured(!!combo.isFeatured);
       setStartDate(combo.startDate ? combo.startDate.slice(0, 10) : "");
       setEndDate(combo.endDate ? combo.endDate.slice(0, 10) : "");
       setMaxPerOrder(combo.maxPerOrder ? String(combo.maxPerOrder) : "");
@@ -245,6 +247,7 @@ export default function ComboDetailsPage() {
         categoryId: !categoryId || categoryId === "none" ? null : categoryId,
         price: priceNum,
         isActive,
+        isFeatured,
         startDate: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : null,
         endDate: endDate ? new Date(`${endDate}T23:59:59.999`).toISOString() : null,
         maxPerOrder: maxPerOrder ? parseInt(maxPerOrder, 10) : null,
@@ -298,6 +301,16 @@ export default function ComboDetailsPage() {
         </div>
 
         <div className="flex items-center gap-6">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="combo-featured"
+              checked={isFeatured}
+              onCheckedChange={setIsFeatured}
+            />
+            <Label htmlFor="combo-featured" className="cursor-pointer font-semibold flex items-center gap-1">
+              Destaque
+            </Label>
+          </div>
           <div className="flex items-center space-x-2">
             <Switch
               id="combo-active"

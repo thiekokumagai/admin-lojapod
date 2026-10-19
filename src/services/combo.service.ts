@@ -25,6 +25,7 @@ export interface Combo {
   categoryId?: string | null;
   price: number;
   isActive: boolean;
+  isFeatured?: boolean;
   startDate?: string | null;
   endDate?: string | null;
   maxPerOrder?: number | null;
@@ -46,6 +47,7 @@ export interface CreateComboPayload {
   categoryId?: string | null;
   price: number;
   isActive?: boolean;
+  isFeatured?: boolean;
   startDate?: string;
   endDate?: string;
   maxPerOrder?: number;

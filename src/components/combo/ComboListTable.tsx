@@ -501,6 +501,9 @@ export function ComboListTable({
                     ) : (
                       <Badge variant="secondary" className="py-0 text-[10px]">Inativo</Badge>
                     )}
+                    {combo.isFeatured && (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 py-0 text-[10px] font-semibold">⭐ Destaque</Badge>
+                    )}
                     {combo.discountPercentage > 0 && (
                       <Badge className="bg-amber-100 text-amber-800 border-amber-200 py-0 text-[10px] font-semibold flex items-center gap-0.5">
                         <Sparkles className="w-2.5 h-2.5" />
@@ -637,6 +640,11 @@ export function ComboListTable({
                         <span className={`font-medium hover:underline ${!combo.isActive ? "text-muted-foreground" : ""}`}>
                           {combo.name}
                         </span>
+                        {combo.isFeatured && (
+                          <span className="text-amber-500 text-sm font-bold shrink-0" title="Combo em Destaque">
+                            ⭐
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

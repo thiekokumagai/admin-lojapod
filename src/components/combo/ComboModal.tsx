@@ -50,6 +50,7 @@ export function ComboModal({
   const [categoryId, setCategoryId] = useState<string>("none");
   const [price, setPrice] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [maxPerOrder, setMaxPerOrder] = useState("");
@@ -91,6 +92,7 @@ export function ComboModal({
           : ""
       );
       setIsActive(comboToEdit.isActive);
+      setIsFeatured(!!comboToEdit.isFeatured);
       setStartDate(comboToEdit.startDate ? comboToEdit.startDate.slice(0, 10) : "");
       setEndDate(comboToEdit.endDate ? comboToEdit.endDate.slice(0, 10) : "");
       setMaxPerOrder(comboToEdit.maxPerOrder ? String(comboToEdit.maxPerOrder) : "");
@@ -114,6 +116,7 @@ export function ComboModal({
       setCategoryId("none");
       setPrice("");
       setIsActive(true);
+      setIsFeatured(false);
       setStartDate("");
       setEndDate("");
       setMaxPerOrder("");
@@ -261,6 +264,7 @@ export function ComboModal({
         categoryId: (!categoryId || categoryId === "none") ? null : categoryId,
         price: priceNum,
         isActive,
+        isFeatured,
         startDate: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : null,
         endDate: endDate ? new Date(`${endDate}T23:59:59.999`).toISOString() : null,
         maxPerOrder: maxPerOrder ? parseInt(maxPerOrder, 10) : null,
@@ -567,6 +571,22 @@ export function ComboModal({
                     id="combo-active"
                     checked={isActive}
                     onCheckedChange={setIsActive}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50">
+                  <div>
+                    <Label htmlFor="combo-featured" className="font-semibold text-slate-700">
+                      Combo em Destaque
+                    </Label>
+                    <p className="text-xs text-slate-500">
+                      Exibir o combo na seção de destaques superiores da loja
+                    </p>
+                  </div>
+                  <Switch
+                    id="combo-featured"
+                    checked={isFeatured}
+                    onCheckedChange={setIsFeatured}
                   />
                 </div>
 
