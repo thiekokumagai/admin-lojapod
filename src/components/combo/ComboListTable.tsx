@@ -273,12 +273,12 @@ export function ComboListTable({
 
   const clearFilters = () => {
     setSearchValue("");
-    onFiltersChange({ search: "", status: "all", categoryId: "" });
+    onFiltersChange({ search: "", status: "active", categoryId: "" });
   };
 
   const hasFilters =
     Boolean(filters.search) ||
-    filters.status !== "all" ||
+    filters.status !== "active" ||
     Boolean(filters.categoryId);
 
   const getCategoryName = (catId?: string | null) => {

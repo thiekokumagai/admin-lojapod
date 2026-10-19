@@ -20,7 +20,7 @@ export default function CombosPage() {
 
   const filters: ComboListTableFilters = {
     search: searchParams.get("search") || "",
-    status: (searchParams.get("status") as any) || "all",
+    status: (searchParams.get("status") as any) || "active",
     categoryId: searchParams.get("categoryId") || "",
   };
 
@@ -75,7 +75,7 @@ export default function CombosPage() {
     if (next.search) newParams.set("search", next.search);
     else newParams.delete("search");
 
-    if (next.status && next.status !== "all") newParams.set("status", next.status);
+    if (next.status && next.status !== "active") newParams.set("status", next.status);
     else newParams.delete("status");
 
     if (next.categoryId) newParams.set("categoryId", next.categoryId);

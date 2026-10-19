@@ -672,6 +672,27 @@ export default function ComboDetailsPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Bottom Save Button */}
+        <div className="flex justify-end pt-4">
+          <Button
+            type="button"
+            className="h-11 rounded-xl px-6 text-sm font-semibold shadow-md transition-all active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white"
+            disabled={isSaving}
+            onClick={() => void handleSaveCombo()}
+          >
+            {isSaving ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <span>Salvando...</span>
+              </div>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" /> Finalizar Cadastro
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Submodal para adicionar item ao combo */}
