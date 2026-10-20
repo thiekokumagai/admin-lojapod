@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SimpleAddressForm } from "@/components/orders/SimpleAddressForm";
+import { ManualOrderLoyaltyCard, SelectedLoyaltyReward } from "@/components/orders/ManualOrderLoyaltyCard";
 
 interface OrderItem {
   productId: string;
@@ -47,6 +48,7 @@ export default function CreateOrderPage() {
   );
   
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [loyaltyReward, setLoyaltyReward] = useState<SelectedLoyaltyReward | null>(null);
   const [paymentMethod, setPaymentMethod] = useState(duplicateData?.paymentMethod || "");
   const [isPaid, setIsPaid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -156,7 +158,8 @@ export default function CreateOrderPage() {
         : 0
   ) : 0;
   
-  const totalAfterCoupon = Math.max(0, subtotal - discount);
+  const loyaltyDiscount = loyaltyReward?.discountValue || 0;
+  const totalAfterCoupon = Math.max(0, subtotal - discount - loyaltyDiscount);
   const isFreeShippingBySettings = useMemo(() => {
     if (!storeSettings?.freeShippingEnabled) return false;
     const minVal = Number(storeSettings.freeShippingMinValue);
@@ -274,6 +277,11 @@ export default function CreateOrderPage() {
         couponTitle: coupon?.title || undefined,
         couponDiscount: coupon?.type !== 'FREE_SHIPPING' ? Number(discount.toFixed(2)) : 0,
         couponFreightDiscount: isFreeShippingByCoupon ? (deliveryFee === -1 ? 0 : Number(deliveryFee.toFixed(2))) : 0,
+        redeemedReward: loyaltyReward ? {
+          rewardType: loyaltyReward.rewardType,
+          rewardTitle: loyaltyReward.rewardTitle,
+          discountValue: loyaltyReward.discountValue,
+        } : undefined,
         totalOrder: Number(finalTotal.toFixed(2)),
         totalReceived: isPaid ? Number(finalTotal.toFixed(2)) : 0,
         paymentType: paymentMethod === 'PIX' ? 'online' : 'entrega',
@@ -574,13 +582,27 @@ export default function CreateOrderPage() {
               </div>
             ) : (
               <CustomerSearch 
-                onSelectCustomer={setSelectedCustomer} 
+                onSelectCustomer={(cust) => {
+                  setSelectedCustomer(cust);
+                  if (!cust) setLoyaltyReward(null);
+                }} 
                 onSelectAddress={setSelectedAddress} 
                 initialCustomer={selectedCustomer}
                 initialAddressId={selectedAddress?.id || null}
                 mode="create"
                 hideAddress={deliveryModality === "STORE_PICKUP"}
               />
+            )}
+
+            {!isBudgetMode && selectedCustomer && (
+              <div className="mt-4">
+                <ManualOrderLoyaltyCard
+                  customerPhone={selectedCustomer.phone}
+                  subtotal={subtotal}
+                  selectedReward={loyaltyReward}
+                  onSelectReward={setLoyaltyReward}
+                />
+              </div>
             )}
 
             {!isBudgetMode && selectedCustomer && (
@@ -633,6 +655,7 @@ export default function CreateOrderPage() {
               onNeedsChangeChange={setNeedsChange}
               changeFor={changeFor}
               onChangeForChange={setChangeFor}
+              loyaltyReward={loyaltyReward}
             />
           </div>
         </div>

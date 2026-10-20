@@ -97,6 +97,15 @@ export const loyaltyService = {
     return res.json();
   },
 
+  getCustomerCard: async (phone?: string): Promise<{ card: LoyaltyCard | null; program: LoyaltyProgram | null }> => {
+    const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
+    const sp = new URLSearchParams();
+    if (cleanPhone) sp.set("phone", cleanPhone);
+    const res = await apiFetch(`/loyalty/card?${sp.toString()}`);
+    if (!res.ok) throw new Error("Erro ao consultar cartão fidelidade");
+    return res.json();
+  },
+
   updateProgram: async (data: Partial<LoyaltyProgram>): Promise<LoyaltyProgram> => {
     const res = await apiFetch("/loyalty/program", {
       method: "POST",

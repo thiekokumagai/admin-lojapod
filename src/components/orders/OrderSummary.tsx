@@ -47,6 +47,7 @@ interface OrderSummaryProps {
   deliveryModality?: string;
   isFreeShipping?: boolean;
   deliveryType?: string;
+  loyaltyReward?: { rewardType: string; rewardTitle: string; discountValue?: number } | null;
 }
 
 export function OrderSummary({
@@ -81,6 +82,7 @@ export function OrderSummary({
   deliveryModality,
   isFreeShipping,
   deliveryType,
+  loyaltyReward,
 }: OrderSummaryProps) {
   const [couponCode, setCouponCode] = useState("");
   const { data: coupons } = useCoupons();
@@ -283,6 +285,26 @@ export function OrderSummary({
             <span>-{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(discount)}</span>
           </div>
         )}
+
+        {loyaltyReward && loyaltyReward.discountValue && loyaltyReward.discountValue > 0 ? (
+          <div className="flex justify-between text-emerald-600 font-bold">
+            <span>
+              {loyaltyReward.rewardType === "CASHBACK"
+                ? "Fidelidade (Cashback)"
+                : loyaltyReward.rewardType === "POINTS_DISCOUNT"
+                ? "Fidelidade (Pontos)"
+                : "Fidelidade (Desconto)"}
+            </span>
+            <span>-{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(loyaltyReward.discountValue)}</span>
+          </div>
+        ) : null}
+
+        {loyaltyReward && (!loyaltyReward.discountValue || loyaltyReward.discountValue === 0) ? (
+          <div className="flex justify-between items-center text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 font-bold">
+            <span>🎁 Brinde Fidelidade:</span>
+            <span className="truncate max-w-[180px]">{loyaltyReward.rewardTitle}</span>
+          </div>
+        ) : null}
 
         {pixDiscountAmount > 0 && paymentMethod === "PIX" && (
           <div className="flex justify-between text-emerald-600 font-bold">
