@@ -277,10 +277,12 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
 
     order.items.forEach((item: any) => {
       const rawCategoryName =
-        item.product?.category?.title ||
-        item.product?.categoryName ||
-        item.category?.title ||
         item.categoryName ||
+        item.product?.category?.title ||
+        item.combo?.category?.title ||
+        item.product?.categoryName ||
+        item.combo?.categoryName ||
+        item.category?.title ||
         item.productCategory ||
         "Geral";
 
@@ -337,7 +339,9 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
       const rawCategoryName =
         item.categoryName ||
         item.product?.category?.title ||
+        item.combo?.category?.title ||
         item.product?.categoryName ||
+        item.combo?.categoryName ||
         item.category?.title ||
         "Geral";
       const categoryName = (rawCategoryName && rawCategoryName.trim() !== "" && rawCategoryName !== "Sem Categoria")

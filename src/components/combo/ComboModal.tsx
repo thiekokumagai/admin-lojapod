@@ -670,130 +670,157 @@ export function ComboModal({
             <DialogTitle>Adicionar Produto ao Combo</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 pt-2">
-            {/* Campo unificado de busca com limpeza rápida e contagem */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="product-search-input">Buscar Produto *</Label>
-                {productSearch && (
-                  <span className="text-xs text-slate-500">
-                    {availableProducts.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
-                  </span>
-                )}
+                 {/* Seletor com busca como no pedido manual */}
+            {selectedProdForAdd ? (
+              <div className="p-3 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-lg bg-white overflow-hidden shrink-0 border border-indigo-100 flex items-center justify-center">
+                    {selectedProdForAdd.images?.[0]?.url ? (
+                      <img src={buildImageUrl(selectedProdForAdd.images[0].url)} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-5 h-5 text-indigo-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">Produto Selecionado</p>
+                    <p className="text-sm font-bold text-slate-900 truncate">{selectedProdForAdd.title}</p>
+                    <p className="text-xs font-semibold text-slate-600">
+                      R$ {(Number(selectedProdForAdd.promotionalPrice || selectedProdForAdd.price || 0)).toFixed(2).replace('.', ',')}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedProductId("");
+                    setSelectedVariation("");
+                    setSelectedProductItemId("");
+                    setProductSearch("");
+                  }}
+                  className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8"
+                >
+                  Trocar
+                </Button>
               </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="product-search-input"
-                  placeholder="Digite o nome do produto..."
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-9 pr-8"
-                  autoFocus
-                />
-                {productSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setProductSearch("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="product-search-input">Buscar Produto *</Label>
+                  {productSearch && (
+                    <span className="text-xs text-slate-500">
+                      {availableProducts.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="product-search-input"
+                    placeholder="Digite o nome do produto para buscar..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="pl-9 pr-8 h-10"
+                    autoFocus
+                  />
+                  {productSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-            {/* Lista visual de produtos com scroll */}
-            <div className="space-y-1">
-              <Label className="text-xs text-slate-500 font-medium">
-                {selectedProductId ? "Produto Selecionado" : "Selecione um produto da lista"}
-              </Label>
-              <div className="max-h-56 overflow-y-auto border rounded-lg divide-y divide-slate-100 bg-slate-50/50">
-                {isLoadingProducts ? (
-                  <div className="p-6 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                    Carregando produtos...
+                {/* Lista dinâmica que só aparece ao pesquisar */}
+                {productSearch.trim().length > 0 ? (
+                  <div className="max-h-60 overflow-y-auto border rounded-xl divide-y bg-white shadow-sm">
+                    {isLoadingProducts ? (
+                      <div className="p-6 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                        Carregando produtos...
+                      </div>
+                    ) : (
+                      (() => {
+                        const filtered = availableProducts.filter((p) =>
+                          p.title.toLowerCase().includes(productSearch.toLowerCase()),
+                        );
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="p-6 text-center text-sm text-slate-500">
+                              Nenhum produto encontrado com "{productSearch}".
+                            </div>
+                          );
+                        }
+
+                        return filtered.slice(0, 30).map((prod) => {
+                          const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
+                          const normal = prod.price ? Number(prod.price) : 0;
+                          const prodPrice = promo > 0 ? promo : normal;
+                          const img = prod.images?.[0]?.url;
+
+                          return (
+                            <div
+                              key={prod.id}
+                              onClick={() => {
+                                setSelectedProductId(prod.id);
+                                setSelectedVariation("");
+                                setSelectedProductItemId("");
+                                setProductSearch("");
+                              }}
+                              className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-indigo-50/70 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-3 min-w-0 pr-2">
+                                <div className="w-9 h-9 rounded bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                                  {img ? (
+                                    <img
+                                      src={buildImageUrl(img)}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                      <Package className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-800 truncate">
+                                    {prod.title}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    R$ {prodPrice.toFixed(2).replace(".", ",")}
+                                    {prod.items && prod.items.length > 1 && (
+                                      <span className="ml-2 text-indigo-600 font-medium">
+                                        • {prod.items.length} variações
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 flex items-center">
+                                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md hover:bg-indigo-100">
+                                  Selecionar
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()
+                    )}
                   </div>
                 ) : (
-                  (() => {
-                    const filtered = availableProducts.filter((p) =>
-                      p.title.toLowerCase().includes(productSearch.toLowerCase()),
-                    );
-
-                    if (filtered.length === 0) {
-                      return (
-                        <div className="p-6 text-center text-sm text-slate-500">
-                          Nenhum produto encontrado com "{productSearch}".
-                        </div>
-                      );
-                    }
-
-                    return filtered.map((prod) => {
-                      const isSelected = selectedProductId === prod.id;
-                      const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
-                      const normal = prod.price ? Number(prod.price) : 0;
-                      const prodPrice = promo > 0 ? promo : normal;
-                      const img = prod.images?.[0]?.url;
-
-                      return (
-                        <div
-                          key={prod.id}
-                          onClick={() => {
-                            setSelectedProductId(prod.id);
-                            setSelectedVariation("");
-                            setSelectedProductItemId("");
-                          }}
-                          className={`flex items-center justify-between p-2.5 cursor-pointer transition-colors text-left ${
-                            isSelected
-                              ? "bg-indigo-50 border-l-4 border-indigo-600"
-                              : "hover:bg-slate-100/80 bg-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0 pr-2">
-                            <div className="w-9 h-9 rounded bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                              {img ? (
-                                <img
-                                  src={buildImageUrl(img)}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                  <Package className="w-4 h-4" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className={`text-sm font-medium truncate ${isSelected ? "text-indigo-900 font-semibold" : "text-slate-800"}`}>
-                                {prod.title}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                R$ {prodPrice.toFixed(2).replace(".", ",")}
-                                {prod.items && prod.items.length > 1 && (
-                                  <span className="ml-2 text-indigo-600 font-medium">
-                                    • {prod.items.length} variações
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="shrink-0 flex items-center">
-                            {isSelected ? (
-                              <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded-full border border-slate-300" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()
+                  <div className="p-5 text-center text-xs text-slate-400 border border-dashed rounded-xl bg-slate-50/50">
+                    Digite o nome do produto no campo acima para pesquisar.
+                  </div>
                 )}
               </div>
-            </div>
+            )}
 
             {/* Variações do produto se houver */}
             {selectedProdForAdd && selectedProdForAdd.items && selectedProdForAdd.items.length > 0 && selectedProdForAdd.items.some((i) => i.options && i.options.length > 0) && (

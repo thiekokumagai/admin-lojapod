@@ -9,6 +9,8 @@ import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPhone } from "@/utils/formatters";
 
+import { openWhatsApp } from "@/utils/whatsapp";
+
 export default function CustomerDetailsPage() {
   const { id: customerId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -81,8 +83,9 @@ export default function CustomerDetailsPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button 
-                onClick={() => navigate('/clientes')}
+                onClick={() => navigate(-1)}
                 className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-violet-700 hover:border-violet-200 hover:bg-violet-50 transition-all group"
+                title="Voltar"
               >
                 <ArrowLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
               </button>
@@ -91,6 +94,17 @@ export default function CustomerDetailsPage() {
                 <p className="text-sm text-slate-500 font-medium">Visualize as informações e o histórico completo do cliente</p>
               </div>
             </div>
+            {customer.phone && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => openWhatsApp(customer.phone, `Olá ${customer.name}`)}
+                className="h-10 px-3.5 gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 border-emerald-200 rounded-xl transition-all shadow-xs"
+              >
+                <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4" />
+                <span>Conversar no WhatsApp</span>
+              </Button>
+            )}
           </div>
 
           {/* Cards Resumo */}
@@ -224,9 +238,23 @@ export default function CustomerDetailsPage() {
                         className="h-9 border-slate-200 focus-visible:ring-violet-600 rounded-xl"
                       />
                     ) : (
-                      <div className="font-semibold text-slate-800 text-base flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-slate-400" />
-                        {formatPhone(customer.phone)}
+                      <div className="font-semibold text-slate-800 text-base flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-slate-400" />
+                          <span>{formatPhone(customer.phone)}</span>
+                        </div>
+                        {customer.phone && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openWhatsApp(customer.phone, `Olá ${customer.name}`)}
+                            className="h-8 gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 rounded-lg px-2.5"
+                          >
+                            <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4" />
+                            <span>WhatsApp</span>
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
