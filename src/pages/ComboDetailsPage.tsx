@@ -280,10 +280,10 @@ export default function ComboDetailsPage() {
   }
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 sm:space-y-8 pb-20 w-full max-w-full min-w-0 overflow-x-hidden">
       {/* Header Padronizado */}
-      <div className="flex flex-col gap-4 rounded-3xl border bg-card p-6 sm:flex-row sm:items-center sm:justify-between shadow-sm">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-4 rounded-2xl sm:rounded-3xl border bg-card p-4 sm:p-6 sm:flex-row sm:items-center sm:justify-between shadow-sm w-full min-w-0 max-w-full">
+        <div className="space-y-1 min-w-0">
           <Button
             variant="ghost"
             onClick={() => navigate("/combos")}
@@ -292,38 +292,40 @@ export default function ComboDetailsPage() {
             <ArrowLeft className="h-4 w-4" />
             <span>Voltar para combos</span>
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
             {isNewCombo ? "Novo combo" : name || "Editar combo"}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Configure informações, produtos inclusos, preço e limites do combo promocional.
           </p>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="combo-featured"
-              checked={isFeatured}
-              onCheckedChange={setIsFeatured}
-            />
-            <Label htmlFor="combo-featured" className="cursor-pointer font-semibold flex items-center gap-1">
-              Destaque
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="combo-active"
-              checked={isActive}
-              onCheckedChange={setIsActive}
-            />
-            <Label htmlFor="combo-active" className="cursor-pointer font-semibold">
-              {isActive ? "Ativo" : "Inativo"}
-            </Label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 w-full sm:w-auto shrink-0">
+          <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-6">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="combo-featured"
+                checked={isFeatured}
+                onCheckedChange={setIsFeatured}
+              />
+              <Label htmlFor="combo-featured" className="cursor-pointer font-semibold flex items-center gap-1 text-sm">
+                Destaque
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="combo-active"
+                checked={isActive}
+                onCheckedChange={setIsActive}
+              />
+              <Label htmlFor="combo-active" className="cursor-pointer font-semibold text-sm">
+                {isActive ? "Ativo" : "Inativo"}
+              </Label>
+            </div>
           </div>
           <Button
             type="button"
-            className="h-12 rounded-2xl px-8 font-semibold shadow-lg transition-all hover:scale-[1.02] bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="w-full sm:w-auto h-11 sm:h-12 rounded-xl sm:rounded-2xl px-6 sm:px-8 font-semibold shadow-lg transition-all hover:scale-[1.02] bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
             disabled={isSaving}
             onClick={() => void handleSaveCombo()}
           >
@@ -341,31 +343,33 @@ export default function ComboDetailsPage() {
         </div>
       </div>
 
-      <div className="grid gap-8">
-        <Tabs defaultValue="combo" className="w-full">
-          <TabsList className="mb-8 border-b rounded-none w-full justify-start bg-transparent h-auto p-0 gap-6">
-            <TabsTrigger
-              value="combo"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent pb-3 pt-2 px-1 text-base font-semibold data-[state=active]:bg-transparent"
-            >
-              Combo e Produtos
-            </TabsTrigger>
-            <TabsTrigger
-              value="disponibilidade"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent pb-3 pt-2 px-1 text-base font-semibold data-[state=active]:bg-transparent"
-            >
-              Disponibilidade e Limites
-            </TabsTrigger>
-          </TabsList>
+      <div className="grid gap-6 sm:gap-8 w-full min-w-0 max-w-full">
+        <Tabs defaultValue="combo" className="w-full min-w-0 max-w-full">
+          <div className="overflow-x-auto pb-1 -mb-1 w-full max-w-full">
+            <TabsList className="mb-6 sm:mb-8 border-b rounded-none w-full justify-start bg-transparent h-auto p-0 gap-4 sm:gap-6 min-w-max">
+              <TabsTrigger
+                value="combo"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent pb-3 pt-2 px-1 text-sm sm:text-base font-semibold data-[state=active]:bg-transparent"
+              >
+                Combo e Produtos
+              </TabsTrigger>
+              <TabsTrigger
+                value="disponibilidade"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent pb-3 pt-2 px-1 text-sm sm:text-base font-semibold data-[state=active]:bg-transparent"
+              >
+                Disponibilidade e Limites
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* TAB 1: Dados do Combo e Itens */}
-          <TabsContent value="combo" className="space-y-8 outline-none">
+          <TabsContent value="combo" className="space-y-6 sm:space-y-8 outline-none w-full min-w-0 max-w-full">
             {/* Foto e Dados Básicos */}
-            <div className="rounded-3xl border bg-card p-6 shadow-sm space-y-6">
+            <div className="rounded-2xl sm:rounded-3xl border bg-card p-4 sm:p-6 shadow-sm space-y-6 w-full min-w-0 max-w-full">
               <h2 className="text-xl font-bold">Informações Básicas</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full min-w-0 max-w-full">
+                <div className="space-y-2 md:col-span-2 min-w-0">
                   <Label htmlFor="combo-name" className="text-sm font-semibold">
                     Nome do Combo *
                   </Label>
@@ -375,22 +379,23 @@ export default function ComboDetailsPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
+                    className="w-full"
                   />
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2 md:col-span-2 min-w-0">
                   <Label htmlFor="combo-description" className="text-sm font-semibold">
                     Descrição (Suporta formatação, negrito, etc.)
                   </Label>
                   <RichTextEditor value={description} onChange={setDescription} />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="combo-category" className="text-sm font-semibold">
                     Categoria
                   </Label>
                   <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger id="combo-category">
+                    <SelectTrigger id="combo-category" className="w-full">
                       <SelectValue placeholder="Selecione uma categoria (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -404,11 +409,11 @@ export default function ComboDetailsPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="combo-price" className="text-sm font-semibold">
                     Preço de Venda do Combo (R$) *
                   </Label>
-                  <div className="relative">
+                  <div className="relative w-full">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
                       R$
                     </span>
@@ -417,7 +422,7 @@ export default function ComboDetailsPage() {
                       type="tel"
                       inputMode="numeric"
                       placeholder="0,00"
-                      className="pl-9 font-semibold"
+                      className="pl-9 font-semibold w-full"
                       value={
                         price
                           ? new Intl.NumberFormat("pt-BR", {
@@ -444,11 +449,11 @@ export default function ComboDetailsPage() {
                 </div>
 
                 {/* Upload de Imagem */}
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2 md:col-span-2 min-w-0">
                   <Label className="text-sm font-semibold">Imagem do Combo</Label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full min-w-0 max-w-full">
                     {imagePreview ? (
-                      <div className="relative w-28 h-28 rounded-xl overflow-hidden border bg-muted">
+                      <div className="relative w-28 h-28 shrink-0 rounded-xl overflow-hidden border bg-muted">
                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                         <button
                           type="button"
@@ -464,17 +469,17 @@ export default function ComboDetailsPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="w-28 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+                      <div className="w-28 h-28 shrink-0 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
                         <Upload className="w-7 h-7 mb-1" />
                         <span className="text-[11px]">Sem foto</span>
                       </div>
                     )}
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 min-w-0 w-full space-y-1">
                       <Input
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
-                        className="cursor-pointer text-sm"
+                        className="cursor-pointer text-sm w-full max-w-full"
                       />
                       <p className="text-xs text-muted-foreground">
                         JPG, PNG ou WebP. Será otimizado automaticamente para vitrine.
@@ -486,9 +491,9 @@ export default function ComboDetailsPage() {
             </div>
 
             {/* SEÇÃO: Componentes do Combo */}
-            <div className="rounded-3xl border bg-card p-6 shadow-sm space-y-6">
+            <div className="rounded-2xl sm:rounded-3xl border bg-card p-4 sm:p-6 shadow-sm space-y-6 w-full min-w-0 max-w-full">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-xl font-bold">
                     Produtos Inclusos no Combo ({items.length})
                   </h2>
@@ -500,7 +505,7 @@ export default function ComboDetailsPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsAddItemOpen(true)}
-                  className="gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-semibold"
+                  className="gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-semibold w-full sm:w-auto shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   Adicionar Produto
@@ -516,7 +521,7 @@ export default function ComboDetailsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 w-full min-w-0">
                   {items.map((it, idx) => {
                     const prod = availableProducts.find((p) => p.id === it.productId);
                     const promo = prod?.promotionalPrice ? Number(prod.promotionalPrice) : 0;
@@ -527,9 +532,9 @@ export default function ComboDetailsPage() {
                     return (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-3.5 border rounded-xl bg-card shadow-xs gap-3"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 border rounded-xl bg-card shadow-xs gap-3 w-full min-w-0"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1 w-full sm:w-auto">
                           <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0 border">
                             {imgUrl ? (
                               <img src={buildImageUrl(imgUrl)} alt="" className="w-full h-full object-cover" />
@@ -539,11 +544,11 @@ export default function ComboDetailsPage() {
                               </div>
                             )}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h4 className="text-sm font-semibold truncate text-foreground">
                               {prod?.title || "Produto"}
                             </h4>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
                               {it.variation ? (
                                 <span className="bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-medium text-indigo-700">
                                   {it.variation}
@@ -560,7 +565,7 @@ export default function ComboDetailsPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0">
                           <span className="text-sm font-bold whitespace-nowrap">
                             R$ {(itemPrice * it.quantity).toFixed(2).replace(".", ",")}
                           </span>
@@ -569,7 +574,7 @@ export default function ComboDetailsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleRemoveItem(idx)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 shrink-0"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -582,29 +587,31 @@ export default function ComboDetailsPage() {
 
               {/* Card de Economia / Desconto */}
               {items.length > 0 && (
-                <div className="bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider block">
-                      Valor Avulso Somado
-                    </span>
-                    <span className="text-lg font-semibold">
-                      R$ {originalTotalPrice.toFixed(2).replace(".", ",")}
-                    </span>
-                  </div>
+                <div className="bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0 max-w-full">
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                    <div>
+                      <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider block">
+                        Valor Avulso Somado
+                      </span>
+                      <span className="text-lg font-semibold">
+                        R$ {originalTotalPrice.toFixed(2).replace(".", ",")}
+                      </span>
+                    </div>
 
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider block">
-                      Preço do Combo
-                    </span>
-                    <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                      R$ {numericPrice.toFixed(2).replace(".", ",")}
-                    </span>
+                    <div>
+                      <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider block">
+                        Preço do Combo
+                      </span>
+                      <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                        R$ {numericPrice.toFixed(2).replace(".", ",")}
+                      </span>
+                    </div>
                   </div>
 
                   {discountPct > 0 && (
-                    <div className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 px-3.5 py-1.5 rounded-xl text-sm font-bold flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      Economia de R$ {discountSavings.toFixed(2).replace(".", ",")} ({discountPct}% OFF)
+                    <div className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 px-3.5 py-1.5 rounded-xl text-sm font-bold flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800 w-fit">
+                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Economia de R$ {discountSavings.toFixed(2).replace(".", ",")} ({discountPct}% OFF)</span>
                     </div>
                   )}
                 </div>
@@ -613,12 +620,12 @@ export default function ComboDetailsPage() {
           </TabsContent>
 
           {/* TAB 2: Disponibilidade e Limites */}
-          <TabsContent value="disponibilidade" className="space-y-8 outline-none">
-            <div className="rounded-3xl border bg-card p-6 shadow-sm space-y-6">
+          <TabsContent value="disponibilidade" className="space-y-6 sm:space-y-8 outline-none w-full min-w-0 max-w-full">
+            <div className="rounded-2xl sm:rounded-3xl border bg-card p-4 sm:p-6 shadow-sm space-y-6 w-full min-w-0 max-w-full">
               <h2 className="text-xl font-bold">Disponibilidade e Limites</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full min-w-0 max-w-full">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="combo-start" className="text-sm font-semibold">
                     Disponível a partir de
                   </Label>
@@ -627,10 +634,11 @@ export default function ComboDetailsPage() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full"
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="combo-end" className="text-sm font-semibold">
                     Disponível até
                   </Label>
@@ -639,10 +647,11 @@ export default function ComboDetailsPage() {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full"
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="combo-max-order" className="text-sm font-semibold">
                     Limite de unidades por pedido
                   </Label>
@@ -656,13 +665,14 @@ export default function ComboDetailsPage() {
                       const digits = e.target.value.replace(/\D/g, "");
                       setMaxPerOrder(digits ? String(parseInt(digits, 10)) : "");
                     }}
+                    className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
                     Deixe em branco para permitir qualquer quantidade.
                   </p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="combo-max-sales" className="text-sm font-semibold">
                     Limite total de vendas do combo
                   </Label>
@@ -676,6 +686,7 @@ export default function ComboDetailsPage() {
                       const digits = e.target.value.replace(/\D/g, "");
                       setMaxTotalSales(digits ? String(parseInt(digits, 10)) : "");
                     }}
+                    className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
                     Quando atingir este número de vendas, o combo é esgotado automaticamente.
@@ -687,10 +698,10 @@ export default function ComboDetailsPage() {
         </Tabs>
 
         {/* Bottom Save Button */}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 w-full">
           <Button
             type="button"
-            className="h-11 rounded-xl px-6 text-sm font-semibold shadow-md transition-all active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="w-full sm:w-auto h-11 rounded-xl px-6 text-sm font-semibold shadow-md transition-all active:scale-95 bg-indigo-600 hover:bg-indigo-700 text-white"
             disabled={isSaving}
             onClick={() => void handleSaveCombo()}
           >

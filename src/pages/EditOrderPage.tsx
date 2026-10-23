@@ -19,10 +19,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SimpleAddressForm } from "@/components/orders/SimpleAddressForm";
+import type { Combo } from "@/services/combo.service";
 
 interface OrderItem {
-  productId: string;
+  productId?: string;
   productItemId?: string;
+  comboId?: string;
+  isCombo?: boolean;
   title: string;
   price: number;
   quantity: number;
@@ -69,13 +72,15 @@ export default function EditOrderPage() {
   useEffect(() => {
     if (order) {
       // Configura itens iniciais, depois busca infos atualizadas de promo/preço antigo
-      const initialItems = order.items.map(item => ({
+      const initialItems = order.items.map((item: any) => ({
         productId: item.productId,
         productItemId: item.productItemId,
-        title: item.productName,
+        comboId: item.comboId || (item.combo ? item.combo.id : undefined),
+        isCombo: !!(item.comboId || item.isCombo || item.combo),
+        title: item.productName || (item.combo ? item.combo.name : "Item"),
         price: item.price,
         quantity: item.quantity,
-        imageUrl: item.imageUrl,
+        imageUrl: item.imageUrl || (item.combo ? item.combo.imageUrl : undefined),
         variation: item.variation || undefined,
         maxStock: undefined, 
         isPromo: false, // will be updated below
@@ -87,6 +92,9 @@ export default function EditOrderPage() {
         try {
           const enrichedItems = await Promise.all(
             initialItems.map(async (item) => {
+              if (item.isCombo || !item.productId) {
+                return item;
+              }
               try {
                 const product = await getProductById(item.productId);
                 if (product) {
@@ -426,7 +434,9 @@ export default function EditOrderPage() {
         complement: deliveryModality === "STORE_PICKUP" ? "" : (selectedAddress?.complement || ""),
         observation: orderNote.trim(),
         items: effectiveItems.map(item => ({
-          productId: item.productId,
+          productId: item.isCombo ? undefined : item.productId,
+          comboId: item.isCombo ? (item.comboId || item.productId) : undefined,
+          isCombo: !!item.isCombo,
           productItemId: item.productItemId,
           productName: item.title,
           quantity: item.quantity,
@@ -453,6 +463,36 @@ export default function EditOrderPage() {
     }
   };
 
+  const handleAddCombo = (combo: Combo) => {
+    setOrderItems((prev) => {
+      const existing = prev.find((item) => item.isCombo && (item.comboId === combo.id || item.productId === combo.id));
+      if (existing) {
+        const newQuantity = existing.quantity + 1;
+        if (combo.stock !== undefined && newQuantity > combo.stock) return prev;
+        return prev.map((item) => 
+          item.isCombo && (item.comboId === combo.id || item.productId === combo.id)
+            ? { ...item, quantity: newQuantity }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          productId: combo.id,
+          comboId: combo.id,
+          isCombo: true,
+          title: combo.name,
+          price: Number(combo.price),
+          quantity: 1,
+          imageUrl: combo.imageUrl || undefined,
+          maxStock: combo.stock,
+          isPromo: (combo.originalPrice || 0) > Number(combo.price),
+          oldPrice: combo.originalPrice || 0,
+        }
+      ];
+    });
+  };
+
   const handleAddProduct = (product: ProductResponse) => {
     if (product.variations && product.variations.length > 0 && product.items && product.items.length > 0) {
       setProductForVariation(product);
@@ -460,12 +500,12 @@ export default function EditOrderPage() {
     }
     const defaultItem = product.items?.[0];
     setOrderItems((prev) => {
-      const existing = prev.find((item) => item.productId === product.id && !item.variation);
+      const existing = prev.find((item) => !item.isCombo && item.productId === product.id && !item.variation);
       if (existing) {
         const newQuantity = existing.quantity + 1;
         if (newQuantity > product.totalStock) return prev;
         return prev.map((item) => 
-          item.productId === product.id && !item.variation ? { ...item, quantity: newQuantity } : item
+          !item.isCombo && item.productId === product.id && !item.variation ? { ...item, quantity: newQuantity } : item
         );
       }
       return [
@@ -489,12 +529,12 @@ export default function EditOrderPage() {
     if (!productForVariation || !selectedItem) return;
     const variationLabel = selectedItem.options.map((o: any) => o.optionValue).join(" - ");
     setOrderItems((prev) => {
-      const existing = prev.find((item) => item.productId === productForVariation.id && item.variation === variationLabel);
+      const existing = prev.find((item) => !item.isCombo && item.productId === productForVariation.id && item.variation === variationLabel);
       if (existing) {
         const newQuantity = existing.quantity + 1;
         if (newQuantity > selectedItem.stock) return prev;
         return prev.map((item) => 
-          item.productId === productForVariation.id && item.variation === variationLabel ? { ...item, quantity: newQuantity } : item
+          !item.isCombo && item.productId === productForVariation.id && item.variation === variationLabel ? { ...item, quantity: newQuantity } : item
         );
       }
       return [
@@ -516,11 +556,15 @@ export default function EditOrderPage() {
     setProductForVariation(null);
   };
 
-  const handleUpdateQuantity = (productId: string, variation: string | undefined, quantity: number) => {
+  const handleUpdateQuantity = (productId: string | undefined, variation: string | undefined, quantity: number, isCombo?: boolean) => {
     if (quantity < 1) return;
     setOrderItems((prev) => 
       prev.map((item) => {
-        if (item.productId === productId && item.variation === variation) {
+        const matches = isCombo
+          ? item.isCombo && (item.comboId === productId || item.productId === productId)
+          : !item.isCombo && item.productId === productId && item.variation === variation;
+
+        if (matches) {
           if (item.maxStock !== undefined && quantity > item.maxStock) {
             return item;
           }
@@ -531,8 +575,13 @@ export default function EditOrderPage() {
     );
   };
 
-  const handleRemoveProduct = (productId: string, variation: string | undefined) => {
-    setOrderItems((prev) => prev.filter((item) => !(item.productId === productId && item.variation === variation)));
+  const handleRemoveProduct = (productId: string | undefined, variation: string | undefined, isCombo?: boolean) => {
+    setOrderItems((prev) => prev.filter((item) => {
+      if (isCombo) {
+        return !(item.isCombo && (item.comboId === productId || item.productId === productId));
+      }
+      return !(!item.isCombo && item.productId === productId && item.variation === variation);
+    }));
   };
 
   if (isLoading) {
@@ -569,12 +618,12 @@ export default function EditOrderPage() {
           {/* Product Search Section */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-4 sm:p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-800 mb-4">Produtos</h2>
-            <ProductSearch onSelectProduct={handleAddProduct} />
+            <ProductSearch onSelectProduct={handleAddProduct} onSelectCombo={handleAddCombo} />
             
             {orderItems.length > 0 && (
               <div className="mt-6 space-y-3">
                 {effectiveItems.map((item, index) => (
-                  <div key={`${item.productId}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 border border-slate-100 rounded-xl bg-slate-50">
+                  <div key={`${item.productId || item.comboId}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 border border-slate-100 rounded-xl bg-slate-50">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {item.imageUrl ? (
                         <img src={buildImageUrl(item.imageUrl)} alt={item.title} className="w-10 h-10 shrink-0 rounded-md object-cover" />
@@ -584,7 +633,14 @@ export default function EditOrderPage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-slate-700 text-sm leading-snug break-words">{item.title}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-slate-700 text-sm leading-snug break-words">{item.title}</span>
+                          {item.isCombo && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                              Combo
+                            </span>
+                          )}
+                        </div>
                         {item.variation && <div className="text-xs text-slate-500 mt-0.5">{item.variation}</div>}
                       </div>
                     </div>
@@ -607,7 +663,7 @@ export default function EditOrderPage() {
                           variant="outline" 
                           size="icon" 
                           className="h-7 w-7 rounded-md"
-                          onClick={() => handleUpdateQuantity(item.productId, item.variation, item.quantity - 1)}
+                          onClick={() => handleUpdateQuantity(item.comboId || item.productId, item.variation, item.quantity - 1, item.isCombo)}
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </Button>
@@ -617,7 +673,7 @@ export default function EditOrderPage() {
                           size="icon" 
                           className="h-7 w-7 rounded-md disabled:opacity-50"
                           disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
-                          onClick={() => handleUpdateQuantity(item.productId, item.variation, item.quantity + 1)}
+                          onClick={() => handleUpdateQuantity(item.comboId || item.productId, item.variation, item.quantity + 1, item.isCombo)}
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
@@ -625,7 +681,7 @@ export default function EditOrderPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md shrink-0 ml-1 sm:ml-2"
-                          onClick={() => handleRemoveProduct(item.productId, item.variation)}
+                          onClick={() => handleRemoveProduct(item.comboId || item.productId, item.variation, item.isCombo)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

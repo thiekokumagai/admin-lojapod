@@ -20,7 +20,7 @@ export function RichTextEditor({ value, onChange }: Props) {
     },
     editorProps: {
       attributes: {
-        class: "prose prose-sm dark:prose-invert focus:outline-none max-w-full min-h-[150px] px-4 py-3",
+        class: "prose prose-sm dark:prose-invert focus:outline-none max-w-full min-h-[150px] px-4 py-3 break-words [overflow-wrap:anywhere]",
       },
     },
   });
@@ -34,7 +34,7 @@ export function RichTextEditor({ value, onChange }: Props) {
   if (!editor) return null;
 
   return (
-    <div className="rounded-2xl border bg-background overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary focus-within:shadow-md transition-all">
+    <div className="rounded-2xl border bg-background overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary focus-within:shadow-md transition-all w-full max-w-full min-w-0">
       <style>{`
         .ProseMirror ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin: 1rem 0 !important; }
         .ProseMirror ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 1rem 0 !important; }
