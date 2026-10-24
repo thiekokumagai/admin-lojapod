@@ -28,7 +28,9 @@ function getFreightPrice(distanceKm: number, ranges: DeliveryRange[]): number | 
     for (const tier of sortedRanges) {
         if (distanceKm <= tier.distancia) return tier.valor;
     }
-    return null;
+
+    // Se ultrapassou a última faixa cadastrada, assume o valor da última faixa
+    return sortedRanges[sortedRanges.length - 1].valor;
 }
 
 function validateDistance(
