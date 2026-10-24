@@ -163,6 +163,10 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                     <Input 
                       id="value" 
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
                       placeholder="0,00" 
                       value={value !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value)) : ""}
                       onChange={(e) => {
@@ -175,11 +179,16 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 ) : (
                   <Input 
                     id="value" 
-                    type="number" 
-                    step="0.01"
+                    type="text" 
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder={type === "FREE_SHIPPING" ? "N/A" : "EX: 10"} 
                     value={value}
-                    onChange={(e) => setValue(e.target.value)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      setValue(digits);
+                    }}
                     disabled={type === "FREE_SHIPPING"}
                     className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
                   />
@@ -192,6 +201,10 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                   <Input 
                     id="minOrderValue" 
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder="Deixe em branco se não houver" 
                     value={minOrderValue !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(minOrderValue)) : ""}
                     onChange={(e) => {
@@ -240,10 +253,16 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 <Label htmlFor="maxUses" className="text-slate-700 font-bold">Nº Máximo de Usos</Label>
                 <Input 
                   id="maxUses" 
-                  type="number" 
+                  type="text" 
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   placeholder="Deixe em branco se não houver limite" 
                   value={maxUses}
-                  onChange={(e) => setMaxUses(e.target.value)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    setMaxUses(digits);
+                  }}
                   className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
                 />
               </div>

@@ -231,6 +231,10 @@ export default function CustomerDetailsPage() {
                     </label>
                     {isEditing ? (
                       <Input 
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete="tel"
                         value={editData.phone} 
                         onChange={e => setEditData(prev => ({...prev, phone: formatPhone(e.target.value)}))}
                         placeholder="(00) 00000-0000"

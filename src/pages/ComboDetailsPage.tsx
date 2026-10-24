@@ -419,8 +419,10 @@ export default function ComboDetailsPage() {
                     </span>
                     <Input
                       id="combo-price"
-                      type="tel"
+                      type="text"
                       inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
                       placeholder="0,00"
                       className="pl-9 font-semibold w-full"
                       value={
@@ -659,6 +661,8 @@ export default function ComboDetailsPage() {
                     id="combo-max-order"
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxPerOrder}
                     onChange={(e) => {
@@ -680,6 +684,8 @@ export default function ComboDetailsPage() {
                     id="combo-max-sales"
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxTotalSales}
                     onChange={(e) => {

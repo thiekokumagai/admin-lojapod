@@ -136,6 +136,10 @@ function InlinePriceInput({ value, onSave }: InlinePriceInputProps) {
         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
         <Input
           ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="tel"
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}
           onBlur={() => void handleSave()}

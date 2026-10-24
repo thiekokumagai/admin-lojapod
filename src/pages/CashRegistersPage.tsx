@@ -257,6 +257,10 @@ export default function CashRegistersPage() {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">R$</span>
                 <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   value={formData.initialValue}
                   onChange={(e) => {
                     let val = e.target.value.replace(/\D/g, "");

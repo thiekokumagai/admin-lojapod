@@ -1010,6 +1010,7 @@ export default function LoyaltyPage() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    autoComplete="tel"
                     value={configForm.stampsRequired !== undefined ? String(configForm.stampsRequired) : "10"}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, "");
@@ -1088,6 +1089,7 @@ export default function LoyaltyPage() {
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
+                          autoComplete="tel"
                           value={tier.minOrders !== undefined ? String(tier.minOrders) : ""}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, "");
@@ -1105,10 +1107,12 @@ export default function LoyaltyPage() {
                         <div className="relative w-20">
                           <Input
                             type="text"
-                            inputMode="decimal"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            autoComplete="tel"
                             value={tier.discountPercent !== undefined ? String(tier.discountPercent) : ""}
                             onChange={(e) => {
-                              const val = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                              const val = e.target.value.replace(/\D/g, "");
                               const updated = [...(configForm.progressiveTiers || [])];
                               updated[idx] = { ...updated[idx], discountPercent: val === "" ? 0 : Number(val) };
                               setConfigForm((prev) => ({ ...prev, progressiveTiers: updated }));
@@ -1145,10 +1149,12 @@ export default function LoyaltyPage() {
                 <div className="relative w-40">
                   <Input
                     type="text"
-                    inputMode="decimal"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     value={configForm.cashbackPercent !== undefined ? String(configForm.cashbackPercent) : "5"}
                     onChange={(e) => {
-                      const val = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                      const val = e.target.value.replace(/\D/g, "");
                       setConfigForm((prev) => ({ ...prev, cashbackPercent: val === "" ? 0 : Number(val) }));
                     }}
                     className="h-10 rounded-xl bg-white pr-8 font-bold"
@@ -1166,10 +1172,12 @@ export default function LoyaltyPage() {
                     <Label className="text-xs font-semibold text-amber-900 flex items-center h-5">Pontos por R$ 1 Gasto</Label>
                     <Input
                       type="text"
-                      inputMode="decimal"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
                       value={configForm.pointsPerReal !== undefined ? String(configForm.pointsPerReal) : "1"}
                       onChange={(e) => {
-                        const val = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+                        const val = e.target.value.replace(/\D/g, "");
                         setConfigForm((prev) => ({ ...prev, pointsPerReal: val === "" ? 0 : Number(val) }));
                       }}
                       className="h-10 rounded-xl bg-white"
@@ -1181,6 +1189,8 @@ export default function LoyaltyPage() {
                     <Input
                       type="text"
                       inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
                       value={pointsRedemptionDisplay}
                       onChange={(e) => handlePointsRedemptionChange(e.target.value)}
                       className="h-10 rounded-xl bg-white font-semibold"
@@ -1198,6 +1208,7 @@ export default function LoyaltyPage() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    autoComplete="tel"
                     value={configForm.minPointsToRedeem !== undefined ? String(configForm.minPointsToRedeem) : "0"}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, "");
@@ -1219,6 +1230,9 @@ export default function LoyaltyPage() {
                 <Label className="text-xs font-semibold flex items-center h-5">Valor Mínimo do Pedido (R$)</Label>
                 <Input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   value={minOrderDisplay}
                   onChange={(e) => handleMinOrderChange(e.target.value)}
                   className="h-10 rounded-xl font-semibold"
@@ -1234,6 +1248,7 @@ export default function LoyaltyPage() {
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
+                  autoComplete="tel"
                   value={configForm.validityDays !== undefined ? String(configForm.validityDays) : "30"}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, "");
@@ -1279,6 +1294,10 @@ export default function LoyaltyPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Telefone do Cliente (WhatsApp)</Label>
               <Input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="tel"
                 placeholder="(67) 99999-9999"
                 value={adjustPhone}
                 onChange={(e) => setAdjustPhone(formatPhoneNumber(e.target.value))}
@@ -1312,9 +1331,15 @@ export default function LoyaltyPage() {
                   <Minus className="w-4 h-4" />
                 </Button>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   value={adjustCount}
-                  onChange={(e) => setAdjustCount(Number(e.target.value))}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    setAdjustCount(digits ? Number(digits) : 0);
+                  }}
                   className="h-10 text-center font-bold rounded-xl"
                   required
                 />

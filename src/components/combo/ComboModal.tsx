@@ -349,8 +349,10 @@ export function ComboModal({
                   </span>
                   <Input
                     id="combo-price"
-                    type="tel"
+                    type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder="0,00"
                     className="pl-9"
                     value={
@@ -616,6 +618,8 @@ export function ComboModal({
                     id="combo-max-order"
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxPerOrder}
                     onChange={(e) => {
@@ -631,6 +635,8 @@ export function ComboModal({
                     id="combo-max-sales"
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxTotalSales}
                     onChange={(e) => {

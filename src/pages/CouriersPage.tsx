@@ -212,6 +212,10 @@ export default function CouriersPage() {
             <div>
               <label className="text-sm font-semibold mb-1 block">Telefone / WhatsApp</label>
               <Input 
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="tel"
                 value={newPhone} 
                 onChange={(e) => setNewPhone(formatPhone(e.target.value))} 
                 required 
@@ -238,6 +242,10 @@ export default function CouriersPage() {
             <div>
               <label className="text-sm font-semibold mb-1 block">Telefone / WhatsApp</label>
               <Input 
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="tel"
                 value={editPhone} 
                 onChange={(e) => setEditPhone(formatPhone(e.target.value))} 
                 required 
@@ -282,6 +290,9 @@ export default function CouriersPage() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                 <Input 
                   type="text" 
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   value={payAmount !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(payAmount)) : ""} 
                   onChange={(e) => {
                     const digits = e.target.value.replace(/\D/g, "");
