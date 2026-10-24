@@ -1,5 +1,6 @@
 import { DeliverySettingsForm } from "@/components/settings/DeliverySettingsForm";
 import { PaymentSettingsForm } from "@/components/settings/PaymentSettingsForm";
+import { PaymentGatewaysSettingsForm } from "@/components/settings/PaymentGatewaysSettingsForm";
 import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
 import { PaymentRulesSettingsForm } from "@/components/settings/PaymentRulesSettingsForm";
 import { BusinessHoursSettingsForm } from "@/components/settings/BusinessHoursSettingsForm";
@@ -46,6 +47,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="recebimentos" className="space-y-6 outline-none">
+          <PaymentGatewaysSettingsForm />
           <PaymentSettingsForm />
           <PaymentRulesSettingsForm />
         </TabsContent>
