@@ -819,30 +819,32 @@ export default function ProductDetailsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="product-featured"
-              checked={isFeatured}
-              onCheckedChange={setIsFeatured}
-            />
-            <Label htmlFor="product-featured" className="cursor-pointer font-semibold flex items-center gap-1">
-              Destaque
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="product-active"
-              checked={isVisible}
-              onCheckedChange={setIsVisible}
-            />
-            <Label htmlFor="product-active" className="cursor-pointer font-semibold">
-              {isVisible ? "Ativo" : "Inativo"}
-            </Label>
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-4 sm:gap-6 w-full sm:w-auto">
+          <div className="flex items-center gap-5 sm:gap-6">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="product-featured"
+                checked={isFeatured}
+                onCheckedChange={setIsFeatured}
+              />
+              <Label htmlFor="product-featured" className="cursor-pointer font-semibold flex items-center gap-1">
+                Destaque
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="product-active"
+                checked={isVisible}
+                onCheckedChange={setIsVisible}
+              />
+              <Label htmlFor="product-active" className="cursor-pointer font-semibold">
+                {isVisible ? "Ativo" : "Inativo"}
+              </Label>
+            </div>
           </div>
           <Button
             type="button"
-            className="h-12 rounded-2xl px-8 font-semibold shadow-lg transition-all hover:scale-[1.02]"
+            className="h-12 w-full sm:w-auto rounded-2xl px-8 font-semibold shadow-lg transition-all hover:scale-[1.02]"
             disabled={isSaving}
             onClick={() => void handleSaveEverything()}
           >
