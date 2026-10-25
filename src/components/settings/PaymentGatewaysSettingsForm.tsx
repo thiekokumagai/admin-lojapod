@@ -17,6 +17,7 @@ export function PaymentGatewaysSettingsForm() {
   const [infinitePayEnabled, setInfinitePayEnabled] = useState(false);
   const [infinitePayHandle, setInfinitePayHandle] = useState("");
   const [infinitePayApiKey, setInfinitePayApiKey] = useState("");
+  const [infinitePayAssuredInstallments, setInfinitePayAssuredInstallments] = useState(1);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,11 @@ export function PaymentGatewaysSettingsForm() {
       setInfinitePayEnabled(!!ip.enabled && !!ip.acceptCreditCard);
       setInfinitePayHandle(ip.handle || "");
       setInfinitePayApiKey(ip.apiKey || "");
+      setInfinitePayAssuredInstallments(
+        ip.assuredInstallments !== undefined && ip.assuredInstallments !== null
+          ? Number(ip.assuredInstallments)
+          : 1
+      );
     }
   }, [settings]);
 
@@ -63,6 +69,7 @@ export function PaymentGatewaysSettingsForm() {
           acceptCreditCard: infinitePayEnabled,
           handle: infinitePayHandle.trim().replace(/^@/, ""),
           apiKey: infinitePayApiKey.trim(),
+          assuredInstallments: Number(infinitePayAssuredInstallments),
         },
       };
 
@@ -158,6 +165,28 @@ export function PaymentGatewaysSettingsForm() {
                   Chave de API gerada na aba de Checkout Integrado no aplicativo InfinitePay.
                 </p>
               </div>
+            </div>
+
+            {/* Repasse de Juros / Parcelamento */}
+            <div className="space-y-1.5 p-3.5 rounded-lg border bg-background">
+              <Label className="text-xs font-semibold">
+                Repasse de Juros no Parcelamento
+              </Label>
+              <select
+                value={infinitePayAssuredInstallments}
+                onChange={(e) => setInfinitePayAssuredInstallments(Number(e.target.value))}
+                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value={1}>Cliente assume juros a partir da 2ª parcela (1x sem juros) [Padrão]</option>
+                <option value={0}>Cliente assume juros em todas as parcelas</option>
+                <option value={2}>Cliente assume juros a partir da 3ª parcela (até 2x sem juros)</option>
+                <option value={3}>Cliente assume juros a partir da 4ª parcela (até 3x sem juros)</option>
+                <option value={6}>Cliente assume juros a partir da 7ª parcela (até 6x sem juros)</option>
+                <option value={12}>Loja assume todos os juros (até 12x sem juros)</option>
+              </select>
+              <p className="text-[11px] text-muted-foreground">
+                Define até quantas parcelas a loja absorve as taxas. Definido como <strong>1x</strong>, a compra à vista não tem juros para o cliente, e ao parcelar a partir de 2x (até 12x), a InfinitePay cobra os juros do comprador.
+              </p>
             </div>
 
             {/* Webhook URL Helper */}
