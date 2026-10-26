@@ -187,7 +187,7 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                     value={value}
                     onChange={(e) => {
                       const digits = e.target.value.replace(/\D/g, "");
-                      setValue(digits);
+                      setValue(digits ? Number(digits) : "");
                     }}
                     disabled={type === "FREE_SHIPPING"}
                     className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
@@ -263,7 +263,7 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                   value={maxUses}
                   onChange={(e) => {
                     const digits = e.target.value.replace(/\D/g, "");
-                    setMaxUses(digits);
+                    setMaxUses(digits ? Number(digits) : "");
                   }}
                   className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
                 />
