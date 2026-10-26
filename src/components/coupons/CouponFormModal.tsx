@@ -121,18 +121,18 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] overflow-hidden p-0 rounded-2xl border-slate-200">
-        <DialogHeader className="bg-slate-50/80 px-6 py-5 border-b border-slate-100">
-          <DialogTitle className="text-xl font-bold text-slate-800">
+      <DialogContent className="w-[94vw] sm:max-w-[500px] max-h-[88dvh] flex flex-col gap-0 p-0 overflow-hidden rounded-2xl border-slate-200">
+        <DialogHeader className="shrink-0 bg-slate-50/90 backdrop-blur-sm px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+          <DialogTitle className="text-lg sm:text-xl font-bold text-slate-800 text-left">
             {coupon ? "Editar Cupom" : "Novo Cupom"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-6 max-h-[80vh] overflow-y-auto">
-          <form id="coupon-form" onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="title" className="text-slate-700 font-bold">Código do Cupom</Label>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 overscroll-contain">
+          <form id="coupon-form" onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+              <div className="space-y-1.5 sm:space-y-2 col-span-1 sm:col-span-2">
+                <Label htmlFor="title" className="text-slate-700 font-bold text-sm">Código do Cupom</Label>
                 <Input 
                   id="title" 
                   placeholder="EX: BEMVINDO10" 
@@ -142,8 +142,8 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="type" className="text-slate-700 font-bold">Tipo de Desconto</Label>
+              <div className="space-y-1.5 sm:space-y-2 col-span-1">
+                <Label htmlFor="type" className="text-slate-700 font-bold text-sm">Tipo de Desconto</Label>
                 <Select value={type} onValueChange={(val: any) => setType(val)}>
                   <SelectTrigger className="h-11 rounded-xl border-slate-200 focus:ring-violet-600 font-medium">
                     <SelectValue placeholder="Selecione..." />
@@ -156,8 +156,8 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="value" className="text-slate-700 font-bold">Valor do Desconto</Label>
+              <div className="space-y-1.5 sm:space-y-2 col-span-1">
+                <Label htmlFor="value" className="text-slate-700 font-bold text-sm">Valor do Desconto</Label>
                 {type === "VALUE" ? (
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
@@ -195,8 +195,8 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 )}
               </div>
 
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="minOrderValue" className="text-slate-700 font-bold">Valor Mínimo do Pedido</Label>
+              <div className="space-y-1.5 sm:space-y-2 col-span-1 sm:col-span-2">
+                <Label htmlFor="minOrderValue" className="text-slate-700 font-bold text-sm">Valor Mínimo do Pedido</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
                   <Input 
@@ -216,8 +216,8 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 </div>
               </div>
 
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="validUntilDate" className="text-slate-700 font-bold">Data de Validade</Label>
+              <div className="space-y-1.5 sm:space-y-2 col-span-1 sm:col-span-2">
+                <Label htmlFor="validUntilDate" className="text-slate-700 font-bold text-sm">Data de Validade</Label>
                 <Input 
                   id="validUntilDate" 
                   type="date" 
@@ -227,30 +227,32 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="startTime" className="text-slate-700 font-bold">Hora Inicial</Label>
-                <Input 
-                  id="startTime" 
-                  type="time" 
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
-                />
+              <div className="grid grid-cols-2 gap-3 col-span-1 sm:col-span-2">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="startTime" className="text-slate-700 font-bold text-sm">Hora Inicial</Label>
+                  <Input 
+                    id="startTime" 
+                    type="time" 
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium px-2 sm:px-3"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="endTime" className="text-slate-700 font-bold text-sm">Hora Final</Label>
+                  <Input 
+                    id="endTime" 
+                    type="time" 
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium px-2 sm:px-3"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="endTime" className="text-slate-700 font-bold">Hora Final</Label>
-                <Input 
-                  id="endTime" 
-                  type="time" 
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
-                />
-              </div>
-
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="maxUses" className="text-slate-700 font-bold">Nº Máximo de Usos</Label>
+              <div className="space-y-1.5 sm:space-y-2 col-span-1 sm:col-span-2">
+                <Label htmlFor="maxUses" className="text-slate-700 font-bold text-sm">Nº Máximo de Usos</Label>
                 <Input 
                   id="maxUses" 
                   type="text" 
@@ -267,43 +269,47 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                 />
               </div>
 
-              <div className="col-span-2 flex items-center justify-between p-4 bg-slate-50/50 rounded-xl border border-slate-100">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-bold text-slate-800">Aplicar em Itens Promocionais?</Label>
-                  <p className="text-[13px] text-slate-500">
+              <div className="col-span-1 sm:col-span-2 flex items-center justify-between p-3.5 sm:p-4 bg-slate-50/70 rounded-xl border border-slate-100 gap-3">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <Label className="text-sm font-bold text-slate-800 cursor-pointer" onClick={() => setApplyToPromotionalItems(!applyToPromotionalItems)}>
+                    Aplicar em Itens Promocionais?
+                  </Label>
+                  <p className="text-[12px] sm:text-[13px] text-slate-500 leading-tight">
                     Permite usar o cupom em produtos que já estão em promoção.
                   </p>
                 </div>
                 <Switch 
                   checked={applyToPromotionalItems}
                   onCheckedChange={setApplyToPromotionalItems}
-                  className="data-[state=checked]:bg-violet-600"
+                  className="shrink-0 data-[state=checked]:bg-violet-600"
                 />
               </div>
 
-              <div className="col-span-2 flex items-center justify-between p-4 bg-slate-50/50 rounded-xl border border-slate-100">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-bold text-slate-800">Status do Cupom</Label>
-                  <p className="text-[13px] text-slate-500">
+              <div className="col-span-1 sm:col-span-2 flex items-center justify-between p-3.5 sm:p-4 bg-slate-50/70 rounded-xl border border-slate-100 gap-3">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <Label className="text-sm font-bold text-slate-800 cursor-pointer" onClick={() => setStatus(!status)}>
+                    Status do Cupom
+                  </Label>
+                  <p className="text-[12px] sm:text-[13px] text-slate-500 leading-tight">
                     Habilita ou desabilita o uso imediato do cupom.
                   </p>
                 </div>
                 <Switch 
                   checked={status}
                   onCheckedChange={setStatus}
-                  className="data-[state=checked]:bg-emerald-500"
+                  className="shrink-0 data-[state=checked]:bg-emerald-500"
                 />
               </div>
             </div>
           </form>
         </div>
 
-        <div className="bg-slate-50/80 p-5 border-t border-slate-100 flex justify-end gap-3">
+        <div className="shrink-0 bg-slate-50/90 backdrop-blur-sm p-4 sm:p-5 border-t border-slate-100 flex items-center justify-end gap-2 sm:gap-3">
           <Button 
             type="button" 
             variant="ghost" 
             onClick={onClose}
-            className="h-11 font-bold text-slate-600 hover:bg-slate-200/50 hover:text-slate-800 rounded-xl"
+            className="h-11 flex-1 sm:flex-initial font-bold text-slate-600 hover:bg-slate-200/50 hover:text-slate-800 rounded-xl"
             disabled={isSubmitting}
           >
             Cancelar
@@ -312,7 +318,7 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
             type="submit" 
             form="coupon-form"
             disabled={isSubmitting}
-            className="h-11 bg-violet-600 hover:bg-violet-700 text-white font-bold px-6 rounded-xl shadow-sm"
+            className="h-11 flex-1 sm:flex-initial bg-violet-600 hover:bg-violet-700 text-white font-bold px-6 rounded-xl shadow-sm"
           >
             {isSubmitting ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando...</>

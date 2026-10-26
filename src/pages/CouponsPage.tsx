@@ -51,16 +51,16 @@ export default function CouponsPage() {
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
             <span>Cupons de Desconto</span>
           </h1>
-          <p className="text-sm text-slate-500 font-medium">Gerencie promoções, limites de uso e validade dos cupons.</p>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">Gerencie promoções, limites de uso e validade dos cupons.</p>
         </div>
         <Button 
           onClick={handleCreateNew}
-          className="rounded-xl shadow-sm h-11 px-5"
+          className="rounded-xl shadow-sm h-11 px-5 w-full sm:w-auto shrink-0"
         >
           <Plus className="w-4 h-4 mr-2" />
           Novo Cupom
