@@ -17,6 +17,7 @@ import { Send, Bike } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatWhatsAppNumber } from "@/utils/whatsapp";
 
 const paymentLabels: Record<string, string> = {
   PIX: "Pix",
@@ -510,7 +511,7 @@ export default function DeliveryMapPage() {
 
                           wppText += `*Link da Rota no Maps:* \n${mapsUrl}\n`;
 
-                          window.open(`https://wa.me/${courier.phone.replace(/\D/g, '')}?text=${encodeURIComponent(wppText)}`, '_blank');
+                          window.open(`https://wa.me/${formatWhatsAppNumber(courier.phone)}?text=${encodeURIComponent(wppText)}`, '_blank');
                         }}>
                           <Send className="w-3 h-3 mr-1" /> Reenviar
                         </Button>
@@ -818,7 +819,7 @@ export default function DeliveryMapPage() {
                 wppText += `*Valor Total Entrega:* R$ ${Number(deliveryFee).toFixed(2).replace('.', ',')}\n\n`;
                 wppText += `*Link da Rota no Maps:* \n${mapsUrl}\n`;
 
-                window.open(`https://wa.me/${courier.phone.replace(/\D/g, '')}?text=${encodeURIComponent(wppText)}`, '_blank');
+                window.open(`https://wa.me/${formatWhatsAppNumber(courier.phone)}?text=${encodeURIComponent(wppText)}`, '_blank');
 
                 // 2. Register Fee in Backend
                 registerFeeMutation.mutate({

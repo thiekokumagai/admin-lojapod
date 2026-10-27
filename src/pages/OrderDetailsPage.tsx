@@ -12,6 +12,7 @@ import { customersService } from "@/services/customers.service";
 import { getProductById } from "@/services/product.service";
 import { OrderStatus } from "@/types/order";
 import { formatPhone } from "@/utils/formatters";
+import { formatWhatsAppNumber } from "@/utils/whatsapp";
 import { buildImageUrl } from "@/utils/image-url";
 
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
@@ -306,7 +307,7 @@ export default function OrderDetailsPage() {
 
           {/* 5. WhatsApp */}
           <a 
-            href={`https://wa.me/55${order.customerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${order.customerName}! Referente ao seu pedido #${order.orderNumber}.`)}`}
+            href={`https://wa.me/${formatWhatsAppNumber(order.customerPhone)}?text=${encodeURIComponent(`Olá ${order.customerName}! Referente ao seu pedido #${order.orderNumber}.`)}`}
             target="_blank"
             rel="noreferrer"
             className="w-9 h-9 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors shrink-0" 

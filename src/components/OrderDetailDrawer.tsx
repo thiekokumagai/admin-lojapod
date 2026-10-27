@@ -29,6 +29,7 @@ import { OrderStatus } from "@/types/order";
 import { customersService } from "@/services/customers.service";
 import { getProductById } from "@/services/product.service";
 import { formatPhone } from "@/utils/formatters";
+import { formatWhatsAppNumber } from "@/utils/whatsapp";
 
 interface OrderDetailDrawerProps {
   orderId: string | null;
@@ -540,8 +541,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
 
   const handleSendWhatsApp = () => {
     if (!order) return;
-    const phoneStr = order.customerPhone.replace(/\D/g, '');
-    const numero = phoneStr.startsWith('55') ? phoneStr : `55${phoneStr}`;
+    const numero = formatWhatsAppNumber(order.customerPhone);
     const message = encodeURIComponent(`Olá ${order.customerName}, referente ao seu pedido #${order.orderNumber || ''}`);
     
     const urlApp = `whatsapp://send?phone=${numero}&text=${message}`;
