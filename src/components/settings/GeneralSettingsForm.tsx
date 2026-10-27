@@ -168,6 +168,7 @@ export function GeneralSettingsForm() {
   // Estoque e Disponibilidade
   const [autoHideOutOfStock, setAutoHideOutOfStock] = useState(true);
   const [enableStockAlertNotification, setEnableStockAlertNotification] = useState(true);
+  const [showVariationsOnCard, setShowVariationsOnCard] = useState(true);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingWhiteLogo, setIsUploadingWhiteLogo] = useState(false);
@@ -236,6 +237,7 @@ export function GeneralSettingsForm() {
       setEnableExchangePolicy(!!settings.enableExchangePolicy);
       setAutoHideOutOfStock(settings.autoHideOutOfStock !== undefined ? !!settings.autoHideOutOfStock : true);
       setEnableStockAlertNotification(settings.enableStockAlertNotification !== undefined ? !!settings.enableStockAlertNotification : true);
+      setShowVariationsOnCard(settings.showVariationsOnCard !== undefined ? !!settings.showVariationsOnCard : true);
     }
   }, [settings]);
 
@@ -563,6 +565,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         enableExchangePolicy,
         autoHideOutOfStock,
         enableStockAlertNotification,
+        showVariationsOnCard,
       });
 
       toast({
@@ -1119,6 +1122,24 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               <Switch
                 checked={enableStockAlertNotification}
                 onCheckedChange={setEnableStockAlertNotification}
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 pt-3 border-t">
+              <div className="space-y-0.5">
+                <Label
+                  className="font-medium text-sm cursor-pointer select-none"
+                  onClick={() => setShowVariationsOnCard(!showVariationsOnCard)}
+                >
+                  Exibir variações na listagem de produtos
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Quando ativado, os sabores e opções de variação são exibidos nos cards da vitrine em todos os temas. Se desativado, o cliente escolhe a variação somente após clicar para adicionar/comprar.
+                </p>
+              </div>
+              <Switch
+                checked={showVariationsOnCard}
+                onCheckedChange={setShowVariationsOnCard}
               />
             </div>
           </div>

@@ -82,6 +82,7 @@ export interface StoreSettings {
   // Estoque e Disponibilidade
   autoHideOutOfStock?: boolean;
   enableStockAlertNotification?: boolean;
+  showVariationsOnCard?: boolean;
 
   createdAt?: string;
   updatedAt?: string;
