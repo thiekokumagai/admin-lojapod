@@ -1009,7 +1009,6 @@ export default function LoyaltyPage() {
                   <Input
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     value={configForm.stampsRequired !== undefined ? String(configForm.stampsRequired) : "10"}
                     onChange={(e) => {
@@ -1088,7 +1087,6 @@ export default function LoyaltyPage() {
                         <Input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
                           autoComplete="tel"
                           value={tier.minOrders !== undefined ? String(tier.minOrders) : ""}
                           onChange={(e) => {
@@ -1108,7 +1106,6 @@ export default function LoyaltyPage() {
                           <Input
                             type="text"
                             inputMode="numeric"
-                            pattern="[0-9]*"
                             autoComplete="tel"
                             value={tier.discountPercent !== undefined ? String(tier.discountPercent) : ""}
                             onChange={(e) => {
@@ -1150,7 +1147,6 @@ export default function LoyaltyPage() {
                   <Input
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     value={configForm.cashbackPercent !== undefined ? String(configForm.cashbackPercent) : "5"}
                     onChange={(e) => {
@@ -1173,7 +1169,6 @@ export default function LoyaltyPage() {
                     <Input
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
                       autoComplete="tel"
                       value={configForm.pointsPerReal !== undefined ? String(configForm.pointsPerReal) : "1"}
                       onChange={(e) => {
@@ -1189,7 +1184,6 @@ export default function LoyaltyPage() {
                     <Input
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
                       autoComplete="tel"
                       value={pointsRedemptionDisplay}
                       onChange={(e) => handlePointsRedemptionChange(e.target.value)}
@@ -1207,7 +1201,6 @@ export default function LoyaltyPage() {
                   <Input
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     value={configForm.minPointsToRedeem !== undefined ? String(configForm.minPointsToRedeem) : "0"}
                     onChange={(e) => {
@@ -1231,7 +1224,6 @@ export default function LoyaltyPage() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={minOrderDisplay}
                   onChange={(e) => handleMinOrderChange(e.target.value)}
@@ -1247,7 +1239,6 @@ export default function LoyaltyPage() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={configForm.validityDays !== undefined ? String(configForm.validityDays) : "30"}
                   onChange={(e) => {
@@ -1331,7 +1322,6 @@ export default function LoyaltyPage() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={adjustCount}
                   onChange={(e) => {

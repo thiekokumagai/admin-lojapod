@@ -115,7 +115,6 @@ export function ProductDetailsForm({
                         <Input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
                           autoComplete="tel"
                           className="h-12 rounded-2xl bg-background pl-9"
                           placeholder="0,00"
@@ -143,7 +142,6 @@ export function ProductDetailsForm({
                         <Input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
                           autoComplete="tel"
                           className="h-12 rounded-2xl bg-background pl-9"
                           placeholder="0,00"
@@ -171,7 +169,6 @@ export function ProductDetailsForm({
                         <Input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
                           autoComplete="tel"
                           className="h-12 rounded-2xl bg-background pl-9"
                           placeholder="0,00"

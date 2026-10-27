@@ -129,7 +129,6 @@ export default function PurchaseAnalysisPage() {
                   id="meses"
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   value={meses}
                   onChange={(e) => setMeses(e.target.value.replace(/\D/g, ""))}
                   required
@@ -141,7 +140,6 @@ export default function PurchaseAnalysisPage() {
                   id="dias_cobertura"
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   value={diasCobertura}
                   onChange={(e) => setDiasCobertura(e.target.value.replace(/\D/g, ""))}
                   required

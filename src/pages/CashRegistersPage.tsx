@@ -259,7 +259,6 @@ export default function CashRegistersPage() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={formData.initialValue}
                   onChange={(e) => {

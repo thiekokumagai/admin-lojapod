@@ -287,7 +287,6 @@ export default function CouriersPage() {
                 <Input 
                   type="text" 
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={payAmount !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(payAmount)) : ""} 
                   onChange={(e) => {

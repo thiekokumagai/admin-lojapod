@@ -421,7 +421,6 @@ export default function ComboDetailsPage() {
                       id="combo-price"
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
                       autoComplete="tel"
                       placeholder="0,00"
                       className="pl-9 font-semibold w-full"
@@ -661,7 +660,6 @@ export default function ComboDetailsPage() {
                     id="combo-max-order"
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxPerOrder}
@@ -684,7 +682,6 @@ export default function ComboDetailsPage() {
                     id="combo-max-sales"
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxTotalSales}

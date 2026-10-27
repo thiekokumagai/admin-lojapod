@@ -378,7 +378,6 @@ export function DeliverySettingsForm() {
               <Input
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]*"
                 autoComplete="tel"
                 value={formatCurrencyInput(deliveryFixedFee)}
                 onChange={(e) => handleCurrencyInputChange(e.target.value, setDeliveryFixedFee)}
@@ -416,7 +415,6 @@ export function DeliverySettingsForm() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={formatCurrencyInput(freeShippingMinValue)}
                   onChange={(e) => handleCurrencyInputChange(e.target.value, setFreeShippingMinValue)}
@@ -465,7 +463,6 @@ export function DeliverySettingsForm() {
             <Input
               type="text"
               inputMode="numeric"
-              pattern="[0-9]*"
               autoComplete="tel"
               value={maxDeliveryKm}
               onChange={(e) => setMaxDeliveryKm(e.target.value.replace(/\D/g, ""))}
@@ -522,7 +519,6 @@ export function DeliverySettingsForm() {
                               <Input
                                 type="text"
                                 inputMode="numeric"
-                                pattern="[0-9]*"
                                 autoComplete="tel"
                                 value={formatCurrencyInput(r.valor)}
                                 onChange={(e) => {
@@ -554,7 +550,6 @@ export function DeliverySettingsForm() {
                           <Input
                             type="text"
                             inputMode="numeric"
-                            pattern="[0-9]*"
                             autoComplete="tel"
                             placeholder="Ex: 5"
                             value={newDist}
@@ -570,7 +565,6 @@ export function DeliverySettingsForm() {
                           <Input
                             type="text"
                             inputMode="numeric"
-                            pattern="[0-9]*"
                             autoComplete="tel"
                             placeholder="Ex: 8,50"
                             value={newVal !== "" ? formatCurrencyInput(newVal) : ""}

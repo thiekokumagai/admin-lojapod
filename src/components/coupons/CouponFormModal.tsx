@@ -165,7 +165,6 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                       id="value" 
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
                       autoComplete="tel"
                       placeholder="0,00" 
                       value={value !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value)) : ""}
@@ -181,7 +180,6 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                     id="value" 
                     type="text" 
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder={type === "FREE_SHIPPING" ? "N/A" : "EX: 10"} 
                     value={value}
@@ -203,7 +201,6 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                     id="minOrderValue" 
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder="Deixe em branco se não houver" 
                     value={minOrderValue !== "" ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(minOrderValue)) : ""}
@@ -257,7 +254,6 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
                   id="maxUses" 
                   type="text" 
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   placeholder="Deixe em branco se não houver limite" 
                   value={maxUses}

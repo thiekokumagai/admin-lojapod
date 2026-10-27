@@ -351,7 +351,6 @@ export function ComboModal({
                     id="combo-price"
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder="0,00"
                     className="pl-9"
@@ -618,7 +617,6 @@ export function ComboModal({
                     id="combo-max-order"
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxPerOrder}
@@ -635,7 +633,6 @@ export function ComboModal({
                     id="combo-max-sales"
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     autoComplete="tel"
                     placeholder="Sem limite"
                     value={maxTotalSales}

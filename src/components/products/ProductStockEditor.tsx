@@ -118,7 +118,6 @@ export function ProductStockEditor({
                 <Input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   autoComplete="tel"
                   value={directStockValue}
                   onChange={(event) => {
@@ -183,7 +182,6 @@ export function ProductStockEditor({
                     <Input
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]*"
                       autoComplete="tel"
                       value={rawValue}
                       onChange={(event) => {

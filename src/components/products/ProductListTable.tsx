@@ -138,7 +138,6 @@ function InlinePriceInput({ value, onSave }: InlinePriceInputProps) {
           ref={inputRef}
           type="text"
           inputMode="numeric"
-          pattern="[0-9]*"
           autoComplete="tel"
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}
