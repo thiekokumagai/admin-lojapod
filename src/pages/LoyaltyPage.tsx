@@ -1295,8 +1295,6 @@ export default function LoyaltyPage() {
               <Label className="text-xs font-semibold">Telefone do Cliente (WhatsApp)</Label>
               <Input
                 type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 autoComplete="tel"
                 placeholder="(67) 99999-9999"
                 value={adjustPhone}

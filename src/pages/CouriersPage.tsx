@@ -213,8 +213,6 @@ export default function CouriersPage() {
               <label className="text-sm font-semibold mb-1 block">Telefone / WhatsApp</label>
               <Input 
                 type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 autoComplete="tel"
                 value={newPhone} 
                 onChange={(e) => setNewPhone(formatPhone(e.target.value))} 
@@ -243,8 +241,6 @@ export default function CouriersPage() {
               <label className="text-sm font-semibold mb-1 block">Telefone / WhatsApp</label>
               <Input 
                 type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 autoComplete="tel"
                 value={editPhone} 
                 onChange={(e) => setEditPhone(formatPhone(e.target.value))} 
