@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,7 +51,16 @@ export function ProductStockEditor({
   onValueChange,
   onObservationChange,
 }: ProductStockEditorProps) {
+  const [searchQuery, setSearchQuery] = useState("");
   const directSavedItem = savedItems[0];
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return savedItems;
+    const q = searchQuery.toLowerCase().trim();
+    return savedItems.filter((item) =>
+      renderSavedItemLabel(item).toLowerCase().includes(q)
+    );
+  }, [savedItems, searchQuery]);
 
   return (
     <Card className="rounded-3xl border bg-card shadow-sm">
@@ -149,57 +160,92 @@ export function ProductStockEditor({
             Nenhum item gerado ainda. Tente selecionar opções de variação acima.
           </div>
         ) : (
-          <div className="space-y-3">
-            {savedItems.map((item) => {
-              const rawValue = bulkValues[item.id] ?? "";
-              const parsedValue = Number(rawValue);
-              const previewStock =
-                rawValue === "" || Number.isNaN(parsedValue)
-                  ? item.stock
-                  : getNextStock(item.stock, parsedValue, bulkMode);
-
-              return (
-                <div key={item.id} className="grid gap-3 rounded-2xl bg-card p-4 md:grid-cols-[1fr_160px_220px] md:items-end">
-                  <div>
-                    <p className="font-medium">
-                      {renderSavedItemLabel(item)}
-                      {(item as any).isVirtual && (
-                        <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">
-                          Novo
-                        </span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm text-muted-foreground">Atual:</span>
-                      <span className="inline-flex items-center justify-center min-w-8 rounded-md bg-blue-100 px-2.5 py-0.5 text-sm font-extrabold text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                        {item.stock}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-sm font-medium">Quantidade</p>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      value={rawValue}
-                      onChange={(event) => {
-                        const digits = event.target.value.replace(/\D/g, "");
-                        onValueChange(item.id, digits);
-                      }}
-                      placeholder="0"
-                      className="h-10 rounded-xl"
-                    />
-                  </div>
-
-                  <div className="rounded-xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
-                    Resultado previsto:{" "}
-                    <span className="font-bold text-foreground">{previewStock}</span>
-                  </div>
+          <div className="space-y-4">
+            {savedItems.length > 2 && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-muted/30 p-3 border">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar variação no estoque..."
+                    className="h-9 pl-9 pr-8 rounded-xl bg-background text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-              );
-            })}
+                <div className="text-xs text-muted-foreground font-medium whitespace-nowrap px-1">
+                  Exibindo {filteredItems.length} de {savedItems.length} itens
+                </div>
+              </div>
+            )}
+
+            {filteredItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed py-8 text-center text-sm text-muted-foreground">
+                Nenhuma variação encontrada para &quot;{searchQuery}&quot;.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredItems.map((item) => {
+                  const rawValue = bulkValues[item.id] ?? "";
+                  const parsedValue = Number(rawValue);
+                  const previewStock =
+                    rawValue === "" || Number.isNaN(parsedValue)
+                      ? item.stock
+                      : getNextStock(item.stock, parsedValue, bulkMode);
+
+                  return (
+                    <div key={item.id} className="grid gap-3 rounded-2xl bg-card p-4 md:grid-cols-[1fr_160px_220px] md:items-end border">
+                      <div>
+                        <p className="font-medium">
+                          {renderSavedItemLabel(item)}
+                          {(item as any).isVirtual && (
+                            <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">
+                              Novo
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-sm text-muted-foreground">Atual:</span>
+                          <span className="inline-flex items-center justify-center min-w-8 rounded-md bg-blue-100 px-2.5 py-0.5 text-sm font-extrabold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                            {item.stock}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Quantidade</p>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          value={rawValue}
+                          onChange={(event) => {
+                            const digits = event.target.value.replace(/\D/g, "");
+                            onValueChange(item.id, digits);
+                          }}
+                          placeholder="0"
+                          className="h-10 rounded-xl"
+                        />
+                      </div>
+
+                      <div className="rounded-xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
+                        Resultado previsto:{" "}
+                        <span className="font-bold text-foreground">{previewStock}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
