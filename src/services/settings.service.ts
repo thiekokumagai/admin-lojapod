@@ -5,30 +5,43 @@ export async function getSettings(): Promise<StoreSettings> {
   const response = await apiFetch("/settings");
   const data = await response.json();
   
-  let searchCity = "Campo Grande";
-  let searchSuffix = ", Campo Grande, MS, Brasil";
-  const allowAboveMax = data.deliveryRanges?.allowAboveMax;
+  let searchCity = data.city || "";
+  let searchState = data.state || "";
 
-  if (data.deliveryOriginCep) {
+  const cepToLookup = (data.deliveryOriginCep || data.cep || "").replace(/\D/g, "");
+
+  if ((!searchCity || !searchState) && cepToLookup.length >= 8) {
     try {
-      const cleanCep = data.deliveryOriginCep.replace(/\D/g, "");
-      const viaCepRes = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const viaCepRes = await fetch(`https://viacep.com.br/ws/${cepToLookup}/json/`);
       const viaCepData = await viaCepRes.json();
       if (!viaCepData.erro) {
-        searchCity = viaCepData.localidade;
-        const state = viaCepData.uf;
-        searchSuffix = allowAboveMax ? ", Brasil" : `, ${searchCity}, ${state}, Brasil`;
-      } else if (allowAboveMax) {
-        searchSuffix = ", Brasil";
+        searchCity = searchCity || viaCepData.localidade;
+        searchState = searchState || viaCepData.uf;
       }
     } catch (e) {
-      if (allowAboveMax) searchSuffix = ", Brasil";
+      // ignore
     }
-  } else if (allowAboveMax) {
-    searchSuffix = ", Brasil";
   }
 
-  return { ...data, searchSuffix, searchCity };
+  if (!searchCity) {
+    searchCity = "Campo Grande";
+    searchState = "MS";
+  }
+
+  const customMaxKm = data.deliveryRanges?.maxDeliveryKm !== undefined && data.deliveryRanges?.maxDeliveryKm !== null
+    ? Number(data.deliveryRanges.maxDeliveryKm)
+    : 0;
+  const hasRanges = Array.isArray(data.deliveryRanges?.ranges) && data.deliveryRanges.ranges.length > 0;
+  const allowAboveMax = Boolean(data.deliveryRanges?.allowAboveMax);
+
+  const hasRadiusRestriction = customMaxKm > 0 || (hasRanges && !allowAboveMax) || (!allowAboveMax && data.deliveryType === "DISTANCE");
+  const restrictToCity = hasRadiusRestriction;
+
+  const searchSuffix = restrictToCity
+    ? `, ${searchCity}, ${searchState}, Brasil`
+    : ", Brasil";
+
+  return { ...data, searchSuffix, searchCity, searchState, restrictToCity };
 }
 
 export async function updateSettings(data: Partial<StoreSettings>): Promise<StoreSettings> {

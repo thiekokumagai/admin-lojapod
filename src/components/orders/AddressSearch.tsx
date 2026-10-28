@@ -101,7 +101,7 @@ const AddressSearch = ({ onSave, onCancel, initialAddress }: AddressSearchProps)
   const [street, setStreet] = useState(initialAddress?.mainText || "");
   const [neighborhood, setNeighborhood] = useState(initialAddress?.secondaryText.split(",")[0]?.trim() || "");
   const [city, setCity] = useState(initialAddress?.city || storeSettings?.searchCity || "Campo Grande");
-  const [state, setState] = useState(initialAddress?.state || "MS");
+  const [state, setState] = useState(initialAddress?.state || storeSettings?.searchState || storeSettings?.state || "MS");
   const [number, setNumber] = useState("");
   const [cep, setCep] = useState(initialAddress?.cep || "");
   const [complement, setComplement] = useState(initialAddress?.complement || "");
@@ -119,6 +119,9 @@ const AddressSearch = ({ onSave, onCancel, initialAddress }: AddressSearchProps)
   const { predictions, loading: isLoading, handleSelect } = useAddressAutocomplete({
     value: query,
     searchSuffix: storeSettings?.searchSuffix,
+    searchCity: storeSettings?.searchCity,
+    searchState: storeSettings?.searchState,
+    restrictToCity: storeSettings?.restrictToCity,
     onSelect: async (p) => {
       const extractedNumber = extractNumberFromQuery(query);
 

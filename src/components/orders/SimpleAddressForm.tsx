@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import useAddressAutocomplete from "@/hooks/use-address-autocomplete";
+import { useSettings } from "@/hooks/useSettings";
 import type { CustomerAddress } from "@/services/customers.service";
 
 interface SimpleAddressFormProps {
@@ -37,6 +38,7 @@ const waitForGoogleMaps = async () => {
 };
 
 export function SimpleAddressForm({ onSave, onCancel }: SimpleAddressFormProps) {
+  const { settings: storeSettings } = useSettings();
   const [query, setQuery] = useState("");
   const [street, setStreet] = useState("");
   const [number, setNumber] = useState("");
@@ -49,7 +51,10 @@ export function SimpleAddressForm({ onSave, onCancel }: SimpleAddressFormProps) 
 
   const { predictions, loading: isSearching, handleSelect } = useAddressAutocomplete({
     value: query,
-    restrictToCampoGrande: true,
+    searchSuffix: storeSettings?.searchSuffix,
+    searchCity: storeSettings?.searchCity,
+    searchState: storeSettings?.searchState,
+    restrictToCity: storeSettings?.restrictToCity,
     onSelect: async (p) => {
       const match = query.match(/(?:,|\s)(\d{1,6})\b/);
       const extractedNumber = match ? match[1] : "";

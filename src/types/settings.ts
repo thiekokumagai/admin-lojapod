@@ -25,6 +25,8 @@ export interface StoreSettings {
   topHeaderText: string | null;
   searchSuffix?: string;
   searchCity?: string;
+  searchState?: string;
+  restrictToCity?: boolean;
   bannerUrls: string[];
   phone: string;
   instagram: string | null;
