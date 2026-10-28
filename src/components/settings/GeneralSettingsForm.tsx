@@ -153,15 +153,6 @@ export function GeneralSettingsForm() {
 
   const [dnsResult, setDnsResult] = useState<{ isConfigured?: boolean; message?: string; recordType?: string; records?: string[] } | null>(null);
 
-  // Endereço
-  const [cep, setCep] = useState("");
-  const [street, setStreet] = useState("");
-  const [number, setNumber] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [complement, setComplement] = useState("");
-  const [hideAddress, setHideAddress] = useState(false);
   const [exchangePolicy, setExchangePolicy] = useState("");
   const [enableExchangePolicy, setEnableExchangePolicy] = useState(false);
 
@@ -174,8 +165,6 @@ export function GeneralSettingsForm() {
   const [isUploadingWhiteLogo, setIsUploadingWhiteLogo] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
-
-  const numberInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (settings) {
@@ -224,15 +213,6 @@ export function GeneralSettingsForm() {
           .catch(() => {});
       }
 
-      // Endereço
-      setCep(cleanVal(settings.cep, ["79002-075", "79002075"]));
-      setStreet(cleanVal(settings.street, ["Rua 14 de Julho"]));
-      setNumber(cleanVal(settings.number, ["1234"]));
-      setNeighborhood(cleanVal(settings.neighborhood, ["Centro"]));
-      setCity(settings.city || "");
-      setState(settings.state || "");
-      setComplement(settings.complement || "");
-      setHideAddress(!!settings.hideAddress);
       setExchangePolicy(settings.exchangePolicy || "");
       setEnableExchangePolicy(!!settings.enableExchangePolicy);
       setAutoHideOutOfStock(settings.autoHideOutOfStock !== undefined ? !!settings.autoHideOutOfStock : true);
@@ -241,66 +221,7 @@ export function GeneralSettingsForm() {
     }
   }, [settings]);
 
-  // Máscaras de entrada
-  const formatCEP = (value: string) => {
-    return value
-      .replace(/\D/g, "")
-      .replace(/^(\d{5})(\d)/, "$1-$2")
-      .substring(0, 9);
-  };
 
-  const formatPhone = (value: string) => {
-    return value
-      .replace(/\D/g, "")
-      .replace(/^(\d{2})(\d)/g, "($1) $2")
-      .replace(/(\d)(\d{4})$/g, "$1-$2")
-      .substring(0, 15);
-  };
-
-  // Busca do CEP via ViaCEP
-  const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    const formatted = formatCEP(rawValue);
-    setCep(formatted);
-
-    const cleanCep = formatted.replace(/\D/g, "");
-    if (cleanCep.length === 8) {
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-        const data = await res.json();
-
-        if (data.erro) {
-          toast({
-            variant: "destructive",
-            title: "Erro no CEP",
-            description: "CEP não encontrado na base de dados.",
-          });
-          return;
-        }
-
-        setStreet(data.logradouro || "");
-        setNeighborhood(data.bairro || "");
-        setCity(data.localidade || "");
-        setState(data.uf || "");
-
-        toast({
-          title: "Endereço preenchido",
-          description: "Endereço localizado e autopreenchido com sucesso!",
-        });
-
-        // Focar no campo de número após autopreenchimento
-        setTimeout(() => {
-          numberInputRef.current?.focus();
-        }, 100);
-      } catch (err) {
-        toast({
-          variant: "destructive",
-          title: "Erro na busca",
-          description: "Não foi possível consultar o CEP.",
-        });
-      }
-    }
-  };
 
   // Uploads
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -552,15 +473,6 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         pixelId,
         facebookPixelEnabled,
         facebookConversionsToken: facebookConversionsToken || null,
-        facebookConversionsApiEnabled,
-        cep,
-        street,
-        number,
-        neighborhood,
-        city,
-        state,
-        complement,
-        hideAddress,
         exchangePolicy,
         enableExchangePolicy,
         autoHideOutOfStock,
@@ -596,7 +508,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
     <Card>
       <CardContent className="p-5 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-base">Identidade e Endereço da Loja</h2>
+          <h2 className="font-semibold text-base">Identidade Visual da Loja</h2>
           <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending}>
             <Save className="h-4 w-4 mr-1" />
             {updateSettingsMutation.isPending ? "Salvando..." : "Salvar"}
@@ -1009,79 +921,6 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
           )}
         </div>
 
-        {/* Endereço Físico */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Endereço</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <Label className="font-medium">CEP (Autopreenchimento)</Label>
-              <Input
-                value={cep}
-                onChange={handleCEPChange}
-                placeholder="00000-000"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Label className="font-medium">Rua / Logradouro</Label>
-              <Input
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                placeholder="Logradouro"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <Label className="font-medium">Número</Label>
-              <Input
-                ref={numberInputRef}
-                value={number}
-                onChange={(e) => setNumber(e.target.value)}
-                placeholder="Nº"
-              />
-            </div>
-            <div>
-              <Label className="font-medium">Bairro</Label>
-              <Input
-                value={neighborhood}
-                onChange={(e) => setNeighborhood(e.target.value)}
-                placeholder="Bairro"
-              />
-            </div>
-            <div>
-              <Label className="font-medium">Cidade</Label>
-              <Input
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Cidade"
-              />
-            </div>
-            <div>
-              <Label className="font-medium">Estado</Label>
-              <Input
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="UF"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label className="font-medium">Complemento</Label>
-            <Input
-              value={complement}
-              onChange={(e) => setComplement(e.target.value)}
-              placeholder="Ex: Bloco A, Sala 4"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 pt-2 pb-4">
-            <Switch checked={hideAddress} onCheckedChange={setHideAddress} />
-            <Label className="font-normal text-sm cursor-pointer select-none" onClick={() => setHideAddress(!hideAddress)}>
-              Ocultar endereço físico na loja pública
-            </Label>
-          </div>
 
         {/* Estoque e Disponibilidade */}
         <div className="space-y-4 pt-4 border-t">
@@ -1176,11 +1015,8 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               {updateSettingsMutation.isPending ? "Salvando..." : "Salvar Configurações"}
             </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    
+        </CardContent>
+      </Card>
     </>
   );
 }

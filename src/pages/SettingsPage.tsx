@@ -22,7 +22,7 @@ export default function SettingsPage() {
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-2 h-auto p-1.5 bg-muted/60">
           <TabsTrigger value="geral" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Store className="h-4 w-4" />
-            Identidade &amp; Endereço
+            Identidade Visual
           </TabsTrigger>
           <TabsTrigger value="recebimentos" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <QrCode className="h-4 w-4" />

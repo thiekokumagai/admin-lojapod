@@ -431,7 +431,7 @@ export default function EditOrderPage() {
         city: deliveryModality === "STORE_PICKUP" ? (storeSettings?.city || storeSettings?.searchCity || "Campo Grande") : (selectedAddress?.city || storeSettings?.searchCity || "Campo Grande"),
         state: deliveryModality === "STORE_PICKUP" ? (storeSettings?.state || "MS") : (selectedAddress?.state || "MS"),
         cep: deliveryModality === "STORE_PICKUP" ? (storeSettings?.cep || "00000-000") : (selectedAddress?.cep || "00000-000"),
-        complement: deliveryModality === "STORE_PICKUP" ? "" : (selectedAddress?.complement || ""),
+        complement: deliveryModality === "STORE_PICKUP" ? (storeSettings?.complement || "") : (selectedAddress?.complement || ""),
         observation: orderNote.trim(),
         items: effectiveItems.map(item => ({
           productId: item.isCombo ? undefined : item.productId,

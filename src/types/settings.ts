@@ -16,6 +16,20 @@ export interface InstallmentRule {
   juros: number;
 }
 
+export interface SavedStoreAddress {
+  id: string;
+  title: string;
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  cep: string;
+  complement?: string;
+  reference?: string;
+  isActive?: boolean;
+}
+
 export interface StoreSettings {
   id: string;
   storeName: string;
@@ -45,6 +59,7 @@ export interface StoreSettings {
   state: string;
   complement: string | null;
   hideAddress: boolean;
+  savedStoreAddresses?: SavedStoreAddress[];
   
   deliveryOriginCep: string | null;
   deliveryOriginNumber: string | null;

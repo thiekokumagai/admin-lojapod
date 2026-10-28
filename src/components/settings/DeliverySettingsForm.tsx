@@ -20,6 +20,7 @@ import {
   DollarSign,
   Route
 } from "lucide-react";
+import { StoreAddressesManager } from "@/components/settings/StoreAddressesManager";
 
 interface RangeItem {
   id: string;
@@ -185,6 +186,17 @@ export function DeliverySettingsForm() {
     toast({ title: "Faixa de frete removida." });
   };
 
+  // Salvar alterações de endereços da loja
+  const handleSaveAddresses = async (updatedPayload: any) => {
+    if (updatedPayload.deliveryOriginCep) {
+      setOriginCep(updatedPayload.deliveryOriginCep);
+    }
+    if (updatedPayload.deliveryOriginNumber) {
+      setOriginNumber(updatedPayload.deliveryOriginNumber);
+    }
+    await updateSettingsMutation.mutateAsync(updatedPayload);
+  };
+
   // Salvar no backend
   const handleSave = async () => {
     const cleanCep = originCep.replace(/\D/g, "");
@@ -258,38 +270,12 @@ export function DeliverySettingsForm() {
           </Button>
         </div>
 
-        {/* 1. Ponto de Partida / Origem do Frete (Geral para cálculo de rota e limites) */}
-        <div className="p-4 rounded-xl border bg-muted/20 space-y-3">
-          <div className="space-y-0.5">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              Ponto de Partida / Origem do Frete
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Utilizado para medir a rota até a residência do cliente e validar limites de distância em todos os fretes.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md pt-1">
-            <div className="space-y-1.5">
-              <Label className="font-medium text-xs">CEP de Origem</Label>
-              <Input
-                value={originCep}
-                onChange={handleCEPChange}
-                placeholder="00000-000"
-                className="font-medium h-9"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="font-medium text-xs">Número do Endereço</Label>
-              <Input
-                value={originNumber}
-                onChange={(e) => setOriginNumber(e.target.value)}
-                placeholder="Ex: 123"
-                className="font-medium h-9"
-              />
-            </div>
-          </div>
-        </div>
+        {/* 1. Endereços da Loja & Origem do Frete (Geral para cálculo de rota, limites e rodapé) */}
+        <StoreAddressesManager
+          settings={settings}
+          onSaveActiveAddress={handleSaveAddresses}
+          isSaving={updateSettingsMutation.isPending}
+        />
 
         {/* 2. Escolha do Modelo de Frete Principal */}
         <div className="space-y-3">
