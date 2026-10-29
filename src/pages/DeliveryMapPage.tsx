@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatWhatsAppNumber } from "@/utils/whatsapp";
+import { formatWhatsAppNumber, openWhatsApp } from "@/utils/whatsapp";
 
 // Helpers para URLs universais do Google Maps e Waze para celular
 export function buildGoogleMapsRouteUrl(
@@ -815,7 +815,7 @@ export default function DeliveryMapPage() {
                           const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, sortedOrders, assignedHasCollection);
                           wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
-                          window.open(`https://wa.me/${formatWhatsAppNumber(courier.phone)}?text=${encodeURIComponent(wppText)}`, '_blank');
+                          openWhatsApp(courier.phone, wppText);
                         }}>
                           <Send className="w-3 h-3 mr-1" /> Reenviar
                         </Button>
@@ -1130,7 +1130,7 @@ export default function DeliveryMapPage() {
                 const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, route.optimizedOrders, route.returnToStore ?? false);
                 wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
-                window.open(`https://wa.me/${formatWhatsAppNumber(courier.phone)}?text=${encodeURIComponent(wppText)}`, '_blank');
+                openWhatsApp(courier.phone, wppText);
 
                 // 2. Register Fee in Backend
                 registerFeeMutation.mutate({

@@ -17,11 +17,30 @@ export function formatWhatsAppNumber(phone?: string | null): string {
   return clean;
 }
 
-export function openWhatsApp(phone: string, text: string = "") {
+export interface OpenWhatsAppOptions {
+  phone: string;
+  message?: string;
+}
+
+export function openWhatsApp(
+  phoneOrOptions: string | OpenWhatsAppOptions,
+  text: string = ""
+): void {
+  let phone = "";
+  let messageStr = "";
+
+  if (typeof phoneOrOptions === "object" && phoneOrOptions !== null) {
+    phone = phoneOrOptions.phone;
+    messageStr = phoneOrOptions.message || "";
+  } else {
+    phone = phoneOrOptions;
+    messageStr = text;
+  }
+
   if (!phone) return;
   const numero = formatWhatsAppNumber(phone);
   if (!numero) return;
-  const message = text ? encodeURIComponent(text) : "";
+  const message = messageStr ? encodeURIComponent(messageStr) : "";
 
   const urlApp = `whatsapp://send?phone=${numero}${message ? `&text=${message}` : ""}`;
   const urlWeb = `https://wa.me/${numero}${message ? `?text=${message}` : ""}`;
@@ -39,3 +58,4 @@ export function openWhatsApp(phone: string, text: string = "") {
     window.open(urlWeb, "_blank", "noopener,noreferrer");
   }
 }
+
