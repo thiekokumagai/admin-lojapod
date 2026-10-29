@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Tag } from "lucide-react";
+import { CreditCard, Tag, Ban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -48,6 +48,8 @@ interface OrderSummaryProps {
   isFreeShipping?: boolean;
   deliveryType?: string;
   loyaltyReward?: { rewardType: string; rewardTitle: string; discountValue?: number } | null;
+  isCustomerBlocked?: boolean;
+  submitLabel?: string;
 }
 
 export function OrderSummary({
@@ -83,6 +85,8 @@ export function OrderSummary({
   isFreeShipping,
   deliveryType,
   loyaltyReward,
+  isCustomerBlocked = false,
+  submitLabel,
 }: OrderSummaryProps) {
   const [couponCode, setCouponCode] = useState("");
   const { data: coupons } = useCoupons();
@@ -120,6 +124,19 @@ export function OrderSummary({
 
   return (
     <div className="space-y-6">
+      {/* Alerta de Cliente Bloqueado na Block List */}
+      {isCustomerBlocked && (
+        <div className="p-3 sm:p-3.5 bg-rose-50/80 border border-rose-200 rounded-xl flex items-start gap-2.5">
+          <Ban className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-bold text-rose-900">Cliente Bloqueado na Block List</h4>
+            <p className="text-[11px] text-rose-700 leading-relaxed">
+              Este cliente está na lista de bloqueio. Não é permitido finalizar pedidos manuais para clientes bloqueados.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Coupon */}
       <div className="space-y-3">
         <Label className="text-slate-700 font-semibold flex items-center gap-2">
