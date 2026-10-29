@@ -1,39 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import { useInfiniteCustomers, useToggleBlockCustomer } from "@/hooks/useCustomers";
-import { type Customer } from "@/services/customers.service";
+import { useInfiniteCustomers } from "@/hooks/useCustomers";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from "@/components/ui/alert-dialog";
-import { Search, Loader2, Users, ArrowRight, X, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
+import { Search, Loader2, Users, ArrowRight, X, ShieldAlert, Ban } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatPhone } from "@/utils/formatters";
 import { openWhatsApp } from "@/utils/whatsapp";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function CustomersPage() {
   const [search, setSearch] = useState(() => {
     return sessionStorage.getItem("customers_search") || "";
   });
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "blocked">("all");
-  const [customerToToggle, setCustomerToToggle] = useState<Customer | null>(null);
 
   const limit = 20;
   const isBlockedParam = statusFilter === "all" ? undefined : statusFilter === "blocked";
 
   const { data: paginatedData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteCustomers(search, limit, isBlockedParam);
-  const { mutate: toggleBlock, isPending: isToggling } = useToggleBlockCustomer();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const customers = paginatedData?.pages.flatMap(p => p.data || []) || [];
@@ -72,29 +57,6 @@ export default function CustomersPage() {
     sessionStorage.setItem("customers_search", val);
     sessionStorage.removeItem("customers_scroll_top");
     isRestoredRef.current = true;
-  };
-
-  const handleConfirmToggleBlock = () => {
-    if (!customerToToggle) return;
-    const isBlocking = !customerToToggle.isBlocked;
-    toggleBlock(customerToToggle.id, {
-      onSuccess: () => {
-        toast({
-          title: isBlocking ? "Cliente bloqueado" : "Cliente desbloqueado",
-          description: isBlocking
-            ? `${customerToToggle.name} foi adicionado à Block List e não poderá realizar novos pedidos.`
-            : `${customerToToggle.name} foi desbloqueado com sucesso.`,
-        });
-        setCustomerToToggle(null);
-      },
-      onError: () => {
-        toast({
-          title: "Erro ao atualizar status",
-          description: "Não foi possível alterar o bloqueio do cliente. Tente novamente.",
-          variant: "destructive",
-        });
-      },
-    });
   };
 
   useEffect(() => {
@@ -216,62 +178,29 @@ export default function CustomersPage() {
               <div 
                 key={customer.id} 
                 onClick={() => handleOpenCustomer(customer.id)}
-                className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col gap-3 active:bg-violet-50/40 cursor-pointer ${
+                className={`bg-white rounded-xl border p-4 shadow-sm flex items-center justify-between active:bg-violet-50/40 cursor-pointer gap-2 ${
                   customer.isBlocked ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/60'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-slate-800 text-sm truncate">{customer.name}</span>
-                      {customer.isBlocked ? (
-                        <Badge variant="destructive" className="text-[10px] h-5 px-1.5 gap-1">
-                          <Ban className="h-2.5 w-2.5" />
-                          Bloqueado
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-emerald-600 border-emerald-200 bg-emerald-50">
-                          Ativo
-                        </Badge>
-                      )}
-                    </div>
-                    <span className="font-mono text-slate-500 text-xs mt-0.5">{formatPhone(customer.phone)}</span>
-                    <span className="text-slate-400 text-[10px] mt-1">Cadastro: {new Date(customer.createdAt).toLocaleDateString("pt-BR")}</span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800 text-sm truncate">{customer.name}</span>
+                    {customer.isBlocked ? (
+                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5 gap-1">
+                        <Ban className="h-2.5 w-2.5" />
+                        Bloqueado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-emerald-600 border-emerald-200 bg-emerald-50">
+                        Ativo
+                      </Badge>
+                    )}
                   </div>
-
-                  <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
+                  <span className="font-mono text-slate-500 text-xs mt-0.5">{formatPhone(customer.phone)}</span>
+                  <span className="text-slate-400 text-[10px] mt-1">Cadastro: {new Date(customer.createdAt).toLocaleDateString("pt-BR")}</span>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={customer.isBlocked ? "outline" : "ghost"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCustomerToToggle(customer);
-                    }}
-                    className={`h-8 text-xs font-semibold rounded-lg ${
-                      customer.isBlocked
-                        ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                        : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
-                    }`}
-                  >
-                    {customer.isBlocked ? (
-                      <>
-                        <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-600" />
-                        Desbloquear
-                      </>
-                    ) : (
-                      <>
-                        <ShieldAlert className="h-3.5 w-3.5 mr-1 text-rose-500" />
-                        Bloquear
-                      </>
-                    )}
-                  </Button>
-
+                <div className="flex items-center gap-2 shrink-0">
                   {customer.phone && (
                     <button
                       type="button"
@@ -279,12 +208,15 @@ export default function CustomersPage() {
                         e.stopPropagation();
                         openWhatsApp(customer.phone, `Olá ${customer.name}`);
                       }}
-                      className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors border border-emerald-200/60"
+                      className="w-9 h-9 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors border border-emerald-200/60"
                       title="Chamar no WhatsApp"
                     >
-                      <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4" />
+                      <img src="/whatsapp.svg" alt="WhatsApp" className="h-4.5 w-4.5" />
                     </button>
                   )}
+                  <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -299,7 +231,7 @@ export default function CustomersPage() {
                 <TableHead className="font-bold text-slate-600">Telefone</TableHead>
                 <TableHead className="font-bold text-slate-600">Status</TableHead>
                 <TableHead className="font-bold text-slate-600">Cadastro</TableHead>
-                <TableHead className="w-[180px] text-right pr-6">Ações</TableHead>
+                <TableHead className="w-[100px] text-right pr-6">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -338,34 +270,6 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell className="pr-6">
                     <div className="flex items-center gap-2 justify-end">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={customer.isBlocked ? "outline" : "ghost"}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCustomerToToggle(customer);
-                        }}
-                        className={`h-8 text-xs font-semibold rounded-lg ${
-                          customer.isBlocked
-                            ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                            : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
-                        }`}
-                        title={customer.isBlocked ? "Desbloquear cliente" : "Bloquear cliente"}
-                      >
-                        {customer.isBlocked ? (
-                          <>
-                            <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-600" />
-                            Desbloquear
-                          </>
-                        ) : (
-                          <>
-                            <ShieldAlert className="h-3.5 w-3.5 mr-1 text-rose-500" />
-                            Bloquear
-                          </>
-                        )}
-                      </Button>
-
                       {customer.phone && (
                         <button
                           type="button"
@@ -399,53 +303,6 @@ export default function CustomersPage() {
         )}
         </>
       )}
-
-      {/* Confirmation Dialog for Block/Unblock */}
-      <AlertDialog open={!!customerToToggle} onOpenChange={(open) => !open && setCustomerToToggle(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              {customerToToggle?.isBlocked ? (
-                <>
-                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                  Desbloquear Cliente
-                </>
-              ) : (
-                <>
-                  <ShieldAlert className="h-5 w-5 text-rose-600" />
-                  Bloquear Cliente (Block List)
-                </>
-              )}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 pt-2">
-              {customerToToggle?.isBlocked ? (
-                <span>
-                  Tem certeza que deseja desbloquear o cliente <strong>{customerToToggle?.name}</strong>?
-                  Ele poderá voltar a realizar compras pela loja e pedidos manuais.
-                </span>
-              ) : (
-                <span>
-                  Tem certeza que deseja bloquear o cliente <strong>{customerToToggle?.name}</strong>?
-                  <br />
-                  <br />
-                  <span className="text-rose-600 font-semibold">Atenção:</span> Este cliente e qualquer pedido feito com o número <strong>{formatPhone(customerToToggle?.phone || '')}</strong> será impedido de ser finalizado tanto na loja quanto no pedido manual.
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmToggleBlock}
-              disabled={isToggling}
-              className={customerToToggle?.isBlocked ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}
-            >
-              {isToggling && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {customerToToggle?.isBlocked ? "Sim, Desbloquear" : "Sim, Bloquear"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
