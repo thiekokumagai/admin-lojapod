@@ -19,6 +19,8 @@ export default function CustomerDetailsPage() {
   const { data: customer, isLoading } = useCustomerDetails(customerId);
   const updateMutation = useUpdateCustomer();
   const { toast } = useToast();
+  const { mutate: toggleBlock, isPending: isTogglingBlock } = useToggleBlockCustomer();
+  const [confirmBlockDialogOpen, setConfirmBlockDialogOpen] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ name: "", phone: "" });
@@ -115,21 +117,58 @@ export default function CustomerDetailsPage() {
                 <ArrowLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" />
               </button>
               <div>
-                <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Detalhes do Cliente</h1>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Detalhes do Cliente</h1>
+                  {customer.isBlocked ? (
+                    <Badge variant="destructive" className="text-[11px] font-semibold h-5 px-2 gap-1 rounded-full">
+                      <Ban className="h-3 w-3" />
+                      Bloqueado
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[11px] font-semibold h-5 px-2 text-emerald-700 bg-emerald-50 border-emerald-200 rounded-full">
+                      Ativo
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-slate-500 font-medium">Visualize as informações e o histórico completo do cliente</p>
               </div>
             </div>
-            {customer.phone && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => openWhatsApp(customer.phone, `Olá ${customer.name}`)}
-                className="h-10 px-3.5 gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 border-emerald-200 rounded-xl transition-all shadow-xs"
-              >
-                <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4" />
-                <span>Conversar no WhatsApp</span>
-              </Button>
-            )}
+            <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
+              {customer.isBlocked ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmBlockDialogOpen(true)}
+                  disabled={isTogglingBlock}
+                  className="h-10 px-3.5 gap-2 text-xs font-bold text-emerald-700 bg-white hover:bg-emerald-50 hover:text-emerald-800 border-emerald-200 rounded-xl transition-all shadow-xs"
+                >
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  <span>Desbloquear Cliente</span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmBlockDialogOpen(true)}
+                  disabled={isTogglingBlock}
+                  className="h-10 px-3.5 gap-2 text-xs font-bold text-rose-600 bg-white hover:bg-rose-50 hover:text-rose-700 border-rose-200 rounded-xl transition-all shadow-xs"
+                >
+                  <Ban className="h-4 w-4 text-rose-600" />
+                  <span>Bloquear (Block List)</span>
+                </Button>
+              )}
+
+              {customer.phone && (
+                <Button
+                  type="button"
+                  onClick={() => openWhatsApp(customer.phone, `Olá ${customer.name}`)}
+                  className="h-10 px-4 gap-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm"
+                >
+                  <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4 brightness-0 invert" />
+                  <span>Conversar no WhatsApp</span>
+                </Button>
+              )}
+            </div>
           </div>
 
           {customer.isBlocked && (
@@ -393,6 +432,46 @@ export default function CustomerDetailsPage() {
           onClose={() => setSelectedOrderId(null)}
           readOnly={true}
         />
+
+        {/* Modal de Confirmação de Bloqueio / Desbloqueio */}
+        {customer && (
+          <AlertDialog open={confirmBlockDialogOpen} onOpenChange={setConfirmBlockDialogOpen}>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${customer.isBlocked ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                    {customer.isBlocked ? <ShieldCheck className="h-5 w-5" /> : <Ban className="h-5 w-5" />}
+                  </div>
+                  <AlertDialogTitle className="text-lg font-bold text-slate-800">
+                    {customer.isBlocked ? "Desbloquear cliente?" : "Bloquear cliente na Block List?"}
+                  </AlertDialogTitle>
+                </div>
+                <AlertDialogDescription className="text-slate-600 text-sm pt-2 leading-relaxed">
+                  {customer.isBlocked
+                    ? `Deseja remover "${customer.name}" da Block List? O cliente voltará a conseguir realizar pedidos normalmente.`
+                    : `Tem certeza que deseja bloquear "${customer.name}"? O cliente será adicionado à Block List e não conseguirá finalizar novos pedidos na loja.`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2 sm:gap-0 pt-2">
+                <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleToggleBlock}
+                  disabled={isTogglingBlock}
+                  className={`rounded-xl font-bold ${
+                    customer.isBlocked
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-rose-600 hover:bg-rose-700 text-white'
+                  }`}
+                >
+                  {isTogglingBlock ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  {customer.isBlocked ? "Sim, Desbloquear" : "Sim, Bloquear"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
   );
 }
