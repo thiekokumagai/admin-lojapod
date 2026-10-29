@@ -10,14 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- TODO: Set the document title to the name of your application -->
     <title>Admin</title>
     <meta name="description" id="meta-desc" content="Admin Dashboard">
     <meta name="author" id="meta-author" content="Loja" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    
-    
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/10fbbc4f-62aa-431d-aca6-af27a6db31cf/id-preview-87e4e58b--396ab09a-c3a3-40d3-93bb-55c8fe9b5617.Pod e Mais.app-1774480688206.png">
 
@@ -32,37 +28,56 @@
     <link rel="apple-touch-icon" href="/favicon-192x192.png">
     
     <script>
-      fetch('%VITE_ADMIN_API%/store/settings/manifest.json')
-        .then(res => {
-          if (!res.ok) throw new Error('Not OK');
-          return res.json();
-        })
-        .then(data => {
-          if (data && data.name && typeof data.name === 'string') {
-            document.title = data.name;
-            const metaAuthor = document.getElementById('meta-author');
-            if (metaAuthor) metaAuthor.content = data.name;
-            const metaDesc = document.getElementById('meta-desc');
-            if (metaDesc) metaDesc.content = data.description || 'Admin Dashboard';
-            const ogTitle = document.getElementById('og-title');
-            if (ogTitle) ogTitle.content = data.name + ' App';
-            const twitterTitle = document.getElementById('twitter-title');
-            if (twitterTitle) twitterTitle.content = data.name + ' App';
-            if (data.icons && data.icons.length > 0) {
-              const icon192 = data.icons.find(i => i.sizes === '192x192') || data.icons[0];
-              if (icon192 && icon192.src) {
-                const link = document.querySelector("link[rel~='icon']");
-                if (link) link.href = icon192.src;
-                const appleLink = document.querySelector("link[rel='apple-touch-icon']");
-                if (appleLink) appleLink.href = icon192.src;
+      (function() {
+        var adminApi = '%VITE_ADMIN_API%';
+        if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1' && adminApi.indexOf('localhost') !== -1) {
+          adminApi = adminApi.replace('localhost', location.hostname);
+        }
+        fetch(adminApi + '/store/settings/manifest.json')
+          .then(function(res) {
+            if (!res.ok) throw new Error('Not OK');
+            return res.json();
+          })
+          .then(function(data) {
+            if (data && data.name && typeof data.name === 'string') {
+              document.title = data.name;
+              var metaAuthor = document.getElementById('meta-author');
+              if (metaAuthor) metaAuthor.content = data.name;
+              var metaDesc = document.getElementById('meta-desc');
+              if (metaDesc) metaDesc.content = data.description || 'Admin Dashboard';
+              var ogTitle = document.getElementById('og-title');
+              if (ogTitle) ogTitle.content = data.name + ' App';
+              var twitterTitle = document.getElementById('twitter-title');
+              if (twitterTitle) twitterTitle.content = data.name + ' App';
+              if (data.icons && data.icons.length > 0) {
+                var icon192 = data.icons.find(function(i) { return i.sizes === '192x192'; }) || data.icons[0];
+                if (icon192 && icon192.src) {
+                  var link = document.querySelector("link[rel~='icon']");
+                  if (link) link.href = icon192.src;
+                  var appleLink = document.querySelector("link[rel='apple-touch-icon']");
+                  if (appleLink) appleLink.href = icon192.src;
+                }
               }
             }
+          }).catch(function() {
+            document.title = 'Super Admin | Loja Pod';
+          });
+      })();
+
+      // Safeguard contra tela branca em dispositivos móveis caso haja bloqueio de scripts ou falha de cache
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          var root = document.getElementById('root');
+          if (root && root.children.length === 0) {
+            root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:#020617;color:#fff;font-family:sans-serif;text-align:center;">' +
+              '<h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">Carregando o painel...</h2>' +
+              '<p style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:320px;">Se o painel não abrir no celular, toque abaixo para limpar o cache do navegador e recarregar.</p>' +
+              '<button onclick="localStorage.clear();sessionStorage.clear();if(\'serviceWorker\' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister();});});}window.location.reload(true);" style="padding:12px 24px;border-radius:12px;background:#4f46e5;color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;">Limpar Cache e Recarregar</button>' +
+              '</div>';
           }
-        }).catch(e => {
-          document.title = 'Super Admin | Loja Pod';
-        });
+        }, 6000);
+      });
     </script>
-  <link rel="manifest" href="%VITE_ADMIN_API%/store/settings/manifest.json" crossorigin="anonymous">
 </head>
 
   <body>

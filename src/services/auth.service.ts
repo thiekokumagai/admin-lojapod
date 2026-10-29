@@ -1,5 +1,5 @@
 import { getAuthSession, signIn, signOut, type AuthSession, type AuthUser } from "@/lib/auth";
-import { clearAccessToken, setAccessToken } from "./api";
+import { clearAccessToken, getApiBaseUrl, setAccessToken } from "./api";
 
 export type AuthResponse = {
   accessToken: string;
@@ -12,15 +12,14 @@ export type LoginPayload = {
   password: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_ADMIN_API;
-
 function persistSession(session: AuthSession) {
   signIn(session);
   setAccessToken(session.accessToken);
 }
 
 export async function login(payload: LoginPayload) {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/auth/login`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -45,7 +44,8 @@ export async function refreshTokens() {
     throw new Error("Sessão expirada.");
   }
 
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/auth/refresh`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -87,9 +87,4 @@ export function restoreAuthSession() {
 export function clearSession() {
   signOut();
   clearAccessToken();
-}
-
-export function logout() {
-  clearSession();
-  window.location.href = "/login";
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { clearSession } from "@/services/auth.service";
 import { isSuperAdmin } from "@/lib/auth";
-import { apiFetch } from "@/services/api";
+import { apiFetch, getApiBaseUrl } from "@/services/api";
 import { useSettings } from "@/hooks/useSettings";
 import { getStoreUrl } from "@/utils/store-url";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 import { Key } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export function AdminLayout() {
         .catch(() => {});
     }
 
-    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
+    const socketUrl = getApiBaseUrl().replace(/\/api$/, '') || 'http://localhost:3000';
     const socket = io(socketUrl);
 
     socket.on('order.new', () => {
@@ -216,7 +217,9 @@ export function AdminLayout() {
           )}
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6 min-w-0 max-w-full">
-            <Outlet />
+            <ErrorBoundary fallbackTitle="Erro ao carregar o conteúdo desta página">
+              <Outlet />
+            </ErrorBoundary>
           </main>
         </div>
       </div>

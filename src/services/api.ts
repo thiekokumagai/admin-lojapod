@@ -13,6 +13,18 @@ export const clearAccessToken = () => {
 
 export const getAccessToken = () => accessToken;
 
+export function getApiBaseUrl(): string {
+  let base = import.meta.env.VITE_ADMIN_API || "http://localhost:3000/api";
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    const host = window.location.hostname;
+    // Se o frontend está sendo acessado por IP da rede local (ex: celular 192.168.x.x) e a URL configurada aponta para localhost
+    if (host !== "localhost" && host !== "127.0.0.1" && base.includes("localhost")) {
+      base = base.replace("localhost", host);
+    }
+  }
+  return base;
+}
+
 restoreAuthSession();
 
 async function refreshAccessToken() {
@@ -45,7 +57,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
-    return fetch(`${import.meta.env.VITE_ADMIN_API}${endpoint}`, {
+    return fetch(`${getApiBaseUrl()}${endpoint}`, {
       ...options,
       headers,
       credentials: "include",

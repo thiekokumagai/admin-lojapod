@@ -22,7 +22,7 @@ export function PushNotificationManager() {
   const [showBanner, setShowBanner] = useState(false);
   
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((r) => {
         if (r) setSwRegistration(r);
       }).catch((error) => {
@@ -38,6 +38,11 @@ export function PushNotificationManager() {
         return;
       }
       
+      if (!registration?.pushManager) {
+        console.warn('Push manager não suportado neste navegador/ambiente.');
+        return;
+      }
+
       let permission = Notification.permission;
       if (permission !== 'granted') {
         permission = await Notification.requestPermission();
@@ -73,54 +78,32 @@ export function PushNotificationManager() {
     }
   };
 
-  // Removido aviso duplicado de PWA Update, pois já existe no PWAUpdatePrompt.tsx
-
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      let refreshing = false;
-      const handleControllerChange = () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      };
-
-      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-      return () => {
-        navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!('Notification' in window)) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
     
     if (swRegistration && Notification.permission === 'default') {
       setShowBanner(true);
     } else if (swRegistration && Notification.permission === 'granted') {
-      // Já está ativado, mas podemos garantir que a subscription está no backend
-      // Em um app real, poderíamos verificar se a sub mudou
       registrationCheck(swRegistration);
     }
   }, [swRegistration]);
 
   const registrationCheck = async (registration: ServiceWorkerRegistration) => {
     try {
+      if (!registration?.pushManager) return;
       const sub = await registration.pushManager.getSubscription();
       if (!sub) {
-        // Tentamos se inscrever silenciosamente se não houver sub e a permissão for granted
         subscribeToPush(registration);
       } else {
-        // Se já tiver uma inscrição, enviamos novamente para o backend para garantir que não foi perdido
         await apiFetch('/users/web-push-subscription', {
           method: 'POST',
           body: JSON.stringify({ subscription: sub.toJSON() }),
         });
       }
     } catch (e) {
-      console.error(e);
+      console.error('Falha ao checar registro de push:', e);
     }
-  }
+  };
 
   if (!showBanner || !swRegistration) return null;
 
@@ -138,14 +121,14 @@ export function PushNotificationManager() {
           <button 
             type="button" 
             onClick={() => setShowBanner(false)}
-            className="w-full rounded-xl bg-transparent px-5 py-3.5 text-base font-bold text-primary-foreground hover:bg-primary-foreground/10 active:scale-95 transition-all"
+            className="flex-1 rounded-xl bg-primary-foreground/10 py-3 text-sm font-semibold transition hover:bg-primary-foreground/20"
           >
-            Agora não
+            Depois
           </button>
           <button 
             type="button" 
             onClick={() => subscribeToPush(swRegistration)}
-            className="w-full rounded-xl bg-background px-5 py-3.5 text-base font-bold text-primary shadow-sm hover:bg-background/90 active:scale-95 transition-all"
+            className="flex-1 rounded-xl bg-background py-3 text-sm font-semibold text-foreground shadow-md transition hover:bg-background/90"
           >
             Ativar Agora
           </button>

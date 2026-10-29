@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
       srcDir: 'src',
       filename: 'sw.js',
       registerType: 'prompt',
-      devOptions: { enabled: true },
+      devOptions: { enabled: false },
       manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
