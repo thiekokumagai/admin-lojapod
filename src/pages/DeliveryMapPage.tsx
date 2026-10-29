@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { GoogleMap, Marker, InfoWindow, DirectionsRenderer } from "@react-google-maps/api";
 import { useOrders } from "@/hooks/useOrders";
 import { useSettings } from "@/hooks/useSettings";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Send, Bike, ChevronUp, ChevronDown, RotateCcw } from "lucide-react";
 import { Order } from "@/types/order";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,11 +13,78 @@ import { io } from "socket.io-client";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Courier, couriersService } from "@/services/couriers.service";
 import { toast } from "sonner";
-import { Send, Bike } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatWhatsAppNumber } from "@/utils/whatsapp";
+
+// Helpers para URLs universais do Google Maps e Waze para celular
+export function buildGoogleMapsRouteUrl(
+  origin: { lat: number; lng: number } | null,
+  orders: { lat: number; lng: number }[],
+  returnToStore = false
+): string {
+  if (!orders || orders.length === 0) return "";
+
+  const start = origin ? `${origin.lat},${origin.lng}` : `${orders[0].lat},${orders[0].lng}`;
+  const stops = origin ? orders : orders.slice(1);
+
+  if (stops.length === 0) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${start}&travelmode=driving`;
+  }
+
+  let destination: string;
+  let waypoints: string[];
+
+  if (returnToStore && origin) {
+    destination = `${origin.lat},${origin.lng}`;
+    waypoints = stops.map((s) => `${s.lat},${s.lng}`);
+  } else {
+    const lastStop = stops[stops.length - 1];
+    destination = `${lastStop.lat},${lastStop.lng}`;
+    waypoints = stops.slice(0, -1).map((s) => `${s.lat},${s.lng}`);
+  }
+
+  let url = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${destination}&travelmode=driving`;
+  if (waypoints.length > 0) {
+    url += `&waypoints=${waypoints.map((wp) => encodeURIComponent(wp)).join("%7C")}`;
+  }
+  return url;
+}
+
+export function buildSingleStopMapsUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+}
+
+export function buildSingleStopWazeUrl(lat: number, lng: number): string {
+  return `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+}
+
+export function sortOrdersByProximity(
+  orders: any[],
+  origin: { lat: number; lng: number } | null
+): any[] {
+  if (!origin || orders.length <= 1) return orders;
+  const remaining = [...orders];
+  const sorted: any[] = [];
+  let currentLoc = origin;
+
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const d = Math.pow(remaining[i].lat - currentLoc.lat, 2) + Math.pow(remaining[i].lng - currentLoc.lng, 2);
+      if (d < minDist) {
+        minDist = d;
+        bestIdx = i;
+      }
+    }
+    const [nextStop] = remaining.splice(bestIdx, 1);
+    sorted.push(nextStop);
+    currentLoc = { lat: nextStop.lat, lng: nextStop.lng };
+  }
+  return sorted;
+}
 
 const paymentLabels: Record<string, string> = {
   PIX: "Pix",
@@ -58,6 +125,7 @@ type RouteGroup = {
   id: number;
   directions: google.maps.DirectionsResult;
   optimizedOrders: (Order & { lat: number; lng: number })[];
+  returnToStore?: boolean;
 };
 
 // Colors for multiple routes
@@ -71,6 +139,7 @@ export default function DeliveryMapPage() {
   const [selectedMarker, setSelectedMarker] = useState<(Order & { lat: number; lng: number }) | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [storeLocation, setStoreLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [customReturnToStore, setCustomReturnToStore] = useState<boolean | null>(null);
 
   const deleteTransactionMutation = useMutation({
     mutationFn: (txId: string) => couriersService.deleteTransaction(txId),
@@ -255,11 +324,66 @@ export default function DeliveryMapPage() {
 
   const availableMarkers = useMemo(() => markers.filter(m => !routedOrderIds.has(m.id) && !assignedOrderIds.has(m.id)), [markers, routedOrderIds, assignedOrderIds]);
 
-  const handleCalculateRoute = useCallback(() => {
-    const selectedMarkers = availableMarkers.filter(m => selectedOrderIds.has(m.id));
-    if (!window.google?.maps || selectedMarkers.length < 1) return;
+  const selectedMarkersList = useMemo(
+    () => availableMarkers.filter(m => selectedOrderIds.has(m.id)),
+    [availableMarkers, selectedOrderIds]
+  );
 
-    const directionsService = new window.google.maps.DirectionsService();
+  const hasCollectionRequired = useMemo(() => {
+    const targetOrders = selectedMarkersList.length > 0 ? selectedMarkersList : availableMarkers;
+    if (targetOrders.length === 0) return false;
+    return targetOrders.some(m => {
+      if (m.paymentStatus === 'PAID') return false;
+      const method = (m.paymentMethod || "").toLowerCase();
+      if (method.includes("pix")) return false;
+      return true; // Dinheiro, Cartão na maquininha, etc.
+    });
+  }, [selectedMarkersList, availableMarkers]);
+
+  const effectiveReturnToStore = customReturnToStore !== null ? customReturnToStore : hasCollectionRequired;
+
+  const calculateDirectionsPromise = (
+    origin: google.maps.LatLngLiteral,
+    destination: google.maps.LatLngLiteral,
+    waypoints: google.maps.DirectionsWaypoint[],
+    optimizeWaypoints: boolean
+  ): Promise<google.maps.DirectionsResult> => {
+    return new Promise((resolve, reject) => {
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin,
+          destination,
+          waypoints,
+          optimizeWaypoints,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK && result) {
+            resolve(result);
+          } else {
+            reject(new Error(`Directions status: ${status}`));
+          }
+        }
+      );
+    });
+  };
+
+  const calculateOptimizedRouteData = async (
+    selectedMarkers: (Order & { lat: number; lng: number })[],
+    forceReturnToStore?: boolean
+  ): Promise<{ directions: google.maps.DirectionsResult; optimizedOrders: (Order & { lat: number; lng: number })[]; returnToStore: boolean }> => {
+    if (selectedMarkers.length === 0) throw new Error("Nenhum pedido selecionado");
+
+    const ordersNeedCollection = selectedMarkers.some(m => {
+      if (m.paymentStatus === 'PAID') return false;
+      const method = m.paymentMethod?.toLowerCase() || "";
+      return !method.includes("pix");
+    });
+
+    const requiresReturn = forceReturnToStore !== undefined
+      ? forceReturnToStore
+      : (customReturnToStore !== null ? customReturnToStore : ordersNeedCollection);
 
     let origin: google.maps.LatLngLiteral;
     let destination: google.maps.LatLngLiteral;
@@ -267,93 +391,182 @@ export default function DeliveryMapPage() {
 
     if (storeLocation) {
       origin = storeLocation;
-      
-      const requiresReturn = selectedMarkers.some(m => {
-        if (m.paymentStatus === 'PAID') return false; // Já pago, não precisa voltar maquininha/troco
-        const method = m.paymentMethod?.toLowerCase() || "";
-        return !method.includes("pix"); // Se não for PIX, precisa voltar
-      });
-
       if (requiresReturn) {
-        // Volta pra loja
         destination = storeLocation;
-        waypoints = selectedMarkers.map((m) => ({
-          location: { lat: m.lat, lng: m.lng },
-          stopover: true,
-        }));
+        waypoints = selectedMarkers.map(m => ({ location: { lat: m.lat, lng: m.lng }, stopover: true }));
       } else {
-        // Encontra o mais distante para ser o destino (TSP aberto)
-        let furthestMarker = selectedMarkers[0];
-        let maxDist = -1;
-        selectedMarkers.forEach(m => {
-           const dist = Math.pow(m.lat - storeLocation.lat, 2) + Math.pow(m.lng - storeLocation.lng, 2);
-           if (dist > maxDist) { maxDist = dist; furthestMarker = m; }
-        });
-        destination = { lat: furthestMarker.lat, lng: furthestMarker.lng };
-        waypoints = selectedMarkers.filter(m => m.id !== furthestMarker.id).map((m) => ({
-          location: { lat: m.lat, lng: m.lng },
-          stopover: true,
-        }));
-      }
-    } else {
-      origin = { lat: selectedMarkers[0].lat, lng: selectedMarkers[0].lng };
-      destination = { lat: selectedMarkers[selectedMarkers.length - 1].lat, lng: selectedMarkers[selectedMarkers.length - 1].lng };
-      waypoints = selectedMarkers.slice(1, -1).map((m) => ({
-        location: { lat: m.lat, lng: m.lng },
-        stopover: true,
-      }));
-    }
-
-    directionsService.route(
-      {
-        origin,
-        destination,
-        waypoints,
-        optimizeWaypoints: true,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK && result) {
-          const order = result.routes[0].waypoint_order;
-          let optimizedOrders: any[] = [];
-          
-          if (storeLocation) {
-            const requiresReturn = selectedMarkers.some(m => {
-              if (m.paymentStatus === 'PAID') return false;
-              const method = m.paymentMethod?.toLowerCase() || "";
-              return !method.includes("pix");
-            });
-
-            if (requiresReturn) {
-              optimizedOrders = order.map((idx: number) => selectedMarkers[idx]);
-            } else {
-              // destination was furthest
-              let furthestMarker = selectedMarkers[0];
-              let maxDist = -1;
-              selectedMarkers.forEach(m => {
-                 const dist = Math.pow(m.lat - storeLocation.lat, 2) + Math.pow(m.lng - storeLocation.lng, 2);
-                 if (dist > maxDist) { maxDist = dist; furthestMarker = m; }
-              });
-              const otherMarkers = selectedMarkers.filter(m => m.id !== furthestMarker.id);
-              optimizedOrders = [...order.map((idx: number) => otherMarkers[idx]), furthestMarker];
-            }
-          } else {
-            const waypointsArr = selectedMarkers.slice(1, -1);
-            optimizedOrders = [selectedMarkers[0], ...order.map((idx: number) => waypointsArr[idx]), selectedMarkers[selectedMarkers.length - 1]];
-          }
-
-          setRoutes(prev => [...prev, {
-            id: prev.length > 0 ? Math.max(...prev.map(r => r.id)) + 1 : 1,
-            directions: result,
-            optimizedOrders
-          }]);
-          setSelectedOrderIds(new Set()); // clean for next
+        if (selectedMarkers.length === 1) {
+          destination = { lat: selectedMarkers[0].lat, lng: selectedMarkers[0].lng };
+          waypoints = [];
         } else {
-          console.error(`Error calculating directions: ${status}`);
+          let furthestMarker = selectedMarkers[0];
+          let maxDist = -1;
+          selectedMarkers.forEach(m => {
+            const dist = Math.pow(m.lat - storeLocation.lat, 2) + Math.pow(m.lng - storeLocation.lng, 2);
+            if (dist > maxDist) { maxDist = dist; furthestMarker = m; }
+          });
+          destination = { lat: furthestMarker.lat, lng: furthestMarker.lng };
+          waypoints = selectedMarkers.filter(m => m.id !== furthestMarker.id).map(m => ({
+            location: { lat: m.lat, lng: m.lng },
+            stopover: true,
+          }));
         }
       }
-    );
-  }, [availableMarkers, selectedOrderIds, storeLocation]);
+    } else {
+      if (selectedMarkers.length === 1) {
+        origin = { lat: selectedMarkers[0].lat, lng: selectedMarkers[0].lng };
+        destination = { lat: selectedMarkers[0].lat, lng: selectedMarkers[0].lng };
+        waypoints = [];
+      } else {
+        origin = { lat: selectedMarkers[0].lat, lng: selectedMarkers[0].lng };
+        destination = { lat: selectedMarkers[selectedMarkers.length - 1].lat, lng: selectedMarkers[selectedMarkers.length - 1].lng };
+        waypoints = selectedMarkers.slice(1, -1).map(m => ({
+          location: { lat: m.lat, lng: m.lng },
+          stopover: true,
+        }));
+      }
+    }
+
+    const result = await calculateDirectionsPromise(origin, destination, waypoints, true);
+    const order = result.routes[0]?.waypoint_order || [];
+    let optimizedOrders: (Order & { lat: number; lng: number })[] = [];
+
+    if (storeLocation) {
+      if (requiresReturn) {
+        optimizedOrders = order.map((idx: number) => selectedMarkers[idx]);
+      } else {
+        if (selectedMarkers.length === 1) {
+          optimizedOrders = [selectedMarkers[0]];
+        } else {
+          let furthestMarker = selectedMarkers[0];
+          let maxDist = -1;
+          selectedMarkers.forEach(m => {
+            const dist = Math.pow(m.lat - storeLocation.lat, 2) + Math.pow(m.lng - storeLocation.lng, 2);
+            if (dist > maxDist) { maxDist = dist; furthestMarker = m; }
+          });
+          const otherMarkers = selectedMarkers.filter(m => m.id !== furthestMarker.id);
+          optimizedOrders = [...order.map((idx: number) => otherMarkers[idx]), furthestMarker];
+        }
+      }
+    } else {
+      if (selectedMarkers.length === 1) {
+        optimizedOrders = [selectedMarkers[0]];
+      } else {
+        const waypointsArr = selectedMarkers.slice(1, -1);
+        optimizedOrders = [selectedMarkers[0], ...order.map((idx: number) => waypointsArr[idx]), selectedMarkers[selectedMarkers.length - 1]];
+      }
+    }
+
+    return { directions: result, optimizedOrders, returnToStore: requiresReturn };
+  };
+
+  const fetchDirectionsForManualOrder = async (
+    orders: (Order & { lat: number; lng: number })[],
+    returnToStore: boolean
+  ): Promise<google.maps.DirectionsResult> => {
+    let origin: google.maps.LatLngLiteral;
+    let destination: google.maps.LatLngLiteral;
+    let waypoints: google.maps.DirectionsWaypoint[] = [];
+
+    if (storeLocation) {
+      origin = storeLocation;
+      if (returnToStore) {
+        destination = storeLocation;
+        waypoints = orders.map(o => ({ location: { lat: o.lat, lng: o.lng }, stopover: true }));
+      } else {
+        const last = orders[orders.length - 1];
+        destination = { lat: last.lat, lng: last.lng };
+        waypoints = orders.slice(0, -1).map(o => ({ location: { lat: o.lat, lng: o.lng }, stopover: true }));
+      }
+    } else {
+      origin = { lat: orders[0].lat, lng: orders[0].lng };
+      destination = { lat: orders[orders.length - 1].lat, lng: orders[orders.length - 1].lng };
+      waypoints = orders.slice(1, -1).map(o => ({ location: { lat: o.lat, lng: o.lng }, stopover: true }));
+    }
+
+    return calculateDirectionsPromise(origin, destination, waypoints, false);
+  };
+
+  const handleCalculateRoute = useCallback(async () => {
+    const selectedMarkers = availableMarkers.filter(m => selectedOrderIds.has(m.id));
+    if (!window.google?.maps || selectedMarkers.length < 1) return;
+
+    try {
+      const res = await calculateOptimizedRouteData(selectedMarkers, effectiveReturnToStore);
+      setRoutes(prev => [...prev, {
+        id: prev.length > 0 ? Math.max(...prev.map(r => r.id)) + 1 : 1,
+        directions: res.directions,
+        optimizedOrders: res.optimizedOrders,
+        returnToStore: res.returnToStore
+      }]);
+      setSelectedOrderIds(new Set());
+      setCustomReturnToStore(null);
+      toast.success(`Rota criada com ${res.optimizedOrders.length} paradas otimizadas!`);
+    } catch (err: any) {
+      console.error("Erro ao calcular rota:", err);
+      toast.error("Falha ao calcular rota pelo Google Maps.");
+    }
+  }, [availableMarkers, selectedOrderIds, storeLocation, effectiveReturnToStore]);
+
+  const handleMoveStop = async (routeId: number, fromIndex: number, toIndex: number) => {
+    const route = routes.find(r => r.id === routeId);
+    if (!route || toIndex < 0 || toIndex >= route.optimizedOrders.length) return;
+
+    const newOrders = [...route.optimizedOrders];
+    const [moved] = newOrders.splice(fromIndex, 1);
+    newOrders.splice(toIndex, 0, moved);
+
+    try {
+      const newDirections = await fetchDirectionsForManualOrder(newOrders, route.returnToStore ?? false);
+      setRoutes(prev => prev.map(r => r.id === routeId ? {
+        ...r,
+        directions: newDirections,
+        optimizedOrders: newOrders
+      } : r));
+    } catch (err) {
+      console.error("Error updating route directions:", err);
+      setRoutes(prev => prev.map(r => r.id === routeId ? {
+        ...r,
+        optimizedOrders: newOrders
+      } : r));
+    }
+  };
+
+  const handleToggleReturnToStore = async (routeId: number) => {
+    const route = routes.find(r => r.id === routeId);
+    if (!route) return;
+    const newReturnToStore = !route.returnToStore;
+
+    try {
+      const newDirections = await fetchDirectionsForManualOrder(route.optimizedOrders, newReturnToStore);
+      setRoutes(prev => prev.map(r => r.id === routeId ? {
+        ...r,
+        directions: newDirections,
+        returnToStore: newReturnToStore
+      } : r));
+      toast.success(newReturnToStore ? "Rota configurada para retornar à loja" : "Rota configurada para encerrar na última entrega");
+    } catch (err) {
+      toast.error("Não foi possível recalcular a rota.");
+    }
+  };
+
+  const handleReoptimizeRoute = async (routeId: number) => {
+    const route = routes.find(r => r.id === routeId);
+    if (!route || route.optimizedOrders.length <= 1) return;
+
+    try {
+      const res = await calculateOptimizedRouteData(route.optimizedOrders, route.returnToStore);
+      setRoutes(prev => prev.map(r => r.id === routeId ? {
+        ...r,
+        directions: res.directions,
+        optimizedOrders: res.optimizedOrders,
+        returnToStore: res.returnToStore
+      } : r));
+      toast.success("Ordem reotimizada pelo menor trajeto!");
+    } catch (err) {
+      toast.error("Não foi possível reotimizar a rota.");
+    }
+  };
 
   const toggleOrderSelection = (id: string) => {
     const newSet = new Set(selectedOrderIds);
@@ -395,18 +608,36 @@ export default function DeliveryMapPage() {
             Agrupe pedidos em rotas e otimize as entregas.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {storeLocation && (
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-white px-3 py-2.5 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors select-none">
+              <Checkbox
+                checked={effectiveReturnToStore}
+                onCheckedChange={(val) => setCustomReturnToStore(!!val)}
+              />
+              <span>🔄 Retornar à loja ao finalizar</span>
+              {selectedMarkersList.length > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  hasCollectionRequired 
+                    ? "bg-amber-100 text-amber-800" 
+                    : "bg-emerald-100 text-emerald-800"
+                }`}>
+                  {hasCollectionRequired ? "Cobrança pendente" : "Só PIX / Pago"}
+                </span>
+              )}
+            </label>
+          )}
           {routes.length > 0 && (
             <Button
               variant="outline"
-              className="rounded-xl h-11 px-5 font-bold shadow-sm md:w-auto"
-              onClick={() => { setRoutes([]); setSelectedOrderIds(new Set(markers.map(m => m.id))); }}
+              className="rounded-xl h-11 px-4 font-bold shadow-sm"
+              onClick={() => { setRoutes([]); setSelectedOrderIds(new Set(markers.map(m => m.id))); setCustomReturnToStore(null); }}
             >
-              Limpar Todas as Rotas
+              Limpar Todas
             </Button>
           )}
           <Button
-            className="rounded-xl h-11 px-5 font-bold shadow-sm w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+            className="rounded-xl h-11 px-5 font-bold shadow-sm bg-blue-600 hover:bg-blue-700 text-white"
             onClick={handleCalculateRoute}
             disabled={selectedOrderIds.size < 1}
           >
@@ -425,11 +656,16 @@ export default function DeliveryMapPage() {
               {routes.map((route, routeIndex) => {
                 const color = routeColors[routeIndex % routeColors.length];
                 return (
-                  <div key={route.id} className="mb-6">
-                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                      <h4 className="text-sm font-extrabold uppercase tracking-wider" style={{ color }}>Rota {route.id}</h4>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 text-indigo-500 hover:text-indigo-600 px-2 text-[10px] font-bold" onClick={() => {
+                  <div key={route.id} className="mb-6 p-3 rounded-xl border border-slate-200 bg-white/95 shadow-sm">
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-sm font-extrabold uppercase tracking-wider" style={{ color }}>Rota {route.id}</h4>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          {route.optimizedOrders.length} {route.optimizedOrders.length === 1 ? 'parada' : 'paradas'}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <Button variant="ghost" size="sm" className="h-6 text-indigo-600 hover:text-indigo-700 px-2 text-[10px] font-bold" onClick={() => {
                           const fee = route.optimizedOrders.reduce((acc, o) => acc + (Number(o.freight) || 0), 0);
                           setDeliveryFee(fee > 0 ? fee.toString() : "");
                           
@@ -442,23 +678,79 @@ export default function DeliveryMapPage() {
                         }}>
                           <Send className="w-3 h-3 mr-1" /> Enviar
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-6 text-red-500 hover:text-red-600 px-2 text-[10px] font-bold" onClick={() => {
+                        <Button variant="ghost" size="sm" className="h-6 text-red-500 hover:text-red-600 px-1.5 text-[10px] font-bold" onClick={() => {
                           setRoutes(routes.filter(r => r.id !== route.id));
                         }}>Excluir</Button>
                       </div>
                     </div>
+
+                    {/* Controles de Otimização e Retorno da Rota */}
+                    <div className="flex items-center justify-between gap-1 mb-2.5 pb-2 border-b border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleReturnToStore(route.id)}
+                        className={`text-[10px] font-bold px-2 py-1 rounded transition-colors flex items-center gap-1 ${
+                          route.returnToStore
+                            ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                        title="Clique para alternar entre rota que retorna à loja ou encerra na última entrega"
+                      >
+                        {route.returnToStore ? "🔄 Retorna à Loja" : "🏁 Fim no Cliente"}
+                      </button>
+
+                      {route.optimizedOrders.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleReoptimizeRoute(route.id)}
+                          className="text-[10px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                          title="Restaurar a ordem com menor tempo/distância calculada pelo Google"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Reotimizar</span>
+                        </button>
+                      )}
+                    </div>
+
                     <div className="space-y-2">
                       {route.optimizedOrders.map((marker, index) => (
-                        <div key={marker.id} className="flex flex-col p-3 rounded-lg border bg-white shadow-sm cursor-pointer hover:border-slate-300 transition-colors" style={{ borderLeftWidth: '4px', borderLeftColor: color }} onClick={() => setSelectedMarker(marker)}>
+                        <div key={marker.id} className="flex flex-col p-2.5 rounded-lg border bg-white shadow-xs cursor-pointer hover:border-slate-300 transition-colors" style={{ borderLeftWidth: '4px', borderLeftColor: color }} onClick={() => setSelectedMarker(marker)}>
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Parada {index + 1} - {String.fromCharCode(65 + index)}</span>
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                              Parada {index + 1} - {String.fromCharCode(65 + index)}
+                            </span>
+                            
+                            {/* Botoes de Subir / Descer Parada */}
+                            <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={index === 0}
+                                onClick={() => handleMoveStop(route.id, index, index - 1)}
+                                className="h-5 w-5 p-0 text-slate-400 hover:text-slate-800 disabled:opacity-20"
+                                title="Mover parada para cima"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={index === route.optimizedOrders.length - 1}
+                                onClick={() => handleMoveStop(route.id, index, index + 1)}
+                                className="h-5 w-5 p-0 text-slate-400 hover:text-slate-800 disabled:opacity-20"
+                                title="Mover parada para baixo"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+
                             <span className="text-xs font-mono font-bold text-slate-400">#{marker.orderNumber}</span>
                           </div>
                           <p className="text-sm font-bold text-slate-800 leading-tight">{marker.customerName}</p>
-                          <p className="text-[10px] uppercase font-bold mt-1" style={{ color: (marker.paymentMethod?.toLowerCase().includes("pix") || marker.paymentStatus === 'PAID') ? "#10b981" : "#f59e0b" }}>
+                          <p className="text-[10px] uppercase font-bold mt-0.5" style={{ color: (marker.paymentMethod?.toLowerCase().includes("pix") || marker.paymentStatus === 'PAID') ? "#10b981" : "#f59e0b" }}>
                             {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
                           </p>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-snug">
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-1 leading-snug">
                             {marker.street}, {marker.number} - {marker.neighborhood}
                           </p>
                         </div>
@@ -485,31 +777,43 @@ export default function DeliveryMapPage() {
                             return;
                           }
                           
-                          let wppText = `*ROTA DE ENTREGAS - Podemais (Reenvio)*\nMotoboy: ${courier.name}\n\n`;
-                          
-                          const stops = ar.orders.map((o: any) => `${o.lat},${o.lng}`);
-                          if (storeLocation) {
-                            stops.unshift(`${storeLocation.lat},${storeLocation.lng}`);
-                          }
-                          const mapsUrl = `https://www.google.com/maps/dir/${stops.join('/')}`;
+                          const sortedOrders = sortOrdersByProximity(ar.orders, storeLocation);
 
-                          ar.orders.forEach((o: any, i: number) => {
+                          let wppText = `*ROTA DE ENTREGAS - Podemais (Reenvio)*\n`;
+                          wppText += `Motoboy: ${courier.name}\n`;
+                          wppText += `Total de Entregas: ${sortedOrders.length}\n\n`;
+
+                          sortedOrders.forEach((o: any, i: number) => {
                             wppText += `*PARADA ${i + 1} - ${String.fromCharCode(65 + i)}*\n`;
-                            wppText += `- Nome: ${o.customerName}\n`;
-                            wppText += `- Fone: ${o.customerPhone}\n`;
+                            wppText += `- Pedido: #${o.orderNumber}\n`;
+                            wppText += `- Cliente: ${o.customerName}\n`;
+                            if (o.customerPhone) {
+                              wppText += `- Fone: ${o.customerPhone}\n`;
+                            }
                             wppText += `- Endereço: ${o.street}, ${o.number}${o.complement ? ` (${o.complement})` : ''} - ${o.neighborhood}, ${o.city}\n`;
-                            wppText += `- Pagamento: ${o.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[o.paymentMethod] || o.paymentMethod)}\n`;
-                            if (o.paymentStatus !== 'PAID') {
+                            
+                            const isPaid = o.paymentStatus === 'PAID';
+                            const paymentLabel = paymentLabels[o.paymentMethod] || o.paymentMethod || "Não informado";
+                            wppText += `- Pagamento: ${isPaid ? 'PAGO' : paymentLabel}\n`;
+                            if (!isPaid) {
                               wppText += `- Valor a cobrar: R$ ${Number(o.totalOrder).toFixed(2).replace('.', ',')}\n`;
-                              if ((o.paymentMethod?.toLowerCase() === 'cash' || o.paymentMethod?.toLowerCase() === 'dinheiro') && o.changeAmount > 0) {
-                                wppText += `  *Levar troco:* R$ ${Number(o.changeAmount).toFixed(2).replace('.', ',')}\n`;
-                                wppText += `  (Cliente dará R$ ${Number(o.amountProvided).toFixed(2).replace('.', ',')})\n`;
+                              const change = o.changeAmount || (o as any).changeAmount;
+                              const amountProvided = o.amountProvided || (o as any).amountProvided;
+                              if ((o.paymentMethod?.toLowerCase() === 'cash' || o.paymentMethod?.toLowerCase() === 'dinheiro') && change > 0) {
+                                wppText += `  ⚠️ *Levar troco:* R$ ${Number(change).toFixed(2).replace('.', ',')} (Cliente dará R$ ${Number(amountProvided).toFixed(2).replace('.', ',')})\n`;
                               }
                             }
-                            wppText += `\n`;
+                            wppText += `📍 GPS Maps: ${buildSingleStopMapsUrl(o.lat, o.lng)}\n`;
+                            wppText += `📍 GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
                           });
 
-                          wppText += `*Link da Rota no Maps:* \n${mapsUrl}\n`;
+                          const assignedHasCollection = sortedOrders.some((o: any) => {
+                            if (o.paymentStatus === 'PAID') return false;
+                            const method = (o.paymentMethod || "").toLowerCase();
+                            return !method.includes("pix");
+                          });
+                          const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, sortedOrders, assignedHasCollection);
+                          wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
                           window.open(`https://wa.me/${formatWhatsAppNumber(courier.phone)}?text=${encodeURIComponent(wppText)}`, '_blank');
                         }}>
@@ -791,33 +1095,40 @@ export default function DeliveryMapPage() {
                 if (!courier) return;
 
                 // 1. Generate text and open WhatsApp
-                let wppText = `*ROTA DE ENTREGAS - Podemais*\nMotoboy: ${courier.name}\n\n`;
-                
-                // For Google Maps multi-stop
-                const stops = route.optimizedOrders.map(o => `${o.lat},${o.lng}`);
-                if (storeLocation) {
-                  stops.unshift(`${storeLocation.lat},${storeLocation.lng}`);
+                let wppText = `*ROTA DE ENTREGAS - Podemais*\n`;
+                wppText += `Motoboy: ${courier.name}\n`;
+                wppText += `Total de Entregas: ${route.optimizedOrders.length}\n`;
+                if (deliveryFee) {
+                  wppText += `Valor da Corrida: R$ ${Number(deliveryFee).toFixed(2).replace('.', ',')}\n`;
                 }
-                const mapsUrl = `https://www.google.com/maps/dir/${stops.join('/')}`;
+                wppText += `\n`;
 
                 route.optimizedOrders.forEach((o, i) => {
                   wppText += `*PARADA ${i + 1} - ${String.fromCharCode(65 + i)}*\n`;
-                  wppText += `- Nome: ${o.customerName}\n`;
-                  wppText += `- Fone: ${o.customerPhone}\n`;
+                  wppText += `- Pedido: #${o.orderNumber}\n`;
+                  wppText += `- Cliente: ${o.customerName}\n`;
+                  if (o.customerPhone) {
+                    wppText += `- Fone: ${o.customerPhone}\n`;
+                  }
                   wppText += `- Endereço: ${o.street}, ${o.number}${o.complement ? ` (${o.complement})` : ''} - ${o.neighborhood}, ${o.city}\n`;
-                  wppText += `- Pagamento: ${o.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[o.paymentMethod] || o.paymentMethod)}\n`;
-                  if (o.paymentStatus !== 'PAID') {
-                    wppText += `- Valor a cobrar: R$ ${Number(o.totalOrder).toFixed(2).replace('.', ',')}\n`;
-                    if ((o.paymentMethod?.toLowerCase() === 'cash' || o.paymentMethod?.toLowerCase() === 'dinheiro') && (o as any).changeAmount > 0) {
-                      wppText += `  *Levar troco:* R$ ${Number((o as any).changeAmount).toFixed(2).replace('.', ',')}\n`;
-                      wppText += `  (Cliente dará R$ ${Number((o as any).amountProvided).toFixed(2).replace('.', ',')})\n`;
+                  
+                  const isPaid = o.paymentStatus === 'PAID';
+                  const paymentLabel = paymentLabels[o.paymentMethod] || o.paymentMethod || "Não informado";
+                  wppText += `- Pagamento: ${isPaid ? 'PAGO' : paymentLabel}\n`;
+                  if (!isPaid) {
+                    wppText += `- *Cobrar do cliente:* R$ ${Number(o.totalOrder).toFixed(2).replace('.', ',')}\n`;
+                    const change = (o as any).changeAmount;
+                    const amountProvided = (o as any).amountProvided;
+                    if ((o.paymentMethod?.toLowerCase() === 'cash' || o.paymentMethod?.toLowerCase() === 'dinheiro') && change > 0) {
+                      wppText += `  ⚠️ *Levar troco:* R$ ${Number(change).toFixed(2).replace('.', ',')} (Cliente dará R$ ${Number(amountProvided).toFixed(2).replace('.', ',')})\n`;
                     }
                   }
-                  wppText += `\n`;
+                  wppText += `📍 GPS Maps: ${buildSingleStopMapsUrl(o.lat, o.lng)}\n`;
+                  wppText += `📍 GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
                 });
 
-                wppText += `*Valor Total Entrega:* R$ ${Number(deliveryFee).toFixed(2).replace('.', ',')}\n\n`;
-                wppText += `*Link da Rota no Maps:* \n${mapsUrl}\n`;
+                const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, route.optimizedOrders, route.returnToStore ?? false);
+                wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
                 window.open(`https://wa.me/${formatWhatsAppNumber(courier.phone)}?text=${encodeURIComponent(wppText)}`, '_blank');
 
