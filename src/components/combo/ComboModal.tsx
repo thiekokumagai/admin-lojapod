@@ -673,7 +673,8 @@ export function ComboModal({
             <DialogTitle>Adicionar Produto ao Combo</DialogTitle>
           </DialogHeader>
 
-                 {/* Seletor com busca como no pedido manual */}
+          <div className="space-y-4 py-4">
+            {/* Seletor com busca como no pedido manual */}
             {selectedProdForAdd ? (
               <div className="p-3 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">

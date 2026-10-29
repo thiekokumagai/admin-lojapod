@@ -7,7 +7,11 @@ export const formatCurrency = (value: number) => {
 
 export const formatPhone = (value: string | null | undefined) => {
   if (!value) return "";
-  const digits = value.replace(/\D/g, "").slice(0, 11);
+  let digits = value.replace(/\D/g, "");
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+    digits = digits.slice(2);
+  }
+  digits = digits.slice(0, 11);
   if (!digits) return "";
   if (digits.length <= 2) {
     return `(${digits}`;

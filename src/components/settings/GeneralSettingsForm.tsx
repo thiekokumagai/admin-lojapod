@@ -3,6 +3,7 @@ import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { apiFetch } from "@/services/api";
 import { uploadFavicon, uploadSettingsMedia } from "@/services/settings.service";
 import { buildImageUrl } from "@/utils/image-url";
+import { formatPhone } from "@/utils/formatters";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,7 +145,7 @@ export function GeneralSettingsForm() {
   const [adminEmail, setAdminEmail] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
-  const [templateId, setTemplateId] = useState<'classic' | 'menu-express' | 'urban' | 'urban'>('classic');
+  const [templateId, setTemplateId] = useState<'classic' | 'menu-express' | 'urban'>('classic');
   const [defaultProductSort, setDefaultProductSort] = useState<string>('newest');
   const [primaryColor, setPrimaryColor] = useState('#dc2626');
   const [secondaryColor, setSecondaryColor] = useState('#18181b');
@@ -185,7 +186,7 @@ export function GeneralSettingsForm() {
       setFaviconUrl(settings.faviconUrl || null);
       setTopHeaderText(settings.topHeaderText || "");
       setBannerUrls(settings.bannerUrls || []);
-      setPhone(cleanVal(settings.phone, ["(67) 99999-9999", "67999999999", "6799999-9999"]));
+      setPhone(formatPhone(cleanVal(settings.phone, ["(67) 99999-9999", "67999999999", "6799999-9999"])));
       setInstagram(settings.instagram || "");
       setPixelId(settings.pixelId || "");
       setFacebookPixelEnabled(!!settings.facebookPixelEnabled);
@@ -561,14 +562,14 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
             <div
               onClick={() => setTemplateId("urban")}
               className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                templateId === "urban" || templateId === "urban"
+                templateId === "urban"
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border hover:border-muted-foreground/50 bg-white"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-bold text-sm">Template Urban (Sidebar)</span>
-                {(templateId === "urban" || templateId === "urban") && (
+                {templateId === "urban" && (
                   <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-semibold">Ativo</span>
                 )}
               </div>
@@ -809,6 +810,10 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               <div className="relative">
                 <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  maxLength={15}
                   value={phone}
                   onChange={(e) => setPhone(formatPhone(e.target.value))}
                   placeholder="(00) 00000-0000"
