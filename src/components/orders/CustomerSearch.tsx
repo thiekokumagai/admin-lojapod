@@ -156,7 +156,15 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
                   {customer.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-semibold text-slate-800">{customer.name}</div>
+                  <div className="font-semibold text-slate-800 flex items-center gap-2">
+                    <span>{customer.name}</span>
+                    {customer.isBlocked && (
+                      <Badge variant="destructive" className="text-[10px] h-4.5 px-1.5 gap-1 bg-rose-100 text-rose-700 hover:bg-rose-100 border border-rose-200 font-semibold">
+                        <Ban className="h-2.5 w-2.5 text-rose-600" />
+                        Block List
+                      </Badge>
+                    )}
+                  </div>
                   <div className="text-sm text-slate-500">{formatPhone(customer.phone)}</div>
                 </div>
               </div>
@@ -235,6 +243,17 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
 
       {selectedCustomer && (
         <div className="mt-4 p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-4">
+          {selectedCustomer.isBlocked && (
+            <div className="p-3 sm:p-4 bg-rose-50/80 border border-rose-200 rounded-2xl flex items-start gap-3">
+              <ShieldAlert className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <h4 className="text-xs sm:text-sm font-bold text-rose-900">Cliente Bloqueado (Block List)</h4>
+                <p className="text-xs text-rose-700 leading-relaxed">
+                  Este cliente / telefone está na lista de bloqueio. Pedidos manuais para este cliente não poderão ser finalizados.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between pb-4 border-b border-slate-200">
             {isEditingCustomerData ? (
               <div className="w-full space-y-3">
@@ -304,11 +323,25 @@ export function CustomerSearch({ onSelectCustomer, onSelectAddress, initialCusto
             ) : (
               <>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-bold text-lg">
-                    {selectedCustomer.name.charAt(0).toUpperCase()}
-                  </div>
+                  {selectedCustomer.isBlocked ? (
+                    <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                      <Ban className="h-6 w-6" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-bold text-lg shrink-0">
+                      {selectedCustomer.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div>
-                    <div className="font-bold text-slate-800">{selectedCustomer.name}</div>
+                    <div className="font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+                      <span>{selectedCustomer.name}</span>
+                      {selectedCustomer.isBlocked && (
+                        <Badge variant="destructive" className="text-[10px] h-5 px-1.5 gap-1 bg-rose-100 text-rose-700 hover:bg-rose-100 border border-rose-200 font-semibold">
+                          <Ban className="h-2.5 w-2.5 text-rose-600" />
+                          Block List
+                        </Badge>
+                      )}
+                    </div>
                     <div className="text-sm text-slate-500 flex items-center gap-1">
                       {formatPhone(selectedCustomer.phone)}
                     </div>
