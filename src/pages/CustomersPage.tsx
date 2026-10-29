@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Users, ArrowRight, X, ShieldAlert, Ban } from "lucide-react";
+import { Search, Loader2, Users, ArrowRight, X, ShieldAlert, Ban, UserCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatPhone } from "@/utils/formatters";
 import { openWhatsApp } from "@/utils/whatsapp";
@@ -79,74 +79,83 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-            <span>Clientes</span>
-          </h1>
-          <p className="text-sm text-slate-500 font-medium">
-            Gerencie sua base de clientes, visualize históricos, contatos e gerencie a lista de bloqueio.
-          </p>
-        </div>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+          Clientes
+        </h1>
+        <p className="text-sm text-slate-500 font-medium">
+          Gerencie sua base de clientes, visualize históricos e controle a block list de pedidos.
+        </p>
       </div>
 
       {/* Toolbar / Filters */}
-      <div className="flex flex-col gap-3 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              type="text" 
-              placeholder="Buscar por nome ou telefone..." 
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10 h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium placeholder:text-slate-400"
-            />
-          </div>
-          
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            type="text" 
+            placeholder="Buscar por nome ou telefone..." 
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-10 pr-9 h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium placeholder:text-slate-400"
+          />
           {search && (
-            <Button 
-              variant="ghost" 
+            <button 
+              type="button"
               onClick={() => handleSearchChange("")} 
-              className="h-11 px-3 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-xl transition-colors sm:ml-auto"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
+              title="Limpar busca"
             >
-              <X className="h-4 w-4 mr-2" />
-              Limpar busca
-            </Button>
+              <X className="h-4 w-4" />
+            </button>
           )}
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
-          <span className="text-xs font-semibold text-slate-400 mr-1">Status:</span>
-          <Button
+        {/* Status Segmented Control */}
+        <div className="grid grid-cols-3 sm:flex items-center p-1 bg-slate-100/80 rounded-2xl border border-slate-200/50 gap-1 w-full md:w-auto">
+          {/* Todos */}
+          <button
             type="button"
-            size="sm"
-            variant={statusFilter === "all" ? "default" : "outline"}
             onClick={() => setStatusFilter("all")}
-            className="rounded-lg text-xs h-8 px-3"
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all ${
+              statusFilter === "all"
+                ? "bg-white text-slate-800 shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-800 hover:bg-white/50 font-medium"
+            }`}
           >
-            Todos
-          </Button>
-          <Button
+            <Users className="h-4 w-4 shrink-0 text-slate-700" />
+            <span>Todos</span>
+          </button>
+
+          {/* Ativos */}
+          <button
             type="button"
-            size="sm"
-            variant={statusFilter === "active" ? "default" : "outline"}
             onClick={() => setStatusFilter("active")}
-            className="rounded-lg text-xs h-8 px-3"
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all ${
+              statusFilter === "active"
+                ? "bg-white text-slate-800 shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-800 hover:bg-white/50 font-medium"
+            }`}
           >
-            Ativos
-          </Button>
-          <Button
+            <UserCheck className="h-4 w-4 shrink-0 text-slate-700" />
+            <span>Ativos</span>
+          </button>
+
+          {/* Bloqueados (Block List) */}
+          <button
             type="button"
-            size="sm"
-            variant={statusFilter === "blocked" ? "destructive" : "outline"}
             onClick={() => setStatusFilter("blocked")}
-            className="rounded-lg text-xs h-8 px-3 gap-1.5"
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all ${
+              statusFilter === "blocked"
+                ? "bg-white text-red-600 shadow-sm font-bold"
+                : "text-red-600 font-medium hover:bg-red-50/50"
+            }`}
           >
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Bloqueados (Block List)
-          </Button>
+            <Ban className="h-4 w-4 shrink-0 text-red-600" />
+            <span className="leading-tight text-center sm:whitespace-nowrap">
+              Bloqueados (Block List)
+            </span>
+          </button>
         </div>
       </div>
 
