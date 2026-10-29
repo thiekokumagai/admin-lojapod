@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, Loader2, MapPin, User } from "lucide-react";
+import { Search, Loader2, MapPin, User, ShieldAlert, Ban } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useCustomers } from "@/hooks/useCustomers";
 import { customersService, type Customer, type CustomerAddress } from "@/services/customers.service";

@@ -332,7 +332,9 @@ export default function EditOrderPage() {
   const finalTotal = !isNaN(parsedCustomTotal) && customTotal.trim() !== "" ? parsedCustomTotal : total;
 
   const isAddressRequired = deliveryModality === "DELIVERY" && !isBudgetMode;
-  const isValid = (isBudgetMode || (selectedCustomer !== null && (!isAddressRequired || selectedAddress !== null))) && orderItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
+  const isCustomerBlocked = Boolean(selectedCustomer?.isBlocked);
+
+  const isValid = !isCustomerBlocked && (isBudgetMode || (selectedCustomer !== null && (!isAddressRequired || selectedAddress !== null))) && orderItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
 
   const handleSubmit = async () => {
     if (!id || !isValid || (!isBudgetMode && !selectedCustomer)) return;

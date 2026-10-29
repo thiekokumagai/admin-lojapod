@@ -1,20 +1,39 @@
 import { useState, useEffect, useRef } from "react";
-import { useInfiniteCustomers } from "@/hooks/useCustomers";
+import { useInfiniteCustomers, useToggleBlockCustomer } from "@/hooks/useCustomers";
+import { type Customer } from "@/services/customers.service";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Users, ArrowRight, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { Search, Loader2, Users, ArrowRight, X, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatPhone } from "@/utils/formatters";
 import { openWhatsApp } from "@/utils/whatsapp";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function CustomersPage() {
   const [search, setSearch] = useState(() => {
     return sessionStorage.getItem("customers_search") || "";
   });
-  const limit = 20;
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "blocked">("all");
+  const [customerToToggle, setCustomerToToggle] = useState<Customer | null>(null);
 
-  const { data: paginatedData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteCustomers(search, limit);
+  const limit = 20;
+  const isBlockedParam = statusFilter === "all" ? undefined : statusFilter === "blocked";
+
+  const { data: paginatedData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteCustomers(search, limit, isBlockedParam);
+  const { mutate: toggleBlock, isPending: isToggling } = useToggleBlockCustomer();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const customers = paginatedData?.pages.flatMap(p => p.data || []) || [];
@@ -55,6 +74,29 @@ export default function CustomersPage() {
     isRestoredRef.current = true;
   };
 
+  const handleConfirmToggleBlock = () => {
+    if (!customerToToggle) return;
+    const isBlocking = !customerToToggle.isBlocked;
+    toggleBlock(customerToToggle.id, {
+      onSuccess: () => {
+        toast({
+          title: isBlocking ? "Cliente bloqueado" : "Cliente desbloqueado",
+          description: isBlocking
+            ? `${customerToToggle.name} foi adicionado à Block List e não poderá realizar novos pedidos.`
+            : `${customerToToggle.name} foi desbloqueado com sucesso.`,
+        });
+        setCustomerToToggle(null);
+      },
+      onError: () => {
+        toast({
+          title: "Erro ao atualizar status",
+          description: "Não foi possível alterar o bloqueio do cliente. Tente novamente.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
   useEffect(() => {
     const loader = loaderRef.current;
     if (!loader) return;
@@ -81,34 +123,69 @@ export default function CustomersPage() {
             <span>Clientes</span>
           </h1>
           <p className="text-sm text-slate-500 font-medium">
-            Gerencie sua base de clientes, visualize históricos e dados de contato.
+            Gerencie sua base de clientes, visualize históricos, contatos e gerencie a lista de bloqueio.
           </p>
         </div>
       </div>
 
       {/* Toolbar / Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input 
-            type="text" 
-            placeholder="Buscar por nome ou telefone..." 
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium placeholder:text-slate-400"
-          />
+      <div className="flex flex-col gap-3 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input 
+              type="text" 
+              placeholder="Buscar por nome ou telefone..." 
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-10 h-11 border-slate-200 focus-visible:ring-violet-600 rounded-xl font-medium placeholder:text-slate-400"
+            />
+          </div>
+          
+          {search && (
+            <Button 
+              variant="ghost" 
+              onClick={() => handleSearchChange("")} 
+              className="h-11 px-3 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-xl transition-colors sm:ml-auto"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Limpar busca
+            </Button>
+          )}
         </div>
-        
-        {search && (
-          <Button 
-            variant="ghost" 
-            onClick={() => handleSearchChange("")} 
-            className="h-11 px-3 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-xl transition-colors sm:ml-auto"
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+          <span className="text-xs font-semibold text-slate-400 mr-1">Status:</span>
+          <Button
+            type="button"
+            size="sm"
+            variant={statusFilter === "all" ? "default" : "outline"}
+            onClick={() => setStatusFilter("all")}
+            className="rounded-lg text-xs h-8 px-3"
           >
-            <X className="h-4 w-4 mr-2" />
-            Limpar
+            Todos
           </Button>
-        )}
+          <Button
+            type="button"
+            size="sm"
+            variant={statusFilter === "active" ? "default" : "outline"}
+            onClick={() => setStatusFilter("active")}
+            className="rounded-lg text-xs h-8 px-3"
+          >
+            Ativos
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={statusFilter === "blocked" ? "destructive" : "outline"}
+            onClick={() => setStatusFilter("blocked")}
+            className="rounded-lg text-xs h-8 px-3 gap-1.5"
+          >
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Bloqueados (Block List)
+          </Button>
+        </div>
       </div>
 
       {/* Main Panel */}
@@ -124,7 +201,11 @@ export default function CustomersPage() {
           </div>
           <div className="space-y-1">
             <h3 className="font-bold text-slate-800 text-lg">Nenhum cliente encontrado</h3>
-            <p className="text-xs text-slate-400 max-w-xs font-medium">Tente buscar por outro nome ou número de telefone.</p>
+            <p className="text-xs text-slate-400 max-w-xs font-medium">
+              {statusFilter === "blocked"
+                ? "Nenhum cliente está na block list no momento."
+                : "Tente buscar por outro nome ou número de telefone."}
+            </p>
           </div>
         </div>
       ) : (
@@ -135,14 +216,62 @@ export default function CustomersPage() {
               <div 
                 key={customer.id} 
                 onClick={() => handleOpenCustomer(customer.id)}
-                className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm flex items-center justify-between active:bg-violet-50/40 cursor-pointer gap-2"
+                className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col gap-3 active:bg-violet-50/40 cursor-pointer ${
+                  customer.isBlocked ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/60'
+                }`}
               >
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-bold text-slate-800 text-sm truncate">{customer.name}</span>
-                  <span className="font-mono text-slate-500 text-xs">{formatPhone(customer.phone)}</span>
-                  <span className="text-slate-400 text-[10px] mt-1">Cadastro: {new Date(customer.createdAt).toLocaleDateString("pt-BR")}</span>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-slate-800 text-sm truncate">{customer.name}</span>
+                      {customer.isBlocked ? (
+                        <Badge variant="destructive" className="text-[10px] h-5 px-1.5 gap-1">
+                          <Ban className="h-2.5 w-2.5" />
+                          Bloqueado
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-emerald-600 border-emerald-200 bg-emerald-50">
+                          Ativo
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="font-mono text-slate-500 text-xs mt-0.5">{formatPhone(customer.phone)}</span>
+                    <span className="text-slate-400 text-[10px] mt-1">Cadastro: {new Date(customer.createdAt).toLocaleDateString("pt-BR")}</span>
+                  </div>
+
+                  <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={customer.isBlocked ? "outline" : "ghost"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCustomerToToggle(customer);
+                    }}
+                    className={`h-8 text-xs font-semibold rounded-lg ${
+                      customer.isBlocked
+                        ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                        : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
+                    }`}
+                  >
+                    {customer.isBlocked ? (
+                      <>
+                        <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                        Desbloquear
+                      </>
+                    ) : (
+                      <>
+                        <ShieldAlert className="h-3.5 w-3.5 mr-1 text-rose-500" />
+                        Bloquear
+                      </>
+                    )}
+                  </Button>
+
                   {customer.phone && (
                     <button
                       type="button"
@@ -150,15 +279,12 @@ export default function CustomersPage() {
                         e.stopPropagation();
                         openWhatsApp(customer.phone, `Olá ${customer.name}`);
                       }}
-                      className="w-9 h-9 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors border border-emerald-200/60"
+                      className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors border border-emerald-200/60"
                       title="Chamar no WhatsApp"
                     >
-                      <img src="/whatsapp.svg" alt="WhatsApp" className="h-4.5 w-4.5" />
+                      <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4" />
                     </button>
                   )}
-                  <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
                 </div>
               </div>
             ))}
@@ -166,13 +292,14 @@ export default function CustomersPage() {
 
           {/* Desktop Table View */}
           <div className="hidden md:block bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden overflow-x-auto">
-            <Table className="min-w-[600px]">
+            <Table className="min-w-[650px]">
             <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="font-bold text-slate-600 pl-6">Nome</TableHead>
                 <TableHead className="font-bold text-slate-600">Telefone</TableHead>
+                <TableHead className="font-bold text-slate-600">Status</TableHead>
                 <TableHead className="font-bold text-slate-600">Cadastro</TableHead>
-                <TableHead className="w-[100px] text-right pr-6">Ações</TableHead>
+                <TableHead className="w-[180px] text-right pr-6">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -180,13 +307,29 @@ export default function CustomersPage() {
                 <TableRow 
                   key={customer.id} 
                   onClick={() => handleOpenCustomer(customer.id)}
-                  className="group cursor-pointer hover:bg-violet-50/40 transition-colors"
+                  className={`group cursor-pointer hover:bg-violet-50/40 transition-colors ${
+                    customer.isBlocked ? 'bg-rose-50/15' : ''
+                  }`}
                 >
                   <TableCell className="pl-6">
-                    <div className="font-bold text-slate-700">{customer.name}</div>
+                    <div className="font-bold text-slate-700 flex items-center gap-2">
+                      <span>{customer.name}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium text-slate-500 font-mono tracking-tight">{formatPhone(customer.phone)}</div>
+                  </TableCell>
+                  <TableCell>
+                    {customer.isBlocked ? (
+                      <Badge variant="destructive" className="font-semibold text-xs h-6 px-2 gap-1">
+                        <Ban className="h-3 w-3" />
+                        Bloqueado (Block List)
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="font-semibold text-xs h-6 px-2 text-emerald-600 border-emerald-200 bg-emerald-50">
+                        Ativo
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="font-medium text-slate-500">
@@ -195,6 +338,34 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell className="pr-6">
                     <div className="flex items-center gap-2 justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={customer.isBlocked ? "outline" : "ghost"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCustomerToToggle(customer);
+                        }}
+                        className={`h-8 text-xs font-semibold rounded-lg ${
+                          customer.isBlocked
+                            ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                            : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
+                        }`}
+                        title={customer.isBlocked ? "Desbloquear cliente" : "Bloquear cliente"}
+                      >
+                        {customer.isBlocked ? (
+                          <>
+                            <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                            Desbloquear
+                          </>
+                        ) : (
+                          <>
+                            <ShieldAlert className="h-3.5 w-3.5 mr-1 text-rose-500" />
+                            Bloquear
+                          </>
+                        )}
+                      </Button>
+
                       {customer.phone && (
                         <button
                           type="button"
@@ -208,6 +379,7 @@ export default function CustomersPage() {
                           <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4" />
                         </button>
                       )}
+
                       <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600 transition-all shrink-0">
                         <ArrowRight className="h-4 w-4" />
                       </div>
@@ -227,6 +399,53 @@ export default function CustomersPage() {
         )}
         </>
       )}
+
+      {/* Confirmation Dialog for Block/Unblock */}
+      <AlertDialog open={!!customerToToggle} onOpenChange={(open) => !open && setCustomerToToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {customerToToggle?.isBlocked ? (
+                <>
+                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                  Desbloquear Cliente
+                </>
+              ) : (
+                <>
+                  <ShieldAlert className="h-5 w-5 text-rose-600" />
+                  Bloquear Cliente (Block List)
+                </>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 pt-2">
+              {customerToToggle?.isBlocked ? (
+                <span>
+                  Tem certeza que deseja desbloquear o cliente <strong>{customerToToggle?.name}</strong>?
+                  Ele poderá voltar a realizar compras pela loja e pedidos manuais.
+                </span>
+              ) : (
+                <span>
+                  Tem certeza que deseja bloquear o cliente <strong>{customerToToggle?.name}</strong>?
+                  <br />
+                  <br />
+                  <span className="text-rose-600 font-semibold">Atenção:</span> Este cliente e qualquer pedido feito com o número <strong>{formatPhone(customerToToggle?.phone || '')}</strong> será impedido de ser finalizado tanto na loja quanto no pedido manual.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmToggleBlock}
+              disabled={isToggling}
+              className={customerToToggle?.isBlocked ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}
+            >
+              {isToggling && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {customerToToggle?.isBlocked ? "Sim, Desbloquear" : "Sim, Bloquear"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

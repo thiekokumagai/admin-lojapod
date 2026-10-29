@@ -17,6 +17,7 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  isBlocked?: boolean;
   createdAt: string;
   updatedAt: string;
   addresses: CustomerAddress[];
@@ -34,8 +35,16 @@ export interface PaginatedCustomers {
 }
 
 export const customersService = {
-  getCustomers: async (params?: { page?: number; limit?: number; search?: string }) => {
-    const query = new URLSearchParams(params as any).toString();
+  getCustomers: async (params?: { page?: number; limit?: number; search?: string; isBlocked?: boolean | string }) => {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') {
+          cleanParams[key] = String(val);
+        }
+      });
+    }
+    const query = new URLSearchParams(cleanParams).toString();
     const response = await apiFetch(`/customers${query ? `?${query}` : ''}`);
     return response.json() as Promise<PaginatedCustomers>;
   },
@@ -53,10 +62,17 @@ export const customersService = {
     return response.json() as Promise<Customer>;
   },
 
-  updateCustomer: async (id: string, data: { name?: string; phone?: string }) => {
+  updateCustomer: async (id: string, data: { name?: string; phone?: string; isBlocked?: boolean }) => {
     const response = await apiFetch(`/customers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+    return response.json() as Promise<Customer>;
+  },
+
+  toggleBlockCustomer: async (id: string) => {
+    const response = await apiFetch(`/customers/${id}/toggle-block`, {
+      method: 'PATCH',
     });
     return response.json() as Promise<Customer>;
   },

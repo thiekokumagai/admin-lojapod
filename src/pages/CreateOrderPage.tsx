@@ -197,7 +197,9 @@ export default function CreateOrderPage() {
   const finalTotal = !isNaN(parsedCustomTotal) && customTotal.trim() !== "" ? parsedCustomTotal : total;
 
   const isAddressRequired = deliveryModality === "DELIVERY" && !isBudgetMode;
-  const isValid = (isBudgetMode || (!!selectedCustomer && (!isAddressRequired || !!selectedAddress))) && effectiveItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
+  const isCustomerBlocked = Boolean(selectedCustomer?.isBlocked);
+
+  const isValid = !isCustomerBlocked && (isBudgetMode || (!!selectedCustomer && (!isAddressRequired || !!selectedAddress))) && effectiveItems.length > 0 && paymentMethod !== "" && (paymentMethod !== "Dinheiro" || !needsChange || (changeFor.trim() !== "" && parseFloat(changeFor.replace(/\./g, '').replace(',', '.')) >= finalTotal));
 
   const handleSubmit = async () => {
     if (!isValid || (!isBudgetMode && !selectedCustomer)) return;

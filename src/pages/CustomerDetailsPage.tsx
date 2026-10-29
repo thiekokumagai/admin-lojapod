@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useCustomerDetails, useUpdateCustomer } from "@/hooks/useCustomers";
+import { useCustomerDetails, useUpdateCustomer, useToggleBlockCustomer } from "@/hooks/useCustomers";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, MapPin, CalendarDays, Edit2, Save, ArrowLeft, ShoppingBag, Copy, Check, DollarSign, Package } from "lucide-react";
+import { Loader2, User, Phone, MapPin, CalendarDays, Edit2, Save, ArrowLeft, ShoppingBag, Copy, Check, DollarSign, Package, ShieldAlert, ShieldCheck, Ban } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +49,29 @@ export default function CustomerDetailsPage() {
       setIsEditing(false);
     }
   }, [customer]);
+
+  const handleToggleBlock = () => {
+    if (!customerId || !customer) return;
+    const isBlocking = !customer.isBlocked;
+    toggleBlock(customerId, {
+      onSuccess: () => {
+        toast({
+          title: isBlocking ? "Cliente bloqueado" : "Cliente desbloqueado",
+          description: isBlocking
+            ? `${customer.name} foi adicionado à Block List.`
+            : `${customer.name} foi desbloqueado com sucesso.`,
+        });
+        setConfirmBlockDialogOpen(false);
+      },
+      onError: () => {
+        toast({
+          title: "Erro ao atualizar status",
+          description: "Não foi possível alterar o bloqueio do cliente.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   const handleSave = async () => {
     if (!customerId) return;
@@ -106,6 +131,20 @@ export default function CustomerDetailsPage() {
               </Button>
             )}
           </div>
+
+          {customer.isBlocked && (
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 shadow-sm">
+              <div className="p-2 rounded-xl bg-rose-100 text-rose-600 shrink-0">
+                <ShieldAlert className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-rose-900">Cliente Bloqueado na Block List</h4>
+                <p className="text-xs text-rose-700 leading-relaxed">
+                  Este cliente está na Block List da loja. Ele não conseguirá finalizar novos pedidos na loja do cliente e os operadores serão impedidos de criar novos pedidos manuais para ele.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Cards Resumo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
