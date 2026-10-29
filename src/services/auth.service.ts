@@ -88,3 +88,5 @@ export function clearSession() {
   signOut();
   clearAccessToken();
 }
+
+export const logout = clearSession;
