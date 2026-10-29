@@ -368,11 +368,15 @@ export function OrderSummary({
       </div>
 
       <Button 
-        className={`w-full h-12 rounded-xl font-bold text-white shadow-sm ${isBudgetMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-violet-600 hover:bg-violet-700'}`}
-        disabled={!isValid || isSubmitting}
+        className={`w-full h-12 rounded-xl font-bold text-white shadow-sm ${
+          isCustomerBlocked 
+            ? 'bg-rose-500/70 hover:bg-rose-500/70 cursor-not-allowed' 
+            : (isBudgetMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-violet-600 hover:bg-violet-700')
+        }`}
+        disabled={!isValid || isSubmitting || isCustomerBlocked}
         onClick={onSubmit}
       >
-        {isSubmitting ? "Finalizando..." : (isBudgetMode ? "Orçamento (Não Salva)" : "Finalizar Pedido")}
+        {isSubmitting ? "Finalizando..." : (isBudgetMode ? "Orçamento (Não Salva)" : (submitLabel || "Finalizar Pedido"))}
       </Button>
     </div>
   );

@@ -835,6 +835,7 @@ export default function EditOrderPage() {
               changeFor={changeFor}
               onChangeForChange={setChangeFor}
               submitLabel="Salvar e Imprimir"
+              isCustomerBlocked={Boolean(selectedCustomer?.isBlocked)}
             />
           </div>
         </div>

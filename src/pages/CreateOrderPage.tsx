@@ -709,6 +709,7 @@ export default function CreateOrderPage() {
               changeFor={changeFor}
               onChangeForChange={setChangeFor}
               loyaltyReward={loyaltyReward}
+              isCustomerBlocked={Boolean(selectedCustomer?.isBlocked)}
             />
           </div>
         </div>
