@@ -47,6 +47,9 @@ export function useToggleBlockCustomer() {
   return useMutation({
     mutationFn: (id: string) => customersService.toggleBlockCustomer(id),
     onSuccess: (data, id) => {
+      if (data) {
+        queryClient.setQueryData(['customers', id], data);
+      }
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customers', id] });
     },
