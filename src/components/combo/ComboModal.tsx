@@ -714,7 +714,7 @@ export function ComboModal({
                   <Label htmlFor="product-search-input">Buscar Produto *</Label>
                   {productSearch && (
                     <span className="text-xs text-slate-500">
-                      {availableProducts.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
+                      {availableProducts.filter((p) => p.status === "active" && p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
                     </span>
                   )}
                 </div>
@@ -750,7 +750,7 @@ export function ComboModal({
                     ) : (
                       (() => {
                         const filtered = availableProducts.filter((p) =>
-                          p.title.toLowerCase().includes(productSearch.toLowerCase()),
+                          p.status === "active" && p.title.toLowerCase().includes(productSearch.toLowerCase()),
                         );
 
                         if (filtered.length === 0) {

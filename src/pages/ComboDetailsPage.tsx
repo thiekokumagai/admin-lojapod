@@ -772,7 +772,7 @@ export default function ComboDetailsPage() {
                   </Label>
                   {productSearch && (
                     <span className="text-xs text-muted-foreground">
-                      {availableProducts.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
+                      {availableProducts.filter((p) => p.status === "active" && p.title.toLowerCase().includes(productSearch.toLowerCase())).length} encontrado(s)
                     </span>
                   )}
                 </div>
@@ -807,7 +807,7 @@ export default function ComboDetailsPage() {
                     ) : (
                       (() => {
                         const filtered = availableProducts.filter((p) =>
-                          p.title.toLowerCase().includes(productSearch.toLowerCase())
+                          p.status === "active" && p.title.toLowerCase().includes(productSearch.toLowerCase())
                         );
 
                         if (filtered.length === 0) {
