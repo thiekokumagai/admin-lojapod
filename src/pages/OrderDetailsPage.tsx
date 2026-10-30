@@ -41,6 +41,14 @@ const paymentLabels: Record<string, string> = {
   dinheiro: "Dinheiro",
   Cash: "Dinheiro",
   CASH: "Dinheiro",
+  "Vale refeição": "Vale refeição",
+  "Vale Refeição": "Vale refeição",
+  meal_voucher: "Vale refeição",
+  vale_refeicao: "Vale refeição",
+  "Vale alimentação": "Vale alimentação",
+  "Vale Alimentação": "Vale alimentação",
+  food_voucher: "Vale alimentação",
+  vale_alimentacao: "Vale alimentação",
 };
 
 export default function OrderDetailsPage() {
@@ -213,6 +221,8 @@ export default function OrderDetailsPage() {
           order.paymentMethod === 'credit' || order.paymentMethod === 'credito' ? 'Cartão de Crédito' : 
           order.paymentMethod === 'debit' ? 'Cartão de Débito' : 
           order.paymentMethod === 'cash' ? 'Dinheiro' : 
+          (order.paymentMethod === 'meal_voucher' || order.paymentMethod === 'vale_refeicao') ? 'Vale refeição' :
+          (order.paymentMethod === 'food_voucher' || order.paymentMethod === 'vale_alimentacao') ? 'Vale alimentação' :
           order.paymentMethod,
       };
       navigate("/pedidos/novo", { state: { duplicateData } });

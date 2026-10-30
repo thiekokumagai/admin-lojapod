@@ -66,6 +66,18 @@ const CategoryBadge = ({ category, description, className = "" }: { category: st
   return null;
 };
 
+const formatPaymentMethod = (method?: string) => {
+  if (!method) return "-";
+  const m = method.toLowerCase();
+  if (m === "pix") return "Pix";
+  if (m === "credito" || m === "credit" || m === "cartão de crédito") return "Cartão de Crédito";
+  if (m === "debito" || m === "debit" || m === "cartão de débito") return "Cartão de Débito";
+  if (m === "dinheiro" || m === "cash") return "Dinheiro";
+  if (m === "meal_voucher" || m === "vale_refeicao" || m === "vale refeição" || m === "vale refeicao") return "Vale refeição";
+  if (m === "food_voucher" || m === "vale_alimentacao" || m === "vale alimentação" || m === "vale alimentacao") return "Vale alimentação";
+  return method;
+};
+
 
 export default function CashRegisterDetailsPage({ currentId }: { currentId?: string }) {
   const { id: paramId } = useParams();
@@ -726,14 +738,8 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-bold uppercase">Método</span>
                           <span className="text-xs text-slate-600 font-bold">
-                             {
-                               (order.paymentMethod === 'pix' || order.paymentMethod === 'PIX') ? 'Pix' :
-                               (order.paymentMethod === 'credito' || order.paymentMethod === 'credit' || order.paymentMethod === 'Cartão de Crédito') ? 'Cartão de Crédito' :
-                               (order.paymentMethod === 'debito' || order.paymentMethod === 'debit' || order.paymentMethod === 'Cartão de Débito') ? 'Cartão de Débito' :
-                               (order.paymentMethod === 'dinheiro' || order.paymentMethod === 'cash' || order.paymentMethod === 'Dinheiro') ? 'Dinheiro' :
-                               order.paymentMethod || "-"
-                             }
-                             {(order.paymentMethod === "Cartão de Crédito" || order.paymentMethod === "credito" || order.paymentMethod === "credit") && order.installments && (
+                              {formatPaymentMethod(order.paymentMethod)}
+                              {(order.paymentMethod === "Cartão de Crédito" || order.paymentMethod === "credito" || order.paymentMethod === "credit") && order.installments && (
                                <span className="text-slate-400 font-normal text-[11px] ml-1">({order.installments}x)</span>
                              )}
                           </span>
@@ -775,13 +781,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                           : "-"}
                       </TableCell>
                       <TableCell className="font-bold text-slate-600 text-xs">
-                        {
-                          (order.paymentMethod === 'pix' || order.paymentMethod === 'PIX') ? 'Pix' :
-                          (order.paymentMethod === 'credito' || order.paymentMethod === 'credit' || order.paymentMethod === 'Cartão de Crédito') ? 'Cartão de Crédito' :
-                          (order.paymentMethod === 'debito' || order.paymentMethod === 'debit' || order.paymentMethod === 'Cartão de Débito') ? 'Cartão de Débito' :
-                          (order.paymentMethod === 'dinheiro' || order.paymentMethod === 'cash' || order.paymentMethod === 'Dinheiro') ? 'Dinheiro' :
-                          order.paymentMethod || "-"
-                        }
+                        {formatPaymentMethod(order.paymentMethod)}
                         {(order.paymentMethod === "Cartão de Crédito" || order.paymentMethod === "credito" || order.paymentMethod === "credit") && order.installments && (
                           <span className="text-slate-400 font-normal text-[11px] ml-1">({order.installments}x)</span>
                         )}
@@ -821,13 +821,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                   <div className="space-y-3.5">
                     {Object.entries(totalsByMethodToday).map(([method, total]) => (
                       <div key={method} className="flex justify-between items-center border-b border-blue-100/50 pb-2.5 last:border-0 last:pb-0">
-                        <span className="text-sm font-semibold text-blue-800">{
-                            (method === 'pix' || method === 'PIX') ? 'Pix' :
-                            (method === 'credito' || method === 'credit' || method === 'Cartão de Crédito') ? 'Cartão de Crédito' :
-                            (method === 'debito' || method === 'debit' || method === 'Cartão de Débito') ? 'Cartão de Débito' :
-                            (method === 'dinheiro' || method === 'cash' || method === 'Dinheiro') ? 'Dinheiro' :
-                            method
-                        }</span>
+                        <span className="text-sm font-semibold text-blue-800">{formatPaymentMethod(method)}</span>
                         <span className="font-extrabold text-blue-900">
                           {currencyFormatter.format(total as number)}
                         </span>
@@ -851,13 +845,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                   <div className="space-y-3.5">
                     {Object.entries(summary.totalsByMethod).map(([method, total]) => (
                       <div key={method} className="flex justify-between items-center border-b border-slate-100 pb-2.5 last:border-0 last:pb-0">
-                        <span className="text-sm font-semibold text-slate-600">{
-                            (method === 'pix' || method === 'PIX') ? 'Pix' :
-                            (method === 'credito' || method === 'credit' || method === 'Cartão de Crédito') ? 'Cartão de Crédito' :
-                            (method === 'debito' || method === 'debit' || method === 'Cartão de Débito') ? 'Cartão de Débito' :
-                            (method === 'dinheiro' || method === 'cash' || method === 'Dinheiro') ? 'Dinheiro' :
-                            method
-                        }</span>
+                        <span className="text-sm font-semibold text-slate-600">{formatPaymentMethod(method)}</span>
                         <span className="font-extrabold text-slate-800">
                           {currencyFormatter.format(total as number)}
                         </span>

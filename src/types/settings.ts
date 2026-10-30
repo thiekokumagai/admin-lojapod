@@ -80,6 +80,8 @@ export interface StoreSettings {
   payOnDeliveryCash: boolean;
   payOnDeliveryCardDebit: boolean;
   payOnDeliveryCardCredit: boolean;
+  payOnDeliveryMealVoucher: boolean;
+  payOnDeliveryFoodVoucher: boolean;
   
   // Frete e Retirada
   freeShippingEnabled?: boolean;

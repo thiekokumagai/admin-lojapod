@@ -177,6 +177,8 @@ export default function OrderPrintPage() {
           order.paymentMethod === 'credito' ? 'Cartão de Crédito' :
           order.paymentMethod === 'debito' ? 'Cartão de Débito' :
           order.paymentMethod === 'dinheiro' ? 'Dinheiro' :
+          (order.paymentMethod === 'meal_voucher' || order.paymentMethod === 'vale_refeicao') ? 'Vale refeição' :
+          (order.paymentMethod === 'food_voucher' || order.paymentMethod === 'vale_alimentacao') ? 'Vale alimentação' :
           order.paymentMethod
         }</span></p>
         {order.pixKey && (order.paymentMethod === "PIX" || order.paymentMethod === "pix") && (

@@ -21,6 +21,8 @@ export function PaymentSettingsForm() {
   const [payOnDeliveryCash, setPayOnDeliveryCash] = useState(false);
   const [payOnDeliveryCardDebit, setPayOnDeliveryCardDebit] = useState(false);
   const [payOnDeliveryCardCredit, setPayOnDeliveryCardCredit] = useState(false);
+  const [payOnDeliveryMealVoucher, setPayOnDeliveryMealVoucher] = useState(false);
+  const [payOnDeliveryFoodVoucher, setPayOnDeliveryFoodVoucher] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -38,6 +40,8 @@ export function PaymentSettingsForm() {
       setPayOnDeliveryCash(!!settings.payOnDeliveryCash);
       setPayOnDeliveryCardDebit(!!settings.payOnDeliveryCardDebit);
       setPayOnDeliveryCardCredit(!!settings.payOnDeliveryCardCredit);
+      setPayOnDeliveryMealVoucher(!!settings.payOnDeliveryMealVoucher);
+      setPayOnDeliveryFoodVoucher(!!settings.payOnDeliveryFoodVoucher);
     }
   }, [settings]);
 
@@ -60,6 +64,8 @@ export function PaymentSettingsForm() {
         payOnDeliveryCash,
         payOnDeliveryCardDebit,
         payOnDeliveryCardCredit,
+        payOnDeliveryMealVoucher,
+        payOnDeliveryFoodVoucher,
       });
 
       toast({
@@ -174,6 +180,16 @@ export function PaymentSettingsForm() {
             <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
               <span className="text-sm font-medium">Cartão de Crédito</span>
               <Switch checked={payOnDeliveryCardCredit} onCheckedChange={setPayOnDeliveryCardCredit} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
+              <span className="text-sm font-medium">Vale refeição</span>
+              <Switch checked={payOnDeliveryMealVoucher} onCheckedChange={setPayOnDeliveryMealVoucher} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
+              <span className="text-sm font-medium">Vale alimentação</span>
+              <Switch checked={payOnDeliveryFoodVoucher} onCheckedChange={setPayOnDeliveryFoodVoucher} />
             </div>
           </div>
 

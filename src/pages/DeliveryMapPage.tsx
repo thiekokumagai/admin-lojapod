@@ -104,6 +104,14 @@ const paymentLabels: Record<string, string> = {
   dinheiro: "Dinheiro",
   Cash: "Dinheiro",
   CASH: "Dinheiro",
+  "Vale refeição": "Vale refeição",
+  "Vale Refeição": "Vale refeição",
+  meal_voucher: "Vale refeição",
+  vale_refeicao: "Vale refeição",
+  "Vale alimentação": "Vale alimentação",
+  "Vale Alimentação": "Vale alimentação",
+  food_voucher: "Vale alimentação",
+  vale_alimentacao: "Vale alimentação",
 };
 
 const containerStyle = {

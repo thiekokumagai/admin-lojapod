@@ -68,7 +68,9 @@ const formatMethodName = (method?: string) => {
   if (m === "pix") return "Pix";
   if (m === "credito" || m === "credit" || m === "cartão de crédito") return "Cartão de Crédito";
   if (m === "debito" || m === "debit" || m === "cartão de débito") return "Cartão de Débito";
-  if (m === "dinheiro" || m === "cash" || m === "dinheiro") return "Dinheiro";
+  if (m === "dinheiro" || m === "cash") return "Dinheiro";
+  if (m === "meal_voucher" || m === "vale_refeicao" || m === "vale refeição" || m === "vale refeicao") return "Vale refeição";
+  if (m === "food_voucher" || m === "vale_alimentacao" || m === "vale alimentação" || m === "vale alimentacao") return "Vale alimentação";
   return method;
 };
 

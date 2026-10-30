@@ -190,7 +190,7 @@ export default function EditOrderPage() {
           isActive: true
         });
       }
-      setPaymentMethod(order.paymentMethod === 'pix' ? 'PIX' : order.paymentMethod === 'credit' ? 'Cartão de Crédito' : order.paymentMethod === 'debit' ? 'Cartão de Débito' : order.paymentMethod === 'cash' ? 'Dinheiro' : order.paymentMethod);
+      setPaymentMethod(order.paymentMethod === 'pix' ? 'PIX' : order.paymentMethod === 'credit' ? 'Cartão de Crédito' : order.paymentMethod === 'debit' ? 'Cartão de Débito' : order.paymentMethod === 'cash' ? 'Dinheiro' : (order.paymentMethod === 'meal_voucher' || order.paymentMethod === 'vale_refeicao') ? 'Vale refeição' : (order.paymentMethod === 'food_voucher' || order.paymentMethod === 'vale_alimentacao') ? 'Vale alimentação' : order.paymentMethod);
       setIsPaid(order.paymentStatus === "PAID");
       setCreditInstallments(order.installments || 1);
       setCustomTotal("");
@@ -421,7 +421,7 @@ export default function EditOrderPage() {
         totalOrder: Number(finalTotal.toFixed(2)),
         totalReceived: isPaid ? Number(finalTotal.toFixed(2)) : 0,
         paymentType: paymentMethod === 'PIX' ? 'online' : 'entrega',
-        paymentMethod: paymentMethod === 'PIX' ? 'pix' : paymentMethod === 'Cartão de Crédito' ? 'credit' : paymentMethod === 'Cartão de Débito' ? 'debit' : paymentMethod === 'Dinheiro' ? 'cash' : paymentMethod,
+        paymentMethod: paymentMethod === 'PIX' ? 'pix' : paymentMethod === 'Cartão de Crédito' ? 'credit' : paymentMethod === 'Cartão de Débito' ? 'debit' : paymentMethod === 'Dinheiro' ? 'cash' : (paymentMethod === 'Vale refeição' || paymentMethod === 'Vale Refeição') ? 'meal_voucher' : (paymentMethod === 'Vale alimentação' || paymentMethod === 'Vale Alimentação') ? 'food_voucher' : paymentMethod,
         paymentStatus: isPaid ? "PAID" : "PENDING",
         installments: paymentMethod === 'Cartão de Crédito' ? effectiveCreditInstallments : 1,
         showProductPrices: showProductPrices,

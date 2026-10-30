@@ -183,6 +183,8 @@ export function OrderSummary({
             <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
             <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
             <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+            <SelectItem value="Vale refeição">Vale refeição</SelectItem>
+            <SelectItem value="Vale alimentação">Vale alimentação</SelectItem>
           </SelectContent>
         </Select>
 

@@ -290,7 +290,7 @@ export default function CreateOrderPage() {
         totalOrder: Number(finalTotal.toFixed(2)),
         totalReceived: isPaid ? Number(finalTotal.toFixed(2)) : 0,
         paymentType: paymentMethod === 'PIX' ? 'online' : 'entrega',
-        paymentMethod: paymentMethod === 'PIX' ? 'pix' : paymentMethod === 'Cartão de Crédito' ? 'credit' : paymentMethod === 'Cartão de Débito' ? 'debit' : paymentMethod === 'Dinheiro' ? 'cash' : paymentMethod,
+        paymentMethod: paymentMethod === 'PIX' ? 'pix' : paymentMethod === 'Cartão de Crédito' ? 'credit' : paymentMethod === 'Cartão de Débito' ? 'debit' : paymentMethod === 'Dinheiro' ? 'cash' : (paymentMethod === 'Vale refeição' || paymentMethod === 'Vale Refeição') ? 'meal_voucher' : (paymentMethod === 'Vale alimentação' || paymentMethod === 'Vale Alimentação') ? 'food_voucher' : paymentMethod,
         paymentStatus: isPaid ? "PAID" : "PENDING",
         installments: paymentMethod === 'Cartão de Crédito' ? effectiveCreditInstallments : 1,
         showProductPrices: showProductPrices,

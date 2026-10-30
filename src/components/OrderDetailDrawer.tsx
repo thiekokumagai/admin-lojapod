@@ -66,6 +66,14 @@ const paymentLabels: Record<string, string> = {
   Cash: "Dinheiro",
   CASH: "Dinheiro",
   Dinheiro: "Dinheiro",
+  "Vale refeição": "Vale refeição",
+  "Vale Refeição": "Vale refeição",
+  meal_voucher: "Vale refeição",
+  vale_refeicao: "Vale refeição",
+  "Vale alimentação": "Vale alimentação",
+  "Vale Alimentação": "Vale alimentação",
+  food_voucher: "Vale alimentação",
+  vale_alimentacao: "Vale alimentação",
 };
 
 export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly = false }: OrderDetailDrawerProps) {
@@ -99,7 +107,21 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
 
   useEffect(() => {
     if (order) {
-      setPaymentMethod(order.paymentMethod || "");
+      let initialMethod = order.paymentMethod || "";
+      if (initialMethod === "Vale refeição" || initialMethod === "Vale Refeição" || initialMethod === "vale_refeicao") {
+        initialMethod = "meal_voucher";
+      } else if (initialMethod === "Vale alimentação" || initialMethod === "Vale Alimentação" || initialMethod === "vale_alimentacao") {
+        initialMethod = "food_voucher";
+      } else if (initialMethod === "PIX") {
+        initialMethod = "pix";
+      } else if (initialMethod === "Dinheiro") {
+        initialMethod = "cash";
+      } else if (initialMethod === "Cartão de Crédito" || initialMethod === "credito") {
+        initialMethod = "credit";
+      } else if (initialMethod === "Cartão de Débito" || initialMethod === "debito") {
+        initialMethod = "debit";
+      }
+      setPaymentMethod(initialMethod);
       setInstallments(order.installments || 1);
       setLocalStatus(order.status);
 
@@ -499,6 +521,8 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
           order.paymentMethod === 'credit' || order.paymentMethod === 'credito' ? 'Cartão de Crédito' : 
           order.paymentMethod === 'debit' ? 'Cartão de Débito' : 
           order.paymentMethod === 'cash' ? 'Dinheiro' : 
+          (order.paymentMethod === 'meal_voucher' || order.paymentMethod === 'vale_refeicao') ? 'Vale refeição' :
+          (order.paymentMethod === 'food_voucher' || order.paymentMethod === 'vale_alimentacao') ? 'Vale alimentação' :
           order.paymentMethod,
       };
       navigate("/pedidos/novo", { state: { duplicateData } });
@@ -1041,7 +1065,9 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                           { value: "pix", label: "PIX" },
                           { value: "credit", label: "Cartão de Crédito" },
                           { value: "debit", label: "Cartão de Débito" },
-                          { value: "cash", label: "Dinheiro" }
+                          { value: "cash", label: "Dinheiro" },
+                          { value: "meal_voucher", label: "Vale refeição" },
+                          { value: "food_voucher", label: "Vale alimentação" }
                         ].map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}

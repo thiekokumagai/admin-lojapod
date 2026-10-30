@@ -205,6 +205,8 @@ export function PaymentRulesSettingsForm() {
                         <SelectItem value="cash">Dinheiro</SelectItem>
                         <SelectItem value="debit">Cartão de Débito (Maquininha)</SelectItem>
                         <SelectItem value="credit">Cartão de Crédito (Maquininha)</SelectItem>
+                        <SelectItem value="meal_voucher">Vale refeição</SelectItem>
+                        <SelectItem value="food_voucher">Vale alimentação</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
