@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Order, OrderStatus } from "@/types/order";
 import { OrderKanbanCard } from "./OrderKanbanCard";
 import { Clock, PackageCheck, Truck, CheckCircle2, Inbox } from "lucide-react";
@@ -164,7 +164,7 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
       </div>
 
       {/* Cards Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 overscroll-contain pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 overscroll-contain pr-2">
         {orders.length === 0 ? (
           <div className="h-full min-h-[220px] flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-slate-200/90 bg-white/40">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">

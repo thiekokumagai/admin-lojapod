@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Order, OrderStatus } from "@/types/order";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -160,7 +160,7 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={() => onSelectOrder(order.id)}
-      className={`group relative bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all select-none cursor-pointer max-h-[85vh] overflow-y-auto ${
+      className={`group relative bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all select-none cursor-pointer ${
         isDragging ? "opacity-40 scale-95 border-violet-400" : ""
       } ${isUpdating ? "pointer-events-none" : ""}`}
     >
