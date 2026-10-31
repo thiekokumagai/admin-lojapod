@@ -725,15 +725,12 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] uppercase font-bold text-slate-400">Entrega</span>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Badge className={`${statusConfig[order.status].bg} shadow-none font-bold rounded-full text-[10px] px-2 py-0 border-0`}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                        <div className="flex items-center" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
                           <Select value={order.status} onValueChange={(val) => handleUpdateStatus(order.id, val as OrderStatus)}>
-                            <SelectTrigger className="h-5 w-5 p-0 border-0 bg-transparent focus:ring-0 shadow-none">
-                              <ArrowRight className="h-3 w-3 rotate-90 text-slate-400" />
+                            <SelectTrigger className={`h-auto w-auto inline-flex items-center justify-center gap-1 font-bold rounded-full border-0 shadow-none text-[10px] px-2 py-0.5 transition-all focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer hover:opacity-85 active:scale-95 select-none ${statusConfig[order.status]?.bg || 'bg-slate-100 text-slate-700'} [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-60 shrink-0`}>
+                              <span>{statusConfig[order.status]?.label || order.status}</span>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               <SelectItem value="PENDING">Pendente</SelectItem>
                               <SelectItem value="CONFIRMED">Separado</SelectItem>
                               <SelectItem value="DISPATCHED">Enviado</SelectItem>
@@ -847,18 +844,15 @@ export default function OrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Badge className={`${statusConfig[order.status].bg} shadow-none font-bold rounded-full text-[12px] px-2.5 py-0.5 border-0`}>
-                            {statusConfig[order.status].label}
-                          </Badge>
+                        <div className="flex items-center" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
                           <Select 
                             value={order.status} 
                             onValueChange={(val) => handleUpdateStatus(order.id, val as OrderStatus)}
                           >
-                            <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent focus:ring-0 shadow-none">
-                              <ArrowRight className="h-3 w-3 rotate-90 text-slate-400" />
+                            <SelectTrigger className={`h-auto w-auto inline-flex items-center justify-center gap-1.5 font-bold rounded-full border-0 shadow-none text-[12px] px-2.5 py-0.5 transition-all focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer hover:opacity-85 active:scale-95 select-none ${statusConfig[order.status]?.bg || 'bg-slate-100 text-slate-700'} [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-60 shrink-0`}>
+                              <span>{statusConfig[order.status]?.label || order.status}</span>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               <SelectItem value="PENDING">Pendente</SelectItem>
                               <SelectItem value="CONFIRMED">Separado</SelectItem>
                               <SelectItem value="DISPATCHED">Enviado</SelectItem>
