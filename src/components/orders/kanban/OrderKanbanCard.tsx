@@ -20,7 +20,9 @@ import {
   XCircle, 
   Loader2, 
   ExternalLink,
-  Gift
+  Gift,
+  Check,
+  DollarSign
 } from "lucide-react";
 import { formatOrderTime } from "@/utils/date-timezone";
 
@@ -29,6 +31,7 @@ interface OrderKanbanCardProps {
   timeZone: string;
   onSelectOrder: (orderId: string) => void;
   onUpdateStatus: (orderId: string, newStatus: OrderStatus) => void;
+  onUpdatePaymentStatus?: (orderId: string, newPaymentStatus: import("@/types/order").PaymentStatus) => void;
   isUpdating?: boolean;
 }
 
@@ -68,6 +71,7 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
   timeZone,
   onSelectOrder,
   onUpdateStatus,
+  onUpdatePaymentStatus,
   isUpdating = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -93,6 +97,13 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
   };
 
   const deliverySummary = getDeliverySummary();
+
+  const handleTogglePayment = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onUpdatePaymentStatus || isUpdating) return;
+    const nextStatus = order.paymentStatus === "PAID" ? "PENDING" : "PAID";
+    onUpdatePaymentStatus(order.id, nextStatus);
+  };
 
   const handleDragStart = (e: React.DragEvent) => {
     if (isUpdating) {
@@ -149,7 +160,7 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={() => onSelectOrder(order.id)}
-      className={`group relative bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all select-none cursor-pointer ${
+      className={`group relative bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all select-none cursor-pointer max-h-[85vh] overflow-y-auto ${
         isDragging ? "opacity-40 scale-95 border-violet-400" : ""
       } ${isUpdating ? "pointer-events-none" : ""}`}
     >
@@ -193,6 +204,27 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
                 <ExternalLink className="h-3.5 w-3.5 mr-2 text-slate-500" />
                 Ver Detalhes
               </DropdownMenuItem>
+              {onUpdatePaymentStatus && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() =>
+                      onUpdatePaymentStatus(
+                        order.id,
+                        order.paymentStatus === "PAID" ? "PENDING" : "PAID"
+                      )
+                    }
+                    className={`font-medium text-xs cursor-pointer ${
+                      order.paymentStatus === "PAID"
+                        ? "text-amber-700 focus:bg-amber-50"
+                        : "text-emerald-700 focus:bg-emerald-50"
+                    }`}
+                  >
+                    <DollarSign className="h-3.5 w-3.5 mr-2" />
+                    {order.paymentStatus === "PAID" ? "Marcar como Não Pago" : "Marcar como Pago"}
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Mover Para
@@ -288,19 +320,52 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
         )}
       </div>
 
-      {/* Payment Information */}
+      {/* Payment Information & 1-Click Pay/Unpay Toggle */}
       <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-2 mb-3">
         <div className="flex items-center gap-1.5">
-          <Badge 
-            className={`border-0 font-bold px-2 py-0.5 text-[10px] ${
-              order.paymentStatus === "PAID"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-amber-100 text-amber-800"
-            }`}
-          >
-            {order.paymentStatus === "PAID" ? "Pago" : "Pendente"}
-          </Badge>
-          <span className="text-[11px] text-slate-500 font-medium truncate max-w-[120px]">
+          {onUpdatePaymentStatus ? (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                draggable={false}
+                onClick={handleTogglePayment}
+                disabled={isUpdating}
+                title={order.paymentStatus === "PAID" ? "Clique para marcar como Não Pago" : "Clique para marcar como Pago"}
+                className={`group/pay inline-flex items-center gap-1 font-bold px-2.5 py-1 rounded-full text-[11px] border transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${
+                  order.paymentStatus === "PAID"
+                    ? "bg-emerald-100/90 text-emerald-800 border-emerald-300 hover:bg-emerald-200"
+                    : "bg-amber-100/90 text-amber-800 border-amber-300 hover:bg-amber-200"
+                }`}
+              >
+                {order.paymentStatus === "PAID" ? (
+                  <>
+                    <Check className="h-3 w-3 text-emerald-700" />
+                    <span>Pago</span>
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="h-3 w-3 text-amber-700" />
+                    <span>Pagar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <Badge 
+              className={`border-0 font-bold px-2 py-0.5 text-[10px] ${
+                order.paymentStatus === "PAID"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {order.paymentStatus === "PAID" ? "Pago" : "Pendente"}
+            </Badge>
+          )}
+          <span className="text-[11px] text-slate-500 font-medium truncate max-w-[110px]">
             {paymentLabels[order.paymentMethod] || order.paymentMethod || "Não informado"}
           </span>
         </div>

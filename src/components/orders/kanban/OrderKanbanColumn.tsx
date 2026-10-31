@@ -9,6 +9,7 @@ interface OrderKanbanColumnProps {
   timeZone: string;
   onSelectOrder: (orderId: string) => void;
   onUpdateStatus: (orderId: string, newStatus: OrderStatus) => void;
+  onUpdatePaymentStatus?: (orderId: string, newPaymentStatus: import("@/types/order").PaymentStatus) => void;
   updatingOrderId: string | null;
 }
 
@@ -94,6 +95,7 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
   timeZone,
   onSelectOrder,
   onUpdateStatus,
+  onUpdatePaymentStatus,
   updatingOrderId,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -135,10 +137,10 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
       onDrop={handleDrop}
       className={`flex flex-col bg-slate-50/80 rounded-2xl border ${
         isDragOver ? config.dragOverBorder : config.borderColor
-      } transition-all duration-150 overflow-hidden min-h-[420px] md:h-[calc(100vh-270px)]`}
+      } transition-all duration-150 overflow-hidden min-h-[420px] max-h-[calc(100vh-230px)] md:h-[calc(100vh-250px)]`}
     >
       {/* Column Header */}
-      <div className={`p-3.5 border-b flex items-center justify-between ${config.headerBg}`}>
+      <div className={`p-3.5 border-b flex items-center justify-between shrink-0 ${config.headerBg}`}>
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-white/80 shadow-2xs">
             {config.icon}
@@ -162,7 +164,7 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
       </div>
 
       {/* Cards Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 overscroll-contain">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 overscroll-contain pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
         {orders.length === 0 ? (
           <div className="h-full min-h-[220px] flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-slate-200/90 bg-white/40">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
@@ -183,6 +185,7 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
               timeZone={timeZone}
               onSelectOrder={onSelectOrder}
               onUpdateStatus={onUpdateStatus}
+              onUpdatePaymentStatus={onUpdatePaymentStatus}
               isUpdating={updatingOrderId === order.id}
             />
           ))

@@ -211,6 +211,63 @@ describe("OrderKanbanBoard", () => {
     expect(elements[1]).toHaveTextContent("Cliente Mais Novo");
   });
 
+  it("should sort COMPLETED orders from newest to oldest (LIFO / most recent on top)", () => {
+    const olderCompleted = createMockOrder({
+      id: "older-comp",
+      orderNumber: 2001,
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      status: "COMPLETED",
+      customerName: "Entregue Mais Antigo",
+    });
+    const newerCompleted = createMockOrder({
+      id: "newer-comp",
+      orderNumber: 2002,
+      createdAt: new Date().toISOString(),
+      status: "COMPLETED",
+      customerName: "Entregue Mais Recente",
+    });
+
+    render(
+      <OrderKanbanBoard
+        orders={[olderCompleted, newerCompleted]}
+        isLoading={false}
+        timeZone={mockTimezone}
+        todayYmd={todayYmd}
+        onSelectOrder={vi.fn()}
+        onUpdateStatus={vi.fn()}
+        updatingOrderId={null}
+      />
+    );
+
+    const elements = screen.getAllByText(/Entregue Mais/);
+    expect(elements[0]).toHaveTextContent("Entregue Mais Recente");
+    expect(elements[1]).toHaveTextContent("Entregue Mais Antigo");
+  });
+
+  it("should call onUpdatePaymentStatus when clicking the payment toggle button in OrderKanbanCard", () => {
+    const order = createMockOrder({
+      id: "ord-pay",
+      paymentStatus: "PENDING",
+    });
+    const onUpdatePaymentStatus = vi.fn();
+
+    render(
+      <OrderKanbanCard
+        order={order}
+        timeZone={mockTimezone}
+        onSelectOrder={vi.fn()}
+        onUpdateStatus={vi.fn()}
+        onUpdatePaymentStatus={onUpdatePaymentStatus}
+      />
+    );
+
+    const payButton = screen.getByRole("button", { name: /Pagar/i });
+    expect(payButton).toBeInTheDocument();
+
+    fireEvent.click(payButton);
+    expect(onUpdatePaymentStatus).toHaveBeenCalledWith("ord-pay", "PAID");
+  });
+
   it("should not render stray '0' when cardFee or paymentDiscount are zero or missing", () => {
     const order = createMockOrder({
       paymentDiscount: 0,

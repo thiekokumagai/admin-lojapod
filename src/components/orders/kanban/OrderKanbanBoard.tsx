@@ -11,6 +11,7 @@ interface OrderKanbanBoardProps {
   todayYmd: string;
   onSelectOrder: (orderId: string) => void;
   onUpdateStatus: (orderId: string, newStatus: OrderStatus) => void;
+  onUpdatePaymentStatus?: (orderId: string, newPaymentStatus: import("@/types/order").PaymentStatus) => void;
   updatingOrderId: string | null;
 }
 
@@ -65,6 +66,7 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
   todayYmd,
   onSelectOrder,
   onUpdateStatus,
+  onUpdatePaymentStatus,
   updatingOrderId,
 }) => {
   const [activeMobileStatus, setActiveMobileStatus] = useState<
@@ -91,11 +93,19 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
       }
     });
 
-    // Ordenação operacional (FIFO): do mais antigo para o mais novo
+    // Ordenação:
+    // Para ENTREGUES (COMPLETED): do mais novo para o mais antigo (LIFO / recém-entregues no topo)
+    // Para etapas operacionais (PENDING, CONFIRMED, DISPATCHED): do mais antigo para o mais novo (FIFO)
     (Object.keys(map) as OrderStatus[]).forEach((statusKey) => {
-      map[statusKey].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
+      if (statusKey === "COMPLETED") {
+        map[statusKey].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      } else {
+        map[statusKey].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      }
     });
 
     return map;
@@ -182,6 +192,7 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
           timeZone={timeZone}
           onSelectOrder={onSelectOrder}
           onUpdateStatus={onUpdateStatus}
+          onUpdatePaymentStatus={onUpdatePaymentStatus}
           updatingOrderId={updatingOrderId}
         />
       </div>
@@ -196,6 +207,7 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
             timeZone={timeZone}
             onSelectOrder={onSelectOrder}
             onUpdateStatus={onUpdateStatus}
+            onUpdatePaymentStatus={onUpdatePaymentStatus}
             updatingOrderId={updatingOrderId}
           />
         ))}

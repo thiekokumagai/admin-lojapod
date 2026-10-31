@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, ArrowRight, Loader2, Calendar, ShoppingBag, X, Plus, List, LayoutGrid } from "lucide-react";
+import { Search, ArrowRight, Loader2, Calendar, ShoppingBag, X, Plus, List, LayoutGrid, Check, DollarSign } from "lucide-react";
 import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { OrderKanbanBoard } from "@/components/orders/kanban/OrderKanbanBoard";
 import { OrderStatus, PaymentStatus } from "@/types/order";
@@ -301,7 +301,29 @@ export default function OrdersPage() {
   };
 
   const handleUpdatePaymentStatus = (id: string, newPaymentStatus: PaymentStatus) => {
-    updateStatusMutation.mutate({ id, payload: { paymentStatus: newPaymentStatus } });
+    if (updatingOrderId) return;
+    setUpdatingOrderId(id);
+    updateStatusMutation.mutate(
+      { id, payload: { paymentStatus: newPaymentStatus } },
+      {
+        onSettled: () => {
+          setUpdatingOrderId(null);
+        },
+        onSuccess: () => {
+          toast({
+            title: newPaymentStatus === "PAID" ? "Pagamento confirmado" : "Pagamento alterado",
+            description: newPaymentStatus === "PAID" ? "Pedido marcado como Pago com sucesso." : "Pedido marcado como Pendente.",
+          });
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Erro ao atualizar pagamento",
+            description: err?.message || "Não foi possível atualizar o status de pagamento.",
+          });
+        },
+      }
+    );
   };
 
   // Group orders chronologically by date
@@ -597,6 +619,7 @@ export default function OrdersPage() {
           todayYmd={todayRange.todayYmd}
           onSelectOrder={setSelectedOrderId}
           onUpdateStatus={handleKanbanUpdateStatus}
+          onUpdatePaymentStatus={handleUpdatePaymentStatus}
           updatingOrderId={updatingOrderId}
         />
       ) : isLoadingList ? (
@@ -669,17 +692,28 @@ export default function OrdersPage() {
                             {order.status === 'CANCELLED' ? (
                               <Badge className="bg-rose-100 text-rose-700 shadow-none font-bold rounded-full text-[10px] px-2 py-0 border-0">Cancelado</Badge>
                             ) : (
-                              <>
-                                <Badge className={`${paymentStatusConfig[order.paymentStatus || 'PENDING'].bg} shadow-none font-bold rounded-full text-[10px] px-2 py-0 border-0`}>
-                                  {paymentStatusConfig[order.paymentStatus || 'PENDING'].label}
-                                </Badge>
-                                <Select value={order.paymentStatus || 'PENDING'} onValueChange={(val) => handleUpdatePaymentStatus(order.id, val as PaymentStatus)}>
-                                  <SelectTrigger className="h-5 w-5 p-0 border-0 bg-transparent focus:ring-0 shadow-none">
-                                    <ArrowRight className="h-3 w-3 rotate-90 text-slate-400" />
-                                  </SelectTrigger>
-                                  <SelectContent><SelectItem value="PENDING">Pendente</SelectItem><SelectItem value="PAID">Pago</SelectItem></SelectContent>
-                                </Select>
-                              </>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdatePaymentStatus(order.id, order.paymentStatus === 'PAID' ? 'PENDING' : 'PAID')}
+                                title={order.paymentStatus === 'PAID' ? 'Clique para marcar como Pendente' : 'Clique para marcar como Pago'}
+                                className={`inline-flex items-center gap-1 font-bold rounded-full text-[10px] px-2.5 py-0.5 border transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 ${
+                                  order.paymentStatus === 'PAID'
+                                    ? 'bg-emerald-100/90 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
+                                    : 'bg-amber-100/90 text-amber-800 border-amber-300 hover:bg-amber-200'
+                                }`}
+                              >
+                                {order.paymentStatus === 'PAID' ? (
+                                  <>
+                                    <Check className="h-2.5 w-2.5 text-emerald-700" />
+                                    <span>Pago</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <DollarSign className="h-2.5 w-2.5 text-amber-700" />
+                                    <span>Pagar</span>
+                                  </>
+                                )}
+                              </button>
                             )}
                           </div>
                           {order.paymentMethod && (
@@ -785,21 +819,28 @@ export default function OrdersPage() {
                             </Badge>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <Badge className={`${paymentStatusConfig[order.paymentStatus || 'PENDING'].bg} shadow-none font-bold rounded-full text-[12px] px-2.5 py-0.5 border-0`}>
-                                {paymentStatusConfig[order.paymentStatus || 'PENDING'].label}
-                              </Badge>
-                              <Select 
-                                value={order.paymentStatus || 'PENDING'} 
-                                onValueChange={(val) => handleUpdatePaymentStatus(order.id, val as PaymentStatus)}
+                              <button
+                                type="button"
+                                onClick={() => handleUpdatePaymentStatus(order.id, order.paymentStatus === 'PAID' ? 'PENDING' : 'PAID')}
+                                title={order.paymentStatus === 'PAID' ? 'Clique para marcar como Pendente' : 'Clique para marcar como Pago'}
+                                className={`inline-flex items-center gap-1 font-bold rounded-full text-[12px] px-2.5 py-0.5 border transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 ${
+                                  order.paymentStatus === 'PAID'
+                                    ? 'bg-emerald-100/90 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
+                                    : 'bg-amber-100/90 text-amber-800 border-amber-300 hover:bg-amber-200'
+                                }`}
                               >
-                                <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent focus:ring-0 shadow-none">
-                                  <ArrowRight className="h-3 w-3 rotate-90 text-slate-400" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="PENDING">Pendente</SelectItem>
-                                  <SelectItem value="PAID">Pago</SelectItem>
-                                </SelectContent>
-                              </Select>
+                                {order.paymentStatus === 'PAID' ? (
+                                  <>
+                                    <Check className="h-3 w-3 text-emerald-700" />
+                                    <span>Pago</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <DollarSign className="h-3 w-3 text-amber-700" />
+                                    <span>Pagar</span>
+                                  </>
+                                )}
+                              </button>
                             </div>
                           )}
                           <span className="text-[11px] text-slate-400 font-medium">{paymentLabels[order.paymentMethod] || order.paymentMethod}</span>
