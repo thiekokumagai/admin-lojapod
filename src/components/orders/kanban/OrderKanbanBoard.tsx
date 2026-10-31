@@ -21,46 +21,42 @@ const KANBAN_STATUSES: OrderStatus[] = [
   "COMPLETED",
 ];
 
-const mobileTabConfigs: Record<
-  OrderStatus,
-  { label: string; icon: React.ReactNode; activeBg: string; activeBorder: string; activeText: string }
-> = {
-  PENDING: {
+const statusList: Array<{
+  id: "PENDING" | "CONFIRMED" | "DISPATCHED" | "COMPLETED";
+  label: string;
+  color: string;
+  activeColor: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    id: "PENDING",
     label: "Pendente",
-    icon: <Clock className="h-3.5 w-3.5" />,
-    activeBg: "bg-amber-500 text-white shadow-sm",
-    activeBorder: "border-amber-600",
-    activeText: "text-amber-700",
+    color: "bg-amber-100 text-amber-800 border-amber-200",
+    activeColor: "bg-amber-500 text-white shadow-sm ring-2 ring-amber-400/40",
+    icon: Clock,
   },
-  CONFIRMED: {
+  {
+    id: "CONFIRMED",
     label: "Separado",
-    icon: <PackageCheck className="h-3.5 w-3.5" />,
-    activeBg: "bg-blue-600 text-white shadow-sm",
-    activeBorder: "border-blue-700",
-    activeText: "text-blue-700",
+    color: "bg-blue-100 text-blue-800 border-blue-200",
+    activeColor: "bg-blue-600 text-white shadow-sm ring-2 ring-blue-400/40",
+    icon: PackageCheck,
   },
-  DISPATCHED: {
+  {
+    id: "DISPATCHED",
     label: "Enviado",
-    icon: <Truck className="h-3.5 w-3.5" />,
-    activeBg: "bg-purple-600 text-white shadow-sm",
-    activeBorder: "border-purple-700",
-    activeText: "text-purple-700",
+    color: "bg-purple-100 text-purple-800 border-purple-200",
+    activeColor: "bg-purple-600 text-white shadow-sm ring-2 ring-purple-400/40",
+    icon: Truck,
   },
-  COMPLETED: {
+  {
+    id: "COMPLETED",
     label: "Entregue",
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-    activeBg: "bg-emerald-600 text-white shadow-sm",
-    activeBorder: "border-emerald-700",
-    activeText: "text-emerald-700",
+    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    activeColor: "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/40",
+    icon: CheckCircle2,
   },
-  CANCELLED: {
-    label: "Cancelado",
-    icon: <Clock className="h-3.5 w-3.5" />,
-    activeBg: "bg-rose-600 text-white shadow-sm",
-    activeBorder: "border-rose-700",
-    activeText: "text-rose-700",
-  },
-};
+];
 
 export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
   orders,
@@ -71,7 +67,9 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
   onUpdateStatus,
   updatingOrderId,
 }) => {
-  const [activeMobileStatus, setActiveMobileStatus] = useState<OrderStatus>("PENDING");
+  const [activeMobileStatus, setActiveMobileStatus] = useState<
+    "PENDING" | "CONFIRMED" | "DISPATCHED" | "COMPLETED"
+  >("PENDING");
 
   // Filter orders strictly for today in store's timezone and group by status
   const groupedOrders = useMemo(() => {
@@ -125,32 +123,35 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Mobile Status Tabs (Pills) */}
-      <div className="block md:hidden">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none -mx-1 px-1">
-          {KANBAN_STATUSES.map((status) => {
-            const config = mobileTabConfigs[status];
-            const count = groupedOrders[status]?.length || 0;
-            const isActive = activeMobileStatus === status;
+      {/* Kanban Info / Mobile Tab Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Mobile Navigation Tabs: [Pendente 5] [Separado 3] [Enviado 2] [Entregue 8] */}
+        <div className="grid grid-cols-4 gap-1.5 md:hidden w-full bg-slate-200/60 p-1.5 rounded-2xl">
+          {statusList.map((item) => {
+            const count = groupedOrders[item.id]?.length || 0;
+            const isSelected = activeMobileStatus === item.id;
+            const Icon = item.icon;
 
             return (
               <button
-                key={status}
+                key={item.id}
                 type="button"
-                onClick={() => setActiveMobileStatus(status)}
-                className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all active:scale-95 ${
-                  isActive
-                    ? config.activeBg
-                    : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50"
+                onClick={() => setActiveMobileStatus(item.id)}
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all ${
+                  isSelected
+                    ? item.activeColor
+                    : "bg-white/80 text-slate-700 hover:bg-white"
                 }`}
               >
-                {config.icon}
-                <span>{config.label}</span>
+                <div className="flex items-center gap-1">
+                  <Icon className="h-3 w-3 shrink-0" />
+                  <span className="text-[11px] font-bold truncate">
+                    {item.label}
+                  </span>
+                </div>
                 <span
-                  className={`text-[11px] font-mono font-extrabold px-1.5 py-0.2 rounded-full ${
-                    isActive
-                      ? "bg-white/25 text-white"
-                      : "bg-slate-100 text-slate-600"
+                  className={`mt-0.5 text-xs font-black px-1.5 py-0.2 rounded-full ${
+                    isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
                   }`}
                 >
                   {count}
@@ -160,26 +161,38 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
           })}
         </div>
 
-        {/* Mobile: Active Single Column */}
-        <div className="pt-2">
-          <OrderKanbanColumn
-            status={activeMobileStatus}
-            orders={groupedOrders[activeMobileStatus]}
-            timeZone={timeZone}
-            onSelectOrder={onSelectOrder}
-            onUpdateStatus={onUpdateStatus}
-            updatingOrderId={updatingOrderId}
-          />
+        {/* Desktop Helper Info */}
+        <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Quadro operacional do dia (mais antigo primeiro)</span>
+          <span className="text-slate-300">•</span>
+          <span className="font-bold text-slate-700">
+            {totalTodayOrders} {totalTodayOrders === 1 ? "pedido hoje" : "pedidos hoje"}
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-400">Arraste os cards entre as colunas ou use o botão de ação</span>
         </div>
       </div>
 
-      {/* Desktop View: 4-Column Grid */}
+      {/* Mobile View: Shows the active single column at comfortable full width */}
+      <div className="md:hidden">
+        <OrderKanbanColumn
+          status={activeMobileStatus}
+          orders={groupedOrders[activeMobileStatus]}
+          timeZone={timeZone}
+          onSelectOrder={onSelectOrder}
+          onUpdateStatus={onUpdateStatus}
+          updatingOrderId={updatingOrderId}
+        />
+      </div>
+
+      {/* Desktop View: Shows all 4 columns side by side */}
       <div className="hidden md:grid md:grid-cols-4 md:gap-4">
-        {KANBAN_STATUSES.map((status) => (
+        {statusList.map((item) => (
           <OrderKanbanColumn
-            key={status}
-            status={status}
-            orders={groupedOrders[status]}
+            key={item.id}
+            status={item.id}
+            orders={groupedOrders[item.id]}
             timeZone={timeZone}
             onSelectOrder={onSelectOrder}
             onUpdateStatus={onUpdateStatus}
