@@ -1,6 +1,8 @@
-import { useState, Fragment, useEffect, useRef } from "react";
+import { useState, Fragment, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useInfiniteOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { useInfiniteOrders, useOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { useSettings } from "@/hooks/useSettings";
+import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { 
   Select, 
@@ -20,9 +22,11 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, ArrowRight, Loader2, Calendar, ShoppingBag, X, Plus } from "lucide-react";
+import { Search, ArrowRight, Loader2, Calendar, ShoppingBag, X, Plus, List, LayoutGrid } from "lucide-react";
 import OrderDetailDrawer from "@/components/OrderDetailDrawer";
+import { OrderKanbanBoard } from "@/components/orders/kanban/OrderKanbanBoard";
 import { OrderStatus, PaymentStatus } from "@/types/order";
+import { getStoreTimezone, getTodayRangeUtc } from "@/utils/date-timezone";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -71,6 +75,24 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const [viewMode, setViewMode] = useState<"list" | "kanban">(() => {
+    try {
+      const saved = localStorage.getItem("orders_view_mode");
+      return saved === "kanban" ? "kanban" : "list";
+    } catch {
+      return "list";
+    }
+  });
+
+  const handleViewModeChange = (mode: "list" | "kanban") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("orders_view_mode", mode);
+    } catch {
+      // ignore
+    }
+  };
+
   const [search, setSearch] = useState("");
   const [orderNumberSearch, setOrderNumberSearch] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -78,8 +100,14 @@ export default function OrdersPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const limit = 20;
+
+  const { toast } = useToast();
+  const { data: storeSettings } = useSettings();
+  const storeTimezone = useMemo(() => getStoreTimezone(storeSettings), [storeSettings]);
+  const todayRange = useMemo(() => getTodayRangeUtc(storeTimezone), [storeTimezone]);
 
   useEffect(() => {
     const orderIdParam = searchParams.get("id") || searchParams.get("orderId");
@@ -98,7 +126,9 @@ export default function OrdersPage() {
     }
   };
 
-  const hasFilters = search !== "" || orderNumberSearch !== "" || status !== "ALL" || paymentStatus !== "ALL" || startDate !== "" || endDate !== "";
+  const hasFilters = viewMode === "kanban"
+    ? (search !== "" || orderNumberSearch !== "" || paymentStatus !== "ALL")
+    : (search !== "" || orderNumberSearch !== "" || status !== "ALL" || paymentStatus !== "ALL" || startDate !== "" || endDate !== "");
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -190,23 +220,46 @@ export default function OrdersPage() {
     return isNaN(d.getTime()) ? undefined : d.toISOString();
   };
 
-  const { data: paginatedData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteOrders(
+  const { 
+    data: paginatedData, 
+    isLoading: isLoadingList, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useInfiniteOrders(
     search, 
     status, 
     getValidDateString(startDate), 
     getValidDateString(endDate),
     limit,
     paymentStatus,
-    orderNumberSearch.trim() ? orderNumberSearch.trim() : undefined
+    orderNumberSearch.trim() ? orderNumberSearch.trim() : undefined,
+    { enabled: viewMode === "list" }
+  );
+
+  const { 
+    data: kanbanOrdersResponse, 
+    isLoading: isLoadingKanban 
+  } = useOrders(
+    search.trim() ? search.trim() : undefined,
+    undefined,
+    todayRange.startDateIso,
+    todayRange.endDateIso,
+    1,
+    500,
+    paymentStatus !== "ALL" ? paymentStatus : undefined,
+    orderNumberSearch.trim() ? orderNumberSearch.trim() : undefined,
+    { enabled: viewMode === "kanban" }
   );
 
   const orders = paginatedData?.pages.flatMap(page => page.data || []) || [];
+  const kanbanOrders = kanbanOrdersResponse?.data || [];
 
   const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loader = loaderRef.current;
-    if (!loader) return;
+    if (!loader || viewMode !== "list") return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -219,12 +272,32 @@ export default function OrdersPage() {
 
     observer.observe(loader);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, viewMode]);
 
   const updateStatusMutation = useUpdateOrderStatus();
 
   const handleUpdateStatus = (id: string, newStatus: OrderStatus) => {
     updateStatusMutation.mutate({ id, payload: { status: newStatus } });
+  };
+
+  const handleKanbanUpdateStatus = (id: string, newStatus: OrderStatus) => {
+    if (updatingOrderId) return;
+    setUpdatingOrderId(id);
+    updateStatusMutation.mutate(
+      { id, payload: { status: newStatus } },
+      {
+        onSettled: () => {
+          setUpdatingOrderId(null);
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Erro ao atualizar status",
+            description: err?.message || "Não foi possível alterar o status do pedido.",
+          });
+        },
+      }
+    );
   };
 
   const handleUpdatePaymentStatus = (id: string, newPaymentStatus: PaymentStatus) => {
@@ -268,7 +341,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Title */}
+      {/* Title & View Mode Selector */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
@@ -276,13 +349,44 @@ export default function OrdersPage() {
           </h1>
           <p className="text-sm text-slate-500 font-medium">Gerencie suas vendas e acompanhe os status de entrega em tempo real.</p>
         </div>
-        <Button 
-          className="rounded-xl h-11 px-5 font-bold shadow-sm w-full md:w-auto"
-          onClick={() => window.location.href = "/pedidos/novo"}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Pedido
-        </Button>
+
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Alternador Lista / Kanban */}
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200/80 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("list")}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                viewMode === "list"
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <List className="h-4 w-4" />
+              <span>Lista</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("kanban")}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                viewMode === "kanban"
+                  ? "bg-white text-violet-700 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span>Kanban</span>
+            </button>
+          </div>
+
+          <Button 
+            className="rounded-xl h-11 px-5 font-bold shadow-sm flex-1 md:flex-none"
+            onClick={() => window.location.href = "/pedidos/novo"}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Pedido
+          </Button>
+        </div>
       </div>
 
       {/* Toolbar / Filters */}
@@ -311,22 +415,24 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* Status Dropdown */}
-        <div className="w-full sm:w-48">
-          <Select value={status} onValueChange={(val) => { setStatus(val); }}>
-            <SelectTrigger className="h-11 border-slate-200 focus:ring-violet-600 rounded-xl font-semibold text-slate-700">
-              <SelectValue placeholder="Status de Entrega" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="ALL" className="font-semibold rounded-md">Todos</SelectItem>
-              <SelectItem value="PENDING" className="font-semibold rounded-md">Pendente</SelectItem>
-              <SelectItem value="CONFIRMED" className="font-semibold rounded-md">Separado</SelectItem>
-              <SelectItem value="DISPATCHED" className="font-semibold rounded-md">Enviado</SelectItem>
-              <SelectItem value="COMPLETED" className="font-semibold rounded-md">Entregue</SelectItem>
-              <SelectItem value="CANCELLED" className="font-semibold rounded-md">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Status Dropdown - visible only in list mode */}
+        {viewMode === "list" && (
+          <div className="w-full sm:w-48">
+            <Select value={status} onValueChange={(val) => { setStatus(val); }}>
+              <SelectTrigger className="h-11 border-slate-200 focus:ring-violet-600 rounded-xl font-semibold text-slate-700">
+                <SelectValue placeholder="Status de Entrega" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="ALL" className="font-semibold rounded-md">Todos</SelectItem>
+                <SelectItem value="PENDING" className="font-semibold rounded-md">Pendente</SelectItem>
+                <SelectItem value="CONFIRMED" className="font-semibold rounded-md">Separado</SelectItem>
+                <SelectItem value="DISPATCHED" className="font-semibold rounded-md">Enviado</SelectItem>
+                <SelectItem value="COMPLETED" className="font-semibold rounded-md">Entregue</SelectItem>
+                <SelectItem value="CANCELLED" className="font-semibold rounded-md">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Payment Status Dropdown */}
         <div className="w-full sm:w-48">
@@ -342,122 +448,131 @@ export default function OrdersPage() {
           </Select>
         </div>
 
-        {/* Date Filters */}
-        {/* Desktop View (hidden sm:flex) */}
-        <div className="hidden sm:flex sm:items-center gap-2">
-          <Input 
-            type="date" 
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); }}
-            className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
-          />
-          <span className="text-slate-400 font-medium">até</span>
-          <Input 
-            type="date" 
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); }}
-            className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
-          />
-        </div>
+        {/* Date Filters: fixed indicator in Kanban, date pickers in List */}
+        {viewMode === "kanban" ? (
+          <div className="flex items-center gap-2 px-3.5 h-11 bg-slate-100 text-slate-700 border border-slate-200/80 rounded-xl font-bold text-xs shrink-0 select-none shadow-2xs">
+            <Calendar className="h-4 w-4 text-violet-600" />
+            <span>Hoje (Operacional)</span>
+          </div>
+        ) : (
+          <>
+            {/* Desktop View (hidden sm:flex) */}
+            <div className="hidden sm:flex sm:items-center gap-2">
+              <Input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); }}
+                className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
+              />
+              <span className="text-slate-400 font-medium">até</span>
+              <Input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); }}
+                className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
+              />
+            </div>
 
-        {/* Mobile View (sm:hidden flex w-full) */}
-        <div className="sm:hidden w-full">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 ${
-                  startDate || endDate 
-                    ? "border-emerald-600 bg-emerald-600 text-white font-bold hover:bg-emerald-700 hover:text-white active:bg-emerald-700" 
-                    : "text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                }`}
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <Calendar className={`h-4 w-4 shrink-0 ${startDate || endDate ? "text-white" : "text-slate-400"}`} />
-                  <span className="truncate">{getMobileDateLabel()}</span>
-                </div>
-                {(startDate || endDate) && (
-                  <span className="flex h-2 w-2 rounded-full bg-white shrink-0 ml-2" />
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[calc(100vw-32px)] max-w-sm p-4 rounded-2xl shadow-xl border-slate-200 overflow-hidden box-border" align="center">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-emerald-600" />
-                    Filtro de Data
-                  </h4>
-                  {(startDate || endDate) && (
-                    <button
-                      type="button"
-                      onClick={() => { setStartDate(""); setEndDate(""); }}
-                      className="text-xs font-semibold text-rose-600 hover:text-rose-700"
-                    >
-                      Limpar datas
-                    </button>
-                  )}
-                </div>
+            {/* Mobile View (sm:hidden flex w-full) */}
+            <div className="sm:hidden w-full">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    className={`h-11 w-full justify-between rounded-xl font-semibold border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 ${
+                      startDate || endDate 
+                        ? "border-emerald-600 bg-emerald-600 text-white font-bold hover:bg-emerald-700 hover:text-white active:bg-emerald-700" 
+                        : "text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <Calendar className={`h-4 w-4 shrink-0 ${startDate || endDate ? "text-white" : "text-slate-400"}`} />
+                      <span className="truncate">{getMobileDateLabel()}</span>
+                    </div>
+                    {(startDate || endDate) && (
+                      <span className="flex h-2 w-2 rounded-full bg-white shrink-0 ml-2" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[calc(100vw-32px)] max-w-sm p-4 rounded-2xl shadow-xl border-slate-200 overflow-hidden box-border" align="center">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-emerald-600" />
+                        Filtro de Data
+                      </h4>
+                      {(startDate || endDate) && (
+                        <button
+                          type="button"
+                          onClick={() => { setStartDate(""); setEndDate(""); }}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                        >
+                          Limpar datas
+                        </button>
+                      )}
+                    </div>
 
-                {/* Quick Presets */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handlePresetToday}
-                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
-                  >
-                    Hoje
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handlePreset7Days}
-                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
-                  >
-                    Últimos 7 dias
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handlePresetMonth}
-                    className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
-                  >
-                    Este Mês
-                  </Button>
-                </div>
+                    {/* Quick Presets */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handlePresetToday}
+                        className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
+                      >
+                        Hoje
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handlePreset7Days}
+                        className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
+                      >
+                        Últimos 7 dias
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handlePresetMonth}
+                        className="text-xs h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-700 font-semibold shrink-0"
+                      >
+                        Este Mês
+                      </Button>
+                    </div>
 
-                {/* Date Inputs */}
-                <div className="grid grid-cols-2 gap-2.5 pt-1">
-                  <div className="min-w-0">
-                    <label className="text-xs font-semibold text-slate-500 block mb-1">Data Inicial</label>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      style={{ WebkitTapHighlightColor: "transparent" }}
-                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
-                    />
+                    {/* Date Inputs */}
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                      <div className="min-w-0">
+                        <label className="text-xs font-semibold text-slate-500 block mb-1">Data Inicial</label>
+                        <Input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          style={{ WebkitTapHighlightColor: "transparent" }}
+                          className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="text-xs font-semibold text-slate-500 block mb-1">Data Final</label>
+                        <Input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          style={{ WebkitTapHighlightColor: "transparent" }}
+                          className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <label className="text-xs font-semibold text-slate-500 block mb-1">Data Final</label>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      style={{ WebkitTapHighlightColor: "transparent" }}
-                      className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
-                    />
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </>
+        )}
 
         {hasFilters && (
           <Button 
@@ -474,7 +589,17 @@ export default function OrdersPage() {
 
 
       {/* Main Panel */}
-      {isLoading ? (
+      {viewMode === "kanban" ? (
+        <OrderKanbanBoard
+          orders={kanbanOrders}
+          isLoading={isLoadingKanban}
+          timeZone={storeTimezone}
+          todayYmd={todayRange.todayYmd}
+          onSelectOrder={setSelectedOrderId}
+          onUpdateStatus={handleKanbanUpdateStatus}
+          updatingOrderId={updatingOrderId}
+        />
+      ) : isLoadingList ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white/40 border border-slate-200/50 rounded-2xl">
           <Loader2 className="h-10 w-10 animate-spin text-violet-600" />
           <p className="text-sm font-semibold text-slate-500">Carregando lista de vendas...</p>

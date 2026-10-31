@@ -10,12 +10,16 @@ export function useOrders(
   page?: number,
   limit?: number,
   paymentStatus?: string,
+  orderNumberOrOptions?: string | Omit<import("@tanstack/react-query").UseQueryOptions<any, any, any, any>, 'queryKey' | 'queryFn'>,
   options?: Omit<import("@tanstack/react-query").UseQueryOptions<any, any, any, any>, 'queryKey' | 'queryFn'>
 ) {
+  const actualOrderNumber = typeof orderNumberOrOptions === 'string' ? orderNumberOrOptions : undefined;
+  const actualOptions = typeof orderNumberOrOptions === 'object' ? orderNumberOrOptions : options;
+
   return useQuery({
-    queryKey: ["orders", { search, status, startDate, endDate, page, limit, paymentStatus }],
-    queryFn: () => getOrders(search, status, startDate, endDate, page, limit, paymentStatus),
-    ...options
+    queryKey: ["orders", { search, status, startDate, endDate, page, limit, paymentStatus, orderNumber: actualOrderNumber }],
+    queryFn: () => getOrders(search, status, startDate, endDate, page, limit, paymentStatus, actualOrderNumber),
+    ...actualOptions
   });
 }
 
