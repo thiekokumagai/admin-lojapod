@@ -42,12 +42,8 @@ export function SheetOrdersImportForm() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      const token = localStorage.getItem("token") || "";
       const response = await apiFetch("/imports/orders/sheet", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
       });
 
