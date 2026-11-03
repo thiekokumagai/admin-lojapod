@@ -74,11 +74,14 @@ export function SheetOrdersImportForm() {
         fileInputRef.current.value = "";
       }
       setSelectedFile(null);
-    } catch (err: any) {
+    } catch (err) {
       toast({
         variant: "destructive",
         title: "Erro na importação",
-        description: err.message || "Não foi possível importar os pedidos da planilha.",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Não foi possível importar os pedidos da planilha.",
       });
     } finally {
       setIsUploading(false);
@@ -95,8 +98,9 @@ export function SheetOrdersImportForm() {
               <h2 className="font-semibold text-lg">Importar Pedidos via Planilha (Excel / CSV)</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Importe pedidos anteriores de outros sistemas a partir de relatórios em Excel (.xlsx, .xls) ou CSV. 
-              O sistema cadastra os clientes, endereços, faturamento e datas correspondentes.
+              Importe pedidos anteriores de planilhas Excel (.xls, .xlsx) ou CSV. São usados nome, WhatsApp,
+              endereço, número, bairro, cidade, estado, CEP, referência, pagamento, observação, total e data.
+              Os pedidos são importados como entregues e pagos, sem itens de produto.
             </p>
           </div>
         </div>
@@ -123,7 +127,7 @@ export function SheetOrdersImportForm() {
                 {selectedFile ? selectedFile.name : "Clique para selecionar a planilha de pedidos"}
               </span>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Suporta colunas como: num_pedido, nome, whatsapp, endereco, numero, bairro, cidade, pagamento, total, data
+                Produtos e demais colunas da planilha não são importados.
               </p>
             </div>
           </label>
