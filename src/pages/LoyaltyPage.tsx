@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io } from "socket.io-client";
 import {
   Award,
@@ -35,6 +35,7 @@ import {
   ChevronRight,
   Flame,
   Coins,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -124,8 +125,9 @@ export default function LoyaltyPage() {
   const [filterType, setFilterType] = useState("ALL");
   const [sortBy, setSortBy] = useState("updatedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(15);
+  const PAGE_SIZE = 25;
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const setPage = (_: any) => {};
 
   // Modal de Configurações
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -169,20 +171,53 @@ export default function LoyaltyPage() {
     queryFn: loyaltyService.getProgram,
   });
 
-  // Query dos Cartões
-  const { data: cardsData, isLoading: isLoadingCards } = useQuery({
-    queryKey: ["loyalty-cards", searchTerm, statusFilter, filterType, sortBy, sortOrder, page, limit],
-    queryFn: () =>
+  // Query dos Cartões com Scroll Infinito (idêntico à tela de Produtos)
+  const {
+    data: cardsInfiniteData,
+    isLoading: isLoadingCards,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["loyalty-cards", "infinite", searchTerm, statusFilter, filterType, sortBy, sortOrder],
+    queryFn: ({ pageParam = 1 }) =>
       loyaltyService.listCards({
         search: searchTerm || undefined,
         status: statusFilter,
         filterType,
         sortBy,
         sortOrder,
-        page,
-        limit,
+        page: pageParam,
+        limit: PAGE_SIZE,
       }),
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.total) return undefined;
+      const totalPages = Math.ceil(lastPage.total / (lastPage.limit || PAGE_SIZE));
+      return lastPage.page < totalPages ? lastPage.page + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
+
+  const cards = cardsInfiniteData?.pages.flatMap((p) => p.data || []) ?? [];
+  const totalItems = cardsInfiniteData?.pages[0]?.total ?? 0;
+  const summary = cardsInfiniteData?.pages[0]?.summary;
+
+  useEffect(() => {
+    const loader = loaderRef.current;
+    if (!loader) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "250px" }
+    );
+
+    observer.observe(loader);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Query dos Resgates de Brindes Pendentes
   const { data: redemptions = [], isLoading: isLoadingRedemptions } = useQuery({
@@ -431,11 +466,6 @@ export default function LoyaltyPage() {
       ? "currentStamps"
       : "pointsBalance";
 
-  const totalItems = cardsData?.total || 0;
-  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
-  const startItem = totalItems === 0 ? 0 : (page - 1) * limit + 1;
-  const endItem = Math.min(page * limit, totalItems);
-
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden min-w-0">
       {/* Header */}
@@ -513,7 +543,7 @@ export default function LoyaltyPage() {
           <TabsList className="bg-slate-100/80 p-1 rounded-xl w-full sm:w-auto flex sm:inline-flex min-w-full sm:min-w-0">
             <TabsTrigger value="cards" className="flex-1 sm:flex-initial rounded-lg font-semibold text-xs sm:text-sm gap-1.5 px-3 py-2 whitespace-nowrap">
               <User className="w-4 h-4 shrink-0" />
-              <span>Clientes ({cardsData?.total || 0})</span>
+              <span>Clientes ({totalItems})</span>
             </TabsTrigger>
             <TabsTrigger value="gifts" className="flex-1 sm:flex-initial rounded-lg font-semibold text-xs sm:text-sm gap-1.5 px-3 py-2 relative whitespace-nowrap">
               <Gift className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -536,7 +566,6 @@ export default function LoyaltyPage() {
               onClick={() => {
                 setFilterType("ALL");
                 setStatusFilter("ALL");
-                setPage(1);
               }}
               className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer flex items-center gap-3"
             >
@@ -548,7 +577,7 @@ export default function LoyaltyPage() {
                   Total Clientes
                 </span>
                 <div className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
-                  {cardsData?.summary?.totalCards ?? cardsData?.total ?? 0}
+                  {summary?.totalCards ?? totalItems}
                 </div>
               </div>
             </div>
@@ -558,7 +587,6 @@ export default function LoyaltyPage() {
               onClick={() => {
                 setSortBy("pointsBalance");
                 setSortOrder("desc");
-                setPage(1);
               }}
               className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
                 sortBy === "pointsBalance" && sortOrder === "desc"
@@ -578,7 +606,7 @@ export default function LoyaltyPage() {
                   <Flame className="w-3.5 h-3.5 text-amber-500" />
                 </div>
                 <div className="text-lg sm:text-xl font-black text-amber-600 leading-tight truncate">
-                  {Number(cardsData?.summary?.maxPoints || 0).toLocaleString("pt-BR")}{" "}
+                  {Number(summary?.maxPoints || 0).toLocaleString("pt-BR")}{" "}
                   <span className="text-xs font-semibold text-amber-500">pts</span>
                 </div>
               </div>
@@ -588,7 +616,6 @@ export default function LoyaltyPage() {
             <div
               onClick={() => {
                 setFilterType(filterType === "READY_REWARD" ? "ALL" : "READY_REWARD");
-                setPage(1);
               }}
               className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
                 filterType === "READY_REWARD"
@@ -605,7 +632,7 @@ export default function LoyaltyPage() {
                   Prêmio Pronto
                 </span>
                 <div className="text-lg sm:text-xl font-black text-emerald-600 leading-tight">
-                  {cardsData?.summary?.readyToRedeemCount ?? 0}
+                  {summary?.readyToRedeemCount ?? 0}
                 </div>
               </div>
             </div>
@@ -614,7 +641,6 @@ export default function LoyaltyPage() {
             <div
               onClick={() => {
                 setFilterType(filterType === "EXPIRING_SOON" ? "ALL" : "EXPIRING_SOON");
-                setPage(1);
               }}
               className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
                 filterType === "EXPIRING_SOON"
@@ -631,7 +657,7 @@ export default function LoyaltyPage() {
                   Vencendo Logo
                 </span>
                 <div className="text-lg sm:text-xl font-black text-orange-600 leading-tight">
-                  {cardsData?.summary?.expiringSoonCount ?? 0}
+                  {summary?.expiringSoonCount ?? 0}
                 </div>
               </div>
             </div>
@@ -857,18 +883,19 @@ export default function LoyaltyPage() {
           {/* Cards Mobile (Padronização de Layout da Loja) */}
           <div className="grid md:hidden gap-3">
             {isLoadingCards ? (
-              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6">
-                Carregando participantes...
+              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6 flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span>Carregando participantes...</span>
               </div>
-            ) : cardsData?.data?.length === 0 ? (
+            ) : cards.length === 0 ? (
               <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/60 p-6">
                 Nenhum cliente encontrado com os filtros atuais.
               </div>
             ) : (
-              cardsData?.data.map((card, idx) => {
+              cards.map((card, idx) => {
                 const maxStamps = program?.stampsRequired || 10;
                 const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
-                const cardRank = (page - 1) * limit + idx + 1;
+                const cardRank = idx + 1;
                 const isRankingByPoints = sortBy === "pointsBalance" && sortOrder === "desc";
 
                 return (
@@ -1050,20 +1077,23 @@ export default function LoyaltyPage() {
                   {isLoadingCards ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">
-                        Carregando participantes...
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                          <span>Carregando participantes...</span>
+                        </div>
                       </td>
                     </tr>
-                  ) : cardsData?.data?.length === 0 ? (
+                  ) : cards.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">
                         Nenhum cliente encontrado com os filtros atuais.
                       </td>
                     </tr>
                   ) : (
-                    cardsData?.data.map((card, idx) => {
+                    cards.map((card, idx) => {
                       const maxStamps = program?.stampsRequired || 10;
                       const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
-                      const cardRank = (page - 1) * limit + idx + 1;
+                      const cardRank = idx + 1;
                       const isRankingByPoints = sortBy === "pointsBalance" && sortOrder === "desc";
 
                       return (
@@ -1216,63 +1246,27 @@ export default function LoyaltyPage() {
             </div>
           </div>
 
-          {/* Paginação */}
-          {totalItems > 0 && (
-            <div className="bg-white/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-              <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-                <span>
-                  Mostrando <strong className="text-slate-800">{startItem}</strong> a{" "}
-                  <strong className="text-slate-800">{endItem}</strong> de{" "}
-                  <strong className="text-slate-800">{totalItems}</strong> participantes
-                </span>
-                <span className="text-slate-300 hidden sm:inline">|</span>
-                <div className="flex items-center gap-1.5">
-                  <span>Itens por página:</span>
-                  <Select
-                    value={String(limit)}
-                    onValueChange={(val) => {
-                      setLimit(Number(val));
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="h-8 w-[72px] text-xs font-semibold rounded-lg bg-slate-50 border-slate-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15</SelectItem>
-                      <SelectItem value="30">30</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+          {/* Rodapé com Scroll Infinito (idêntico à tela de Produtos) */}
+          <div className="flex flex-col items-center justify-center text-sm text-slate-500 mt-4 gap-3 pb-4">
+            <span className="w-full text-left text-xs sm:text-sm text-slate-500">
+              {cards.length > 0
+                ? `Mostrando ${cards.length} de ${totalItems} participantes`
+                : "Nenhum participante encontrado"}
+            </span>
 
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 px-2.5 rounded-lg text-xs font-medium"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Anterior
-                </Button>
-                <div className="px-2 font-bold text-slate-700 text-xs">
-                  {page} / {totalPages}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 px-2.5 rounded-lg text-xs font-medium"
-                >
-                  Próxima <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                </Button>
+            {hasNextPage && (
+              <div ref={loaderRef} className="flex flex-col items-center justify-center gap-2 py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-xs text-slate-400 font-medium">Carregando mais participantes ao rolar...</span>
               </div>
-            </div>
-          )}
+            )}
+
+            {!hasNextPage && cards.length > 0 && (
+              <div className="text-xs text-slate-400 font-medium py-2">
+                ✓ Todos os {totalItems} participantes foram carregados
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* ABA 2: Brindes Resgatados para o Dono Entregar */}
