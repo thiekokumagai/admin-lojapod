@@ -19,6 +19,7 @@ import {
   Layers,
   BellRing,
   Award,
+  ListPlus,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -67,6 +68,7 @@ export const navSections = [
     items: [
       { title: "Produtos", url: "/produtos", icon: Package },
       { title: "Combos", url: "/combos", icon: Boxes },
+      { title: "Peça também", url: "/sugestoes", icon: ListPlus },
       { title: "Avise-me quando chegar", url: "/avise-me", icon: BellRing },
       { title: "Categorias", url: "/categorias", icon: FolderTree },
       { title: "Variações", url: "/variacoes", icon: SlidersHorizontal },
