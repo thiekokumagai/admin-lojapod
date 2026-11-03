@@ -55,6 +55,13 @@ import {
 import { toast } from "sonner";
 import { buildImageUrl } from "@/utils/image-url";
 
+const getEffectiveProductPrice = (product?: { price?: any; promotionalPrice?: any } | null): number => {
+  if (!product) return 0;
+  const promo = product.promotionalPrice ? Number(product.promotionalPrice) : 0;
+  const normal = product.price ? Number(product.price) : 0;
+  return promo > 0 ? promo : normal;
+};
+
 export default function OrderBumpsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -729,7 +736,7 @@ export default function OrderBumpsPage() {
                           {selectedTriggerProduct.title}
                         </p>
                         <p className="text-xs font-semibold text-slate-600">
-                          R$ {Number(selectedTriggerProduct.promotionalPrice || selectedTriggerProduct.price || 0).toFixed(2).replace(".", ",")}
+                          R$ {getEffectiveProductPrice(selectedTriggerProduct).toFixed(2).replace(".", ",")}
                         </p>
                       </div>
                     </div>
@@ -780,9 +787,7 @@ export default function OrderBumpsPage() {
                           </div>
                         ) : (
                           filteredTrigger.slice(0, 20).map((prod) => {
-                            const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
-                            const normal = prod.price ? Number(prod.price) : 0;
-                            const pPrice = promo > 0 ? promo : normal;
+                            const pPrice = getEffectiveProductPrice(prod);
                             const img = prod.images?.[0]?.url;
 
                             return (
@@ -848,7 +853,7 @@ export default function OrderBumpsPage() {
                         {selectedSuggestedProduct.title}
                       </p>
                       <p className="text-xs font-semibold text-slate-600">
-                        R$ {Number(selectedSuggestedProduct.promotionalPrice || selectedSuggestedProduct.price || 0).toFixed(2).replace(".", ",")}
+                        R$ {getEffectiveProductPrice(selectedSuggestedProduct).toFixed(2).replace(".", ",")}
                       </p>
                     </div>
                   </div>
@@ -899,9 +904,7 @@ export default function OrderBumpsPage() {
                         </div>
                       ) : (
                         filteredSuggested.slice(0, 20).map((prod) => {
-                          const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
-                          const normal = prod.price ? Number(prod.price) : 0;
-                          const pPrice = promo > 0 ? promo : normal;
+                          const pPrice = getEffectiveProductPrice(prod);
                           const img = prod.images?.[0]?.url;
 
                           return (
