@@ -12,6 +12,9 @@ export interface OrderBumpItem {
   suggestedProductId: string;
   customPrice?: number | null;
   discountPercent?: number | null;
+  viewsCount?: number;
+  conversionsCount?: number;
+  totalRevenue?: number;
   createdAt: string;
   updatedAt: string;
   triggerProduct?: {
