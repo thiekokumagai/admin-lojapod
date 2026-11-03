@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io } from "socket.io-client";
 import {
@@ -42,12 +42,16 @@ import { toast } from "sonner";
 import { useSettings } from "@/hooks/useSettings";
 import { buildImageUrl } from "@/utils/image-url";
 
+const PAGE_SIZE = 25;
+
 export default function StockNotificationsPage() {
   const queryClient = useQueryClient();
   const { data: settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "NOTIFIED">("ALL");
   const [availabilityFilter, setAvailabilityFilter] = useState<"ALL" | "IN_STOCK" | "OUT_OF_STOCK">("ALL");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   const { data: notifications = [], isLoading, refetch } = useQuery({
     queryKey: ["stock-notifications"],
@@ -141,6 +145,52 @@ export default function StockNotificationsPage() {
     return matchesSearch && matchesStatus && matchesAvailability;
   });
 
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchTerm, statusFilter, availabilityFilter]);
+
+  const visibleItems = filteredItems.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredItems.length;
+
+  useEffect(() => {
+    const loader = loaderRef.current;
+    if (!loader || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredItems.length));
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(loader);
+
+    const handleScroll = () => {
+      const el = loaderRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= window.innerHeight + 300) {
+        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredItems.length));
+      }
+    };
+
+    const mainEl = document.querySelector("main");
+    if (mainEl) {
+      mainEl.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      if (mainEl) {
+        mainEl.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [hasMore, filteredItems.length]);
+
   const totalInStock = notifications.filter((n) => n.isAvailable && n.status === "PENDING").length;
   const totalPending = notifications.filter((n) => n.status === "PENDING").length;
   const hasFilters = Boolean(searchTerm || statusFilter !== "ALL" || availabilityFilter !== "ALL");
@@ -149,6 +199,7 @@ export default function StockNotificationsPage() {
     setSearchTerm("");
     setStatusFilter("ALL");
     setAvailabilityFilter("ALL");
+    setVisibleCount(PAGE_SIZE);
   };
 
   return (
@@ -265,7 +316,7 @@ export default function StockNotificationsPage() {
         <>
           {/* Mobile Grid View (Cards Padronizados) */}
           <div className="grid md:hidden gap-3">
-            {filteredItems.map((item) => {
+            {visibleItems.map((item) => {
               const isReadyToNotify = item.isAvailable;
 
               return (
@@ -393,7 +444,7 @@ export default function StockNotificationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredItems.map((item) => {
+                  {visibleItems.map((item) => {
                     const isReadyToNotify = item.isAvailable;
 
                     return (
@@ -507,6 +558,29 @@ export default function StockNotificationsPage() {
               </Table>
             </div>
           </div>
+
+          {/* Rodapé de Paginação / Infinite Scroll */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 py-3 px-1 text-xs text-muted-foreground">
+            <span>
+              Mostrando <strong className="text-foreground">{visibleItems.length}</strong> de{" "}
+              <strong className="text-foreground">{filteredItems.length}</strong>{" "}
+              {filteredItems.length === 1 ? "solicitação" : "solicitações"}
+            </span>
+            {!hasMore && filteredItems.length > PAGE_SIZE && (
+              <span className="text-emerald-600 font-medium flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Todas as solicitações foram carregadas
+              </span>
+            )}
+          </div>
+
+          {/* Loader do Scroll Infinito */}
+          {hasMore && (
+            <div ref={loaderRef} className="py-6 flex flex-col items-center justify-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="text-xs text-muted-foreground font-medium">Carregando mais solicitações...</span>
+            </div>
+          )}
         </>
       )}
     </div>
