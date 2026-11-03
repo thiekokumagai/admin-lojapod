@@ -76,14 +76,30 @@ export default function OrderBumpsPage() {
   const [formPriority, setFormPriority] = useState("0");
   const [formIsActive, setFormIsActive] = useState(true);
 
+  // Estados de busca para seleção de produtos estilo combo
+  const [suggestedSearch, setSuggestedSearch] = useState("");
+  const [triggerSearch, setTriggerSearch] = useState("");
+
   // Queries
   const { data: orderBumps = [], isLoading } = useQuery({
     queryKey: ["order-bumps"],
     queryFn: () => orderBumpService.list(),
   });
 
-  const { data: productsData } = useProducts({ limit: 200 });
-  const products = productsData?.data || [];
+  const { data: productsData, isLoading: isLoadingProducts } = useProducts({ limit: 1000 });
+  const products = productsData?.products || [];
+  const activeProducts = products.filter((p) => p.status === "active");
+
+  const selectedSuggestedProduct = activeProducts.find((p) => p.id === formSuggestedProductId);
+  const selectedTriggerProduct = activeProducts.find((p) => p.id === formTriggerProductId);
+
+  const filteredSuggested = activeProducts.filter((p) =>
+    p.title.toLowerCase().includes(suggestedSearch.toLowerCase())
+  );
+
+  const filteredTrigger = activeProducts.filter((p) =>
+    p.title.toLowerCase().includes(triggerSearch.toLowerCase())
+  );
 
   const { data: categories = [] } = useCategories();
 
@@ -143,6 +159,8 @@ export default function OrderBumpsPage() {
     setFormTriggerProductId("");
     setFormTriggerCategoryId("");
     setFormSuggestedProductId("");
+    setSuggestedSearch("");
+    setTriggerSearch("");
     setFormPricingType("ORIGINAL");
     setFormCustomPrice("");
     setFormDiscountPercent("");
@@ -158,10 +176,17 @@ export default function OrderBumpsPage() {
     setFormTriggerProductId(item.triggerProductId || "");
     setFormTriggerCategoryId(item.triggerCategoryId || "");
     setFormSuggestedProductId(item.suggestedProductId);
+    setSuggestedSearch("");
+    setTriggerSearch("");
 
     if (item.customPrice !== null && item.customPrice !== undefined) {
       setFormPricingType("CUSTOM");
-      setFormCustomPrice(String(item.customPrice));
+      setFormCustomPrice(
+        new Intl.NumberFormat("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(Number(item.customPrice))
+      );
       setFormDiscountPercent("");
     } else if (item.discountPercent !== null && item.discountPercent !== undefined) {
       setFormPricingType("PERCENT");
@@ -195,6 +220,11 @@ export default function OrderBumpsPage() {
       return;
     }
 
+    const numericCustomPrice =
+      formPricingType === "CUSTOM" && formCustomPrice
+        ? Number(formCustomPrice.replace(/\./g, "").replace(",", "."))
+        : null;
+
     const payload: CreateOrderBumpPayload = {
       title: formTitle.trim() || "Peça também",
       triggerType: formTriggerType,
@@ -203,10 +233,7 @@ export default function OrderBumpsPage() {
       suggestedProductId: formSuggestedProductId,
       priority: Number(formPriority) || 0,
       isActive: formIsActive,
-      customPrice:
-        formPricingType === "CUSTOM" && formCustomPrice
-          ? Number(formCustomPrice.replace(",", "."))
-          : null,
+      customPrice: numericCustomPrice,
       discountPercent:
         formPricingType === "PERCENT" && formDiscountPercent
           ? Number(formDiscountPercent.replace(",", "."))
@@ -243,8 +270,6 @@ export default function OrderBumpsPage() {
   const totalConversions = orderBumps.reduce((sum, b) => sum + (b.conversionsCount || 0), 0);
   const totalRevenue = orderBumps.reduce((sum, b) => sum + Number(b.totalRevenue || 0), 0);
   const conversionRate = totalViews > 0 ? ((totalConversions / totalViews) * 100).toFixed(1) : "0.0";
-
-  const selectedSuggestedProduct = products.find((p) => p.id === formSuggestedProductId);
 
   return (
     <div className="space-y-6">
@@ -678,46 +703,242 @@ export default function OrderBumpsPage() {
               </div>
             )}
 
-            {/* Seletor de Produto Gatilho */}
+            {/* Seletor de Produto Gatilho Estilo Combo */}
             {formTriggerType === "PRODUCT" && (
-              <div>
-                <Label className="text-xs font-semibold">Selecione o Produto Gatilho</Label>
-                <Select
-                  value={formTriggerProductId}
-                  onValueChange={setFormTriggerProductId}
-                >
-                  <SelectTrigger className="mt-1 h-10 rounded-xl">
-                    <SelectValue placeholder="Selecione o produto..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl max-h-56">
-                    {products.map((prod) => (
-                      <SelectItem key={prod.id} value={prod.id}>
-                        {prod.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Selecione o Produto Gatilho *</Label>
+                {selectedTriggerProduct ? (
+                  <div className="p-3 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-lg bg-white overflow-hidden shrink-0 border border-indigo-100 flex items-center justify-center">
+                        {selectedTriggerProduct.images?.[0]?.url ? (
+                          <img
+                            src={buildImageUrl(selectedTriggerProduct.images[0].url)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="w-5 h-5 text-indigo-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">
+                          Gatilho Selecionado
+                        </p>
+                        <p className="text-sm font-bold text-slate-900 truncate">
+                          {selectedTriggerProduct.title}
+                        </p>
+                        <p className="text-xs font-semibold text-slate-600">
+                          R$ {Number(selectedTriggerProduct.promotionalPrice || selectedTriggerProduct.price || 0).toFixed(2).replace(".", ",")}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFormTriggerProductId("");
+                        setTriggerSearch("");
+                      }}
+                      className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8"
+                    >
+                      Trocar
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Digite o nome do produto gatilho para buscar..."
+                        value={triggerSearch}
+                        onChange={(e) => setTriggerSearch(e.target.value)}
+                        className="pl-9 pr-8 h-10 rounded-xl"
+                      />
+                      {triggerSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setTriggerSearch("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-full"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {triggerSearch.trim().length > 0 && (
+                      <div className="max-h-52 overflow-y-auto border rounded-xl divide-y bg-white shadow-sm">
+                        {isLoadingProducts ? (
+                          <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                            Carregando produtos...
+                          </div>
+                        ) : filteredTrigger.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-muted-foreground">
+                            Nenhum produto ativo encontrado com "{triggerSearch}".
+                          </div>
+                        ) : (
+                          filteredTrigger.slice(0, 20).map((prod) => {
+                            const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
+                            const normal = prod.price ? Number(prod.price) : 0;
+                            const pPrice = promo > 0 ? promo : normal;
+                            const img = prod.images?.[0]?.url;
+
+                            return (
+                              <div
+                                key={prod.id}
+                                onClick={() => {
+                                  setFormTriggerProductId(prod.id);
+                                  setTriggerSearch("");
+                                }}
+                                className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-indigo-50/70 transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-3 min-w-0 pr-2">
+                                  <div className="w-9 h-9 rounded-md bg-muted overflow-hidden shrink-0 border">
+                                    {img ? (
+                                      <img src={buildImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                        <Package className="w-4 h-4" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-slate-800 truncate">{prod.title}</p>
+                                    <p className="text-xs text-muted-foreground">Estoque: {prod.totalStock ?? 0}</p>
+                                  </div>
+                                </div>
+                                <span className="text-xs font-semibold text-emerald-600 shrink-0">
+                                  R$ {pPrice.toFixed(2).replace(".", ",")}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Produto Sugerido (Bump) */}
-            <div>
-              <Label className="text-xs font-semibold">Qual produto sugerir para o cliente?</Label>
-              <Select
-                value={formSuggestedProductId}
-                onValueChange={setFormSuggestedProductId}
-              >
-                <SelectTrigger className="mt-1 h-10 rounded-xl">
-                  <SelectValue placeholder="Selecione o produto a sugerir..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl max-h-56">
-                  {products.map((prod) => (
-                    <SelectItem key={prod.id} value={prod.id}>
-                      {prod.title} (Estoque: {prod.totalStock})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Produto Sugerido (Bump) Estilo Combo */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Qual produto sugerir para o cliente? *</Label>
+              {selectedSuggestedProduct ? (
+                <div className="p-3 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-lg bg-white overflow-hidden shrink-0 border border-indigo-100 flex items-center justify-center">
+                      {selectedSuggestedProduct.images?.[0]?.url ? (
+                        <img
+                          src={buildImageUrl(selectedSuggestedProduct.images[0].url)}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Package className="w-5 h-5 text-indigo-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">
+                        Produto Sugerido
+                      </p>
+                      <p className="text-sm font-bold text-slate-900 truncate">
+                        {selectedSuggestedProduct.title}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-600">
+                        R$ {Number(selectedSuggestedProduct.promotionalPrice || selectedSuggestedProduct.price || 0).toFixed(2).replace(".", ",")}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFormSuggestedProductId("");
+                      setSuggestedSearch("");
+                    }}
+                    className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8"
+                  >
+                    Trocar
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Digite o nome do produto para buscar e sugerir..."
+                      value={suggestedSearch}
+                      onChange={(e) => setSuggestedSearch(e.target.value)}
+                      className="pl-9 pr-8 h-10 rounded-xl"
+                    />
+                    {suggestedSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setSuggestedSearch("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-full"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {suggestedSearch.trim().length > 0 && (
+                    <div className="max-h-52 overflow-y-auto border rounded-xl divide-y bg-white shadow-sm">
+                      {isLoadingProducts ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                          Carregando produtos...
+                        </div>
+                      ) : filteredSuggested.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground">
+                          Nenhum produto ativo encontrado com "{suggestedSearch}".
+                        </div>
+                      ) : (
+                        filteredSuggested.slice(0, 20).map((prod) => {
+                          const promo = prod.promotionalPrice ? Number(prod.promotionalPrice) : 0;
+                          const normal = prod.price ? Number(prod.price) : 0;
+                          const pPrice = promo > 0 ? promo : normal;
+                          const img = prod.images?.[0]?.url;
+
+                          return (
+                            <div
+                              key={prod.id}
+                              onClick={() => {
+                                setFormSuggestedProductId(prod.id);
+                                setSuggestedSearch("");
+                              }}
+                              className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-indigo-50/70 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-3 min-w-0 pr-2">
+                                <div className="w-9 h-9 rounded-md bg-muted overflow-hidden shrink-0 border">
+                                  {img ? (
+                                    <img src={buildImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                      <Package className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-800 truncate">{prod.title}</p>
+                                  <p className="text-xs text-muted-foreground">Estoque: {prod.totalStock ?? 0}</p>
+                                </div>
+                              </div>
+                              <span className="text-xs font-semibold text-emerald-600 shrink-0">
+                                R$ {pPrice.toFixed(2).replace(".", ",")}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Condição de Preço */}
@@ -755,20 +976,45 @@ export default function OrderBumpsPage() {
 
               {formPricingType === "CUSTOM" && (
                 <div>
-                  <Label className="text-xs font-semibold">Preço Promocional Exclusivo na Sacola (R$)</Label>
-                  <Input
-                    type="text"
-                    value={formCustomPrice}
-                    onChange={(e) => setFormCustomPrice(e.target.value)}
-                    placeholder="Ex: 9.90"
-                    className="mt-1 h-10 rounded-xl bg-white"
-                  />
+                  <Label className="text-xs font-semibold mb-1 block">Preço Promocional Exclusivo na Sacola (R$)</Label>
+                  <div className="relative w-full">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                      R$
+                    </span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      placeholder="0,00"
+                      className="pl-9 font-semibold w-full h-10 rounded-xl bg-white"
+                      value={
+                        formCustomPrice
+                          ? new Intl.NumberFormat("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }).format(Number(formCustomPrice.replace(/\D/g, "")) / 100)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        if (!digits) {
+                          setFormCustomPrice("");
+                        } else {
+                          const formatted = new Intl.NumberFormat("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(Number(digits) / 100);
+                          setFormCustomPrice(formatted);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
               {formPricingType === "PERCENT" && (
                 <div>
-                  <Label className="text-xs font-semibold">Percentual de Desconto na Sacola (%)</Label>
+                  <Label className="text-xs font-semibold mb-1 block">Percentual de Desconto na Sacola (%)</Label>
                   <Input
                     type="number"
                     min="1"
@@ -776,36 +1022,27 @@ export default function OrderBumpsPage() {
                     value={formDiscountPercent}
                     onChange={(e) => setFormDiscountPercent(e.target.value)}
                     placeholder="Ex: 15"
-                    className="mt-1 h-10 rounded-xl bg-white"
+                    className="h-10 rounded-xl bg-white"
                   />
                 </div>
               )}
             </div>
 
-            {/* Prioridade e Status */}
-            <div className="grid grid-cols-2 gap-3 items-center pt-1">
-              <div>
-                <Label className="text-xs font-semibold">Prioridade de Exibição</Label>
-                <Input
-                  type="number"
-                  value={formPriority}
-                  onChange={(e) => setFormPriority(e.target.value)}
-                  placeholder="0"
-                  className="mt-1 h-10 rounded-xl"
-                />
-                <span className="text-[11px] text-muted-foreground mt-0.5 block">
-                  Maior prioridade aparece antes.
-                </span>
-              </div>
-
-              <div className="flex flex-col justify-end">
-                <Label className="text-xs font-semibold mb-2">Status da Regra</Label>
+            {/* Status da Regra */}
+            <div className="pt-1">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div>
+                  <Label className="text-xs font-semibold block">Status da Sugestão</Label>
+                  <span className="text-[11px] text-muted-foreground">
+                    Ative ou pause a exibição desta sugestão na sacola a qualquer momento.
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={formIsActive}
                     onCheckedChange={setFormIsActive}
                   />
-                  <span className="text-xs font-medium">
+                  <span className="text-xs font-semibold">
                     {formIsActive ? "Ativa" : "Inativa"}
                   </span>
                 </div>
