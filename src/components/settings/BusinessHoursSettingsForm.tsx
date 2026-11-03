@@ -173,7 +173,7 @@ export function BusinessHoursSettingsForm() {
                 value={closedNoticeMessage}
                 onChange={(e) => setClosedNoticeMessage(e.target.value)}
                 placeholder="Ex: Estamos em recesso temporário para balanço de estoque. Retornaremos nossas atividades no dia 20!"
-                className="bg-white text-xs text-slate-800 border-amber-200 focus:border-amber-400"
+                className="bg-white text-base md:text-sm text-slate-800 border-amber-200 focus:border-amber-400"
                 rows={3}
               />
             </div>
