@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io } from "socket.io-client";
 import {
@@ -123,6 +123,7 @@ export default function LoyaltyPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL");
+  const [hasUserChangedSort, setHasUserChangedSort] = useState(false);
   const [sortBy, setSortBy] = useState("updatedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const PAGE_SIZE = 25;
@@ -171,6 +172,59 @@ export default function LoyaltyPage() {
     queryFn: loyaltyService.getProgram,
   });
 
+  // Chave de ordenação padrão de acordo com a modalidade
+  const modalitySortKey = useMemo(() => {
+    if (!program?.type) return "updatedAt";
+    switch (program.type) {
+      case "CASHBACK":
+        return "cashbackBalance";
+      case "FREE_PRODUCT":
+      case "PROGRESSIVE_DISCOUNT":
+        return "currentStamps";
+      case "POINTS_DISCOUNT":
+      case "HYBRID":
+        return "pointsBalance";
+      default:
+        return "updatedAt";
+    }
+  }, [program?.type]);
+
+  // Quando o programa carregar pela primeira vez, ajusta automaticamente a ordenação padrão para a modalidade
+  useEffect(() => {
+    if (!hasUserChangedSort && program?.type) {
+      setSortBy(modalitySortKey);
+    }
+  }, [program?.type, modalitySortKey, hasUserChangedSort]);
+
+  // Opções de ordenação filtradas exclusivamente de acordo com a modalidade ou mais recente
+  const modalitySortOptions = useMemo(() => {
+    const type = program?.type || "FREE_PRODUCT";
+    const options: { value: string; label: string }[] = [];
+
+    if (type === "POINTS_DISCOUNT") {
+      options.push({ value: "pointsBalance", label: "🏆 Mais Pontos" });
+    } else if (type === "FREE_PRODUCT") {
+      options.push({ value: "currentStamps", label: "⭐ Mais Selos / Compras" });
+    } else if (type === "CASHBACK") {
+      options.push({ value: "cashbackBalance", label: "💳 Maior Cashback" });
+    } else if (type === "PROGRESSIVE_DISCOUNT") {
+      options.push({ value: "currentStamps", label: "🛍️ Mais Pedidos Acumulados" });
+    } else if (type === "HYBRID") {
+      options.push({ value: "pointsBalance", label: "🏆 Mais Pontos" });
+      options.push({ value: "currentStamps", label: "⭐ Mais Selos / Compras" });
+    }
+
+    options.push({ value: "updatedAt", label: "🕒 Mais Recente" });
+
+    if (type !== "PROGRESSIVE_DISCOUNT") {
+      options.push({ value: "totalCompleted", label: "🎁 Mais Resgates Feitos" });
+    }
+
+    options.push({ value: "customerName", label: "🔤 Nome do Cliente" });
+
+    return options;
+  }, [program?.type]);
+
   // Query dos Cartões com Scroll Infinito (idêntico à tela de Produtos)
   const {
     data: cardsInfiniteData,
@@ -190,10 +244,12 @@ export default function LoyaltyPage() {
         page: pageParam,
         limit: PAGE_SIZE,
       }),
-    getNextPageParam: (lastPage) => {
-      if (!lastPage || !lastPage.total) return undefined;
-      const totalPages = Math.ceil(lastPage.total / (lastPage.limit || PAGE_SIZE));
-      return lastPage.page < totalPages ? lastPage.page + 1 : undefined;
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || !lastPage.data || lastPage.data.length === 0) return undefined;
+      if (lastPage.data.length < (lastPage.limit || PAGE_SIZE)) return undefined;
+      const loadedCount = allPages.reduce((acc, p) => acc + (p.data?.length || 0), 0);
+      if (loadedCount >= lastPage.total) return undefined;
+      return allPages.length + 1;
     },
     initialPageParam: 1,
   });
@@ -202,6 +258,7 @@ export default function LoyaltyPage() {
   const totalItems = cardsInfiniteData?.pages[0]?.total ?? 0;
   const summary = cardsInfiniteData?.pages[0]?.summary;
 
+  // Observador de rolagem dupla (IntersectionObserver + Scroll no <main> do layout)
   useEffect(() => {
     const loader = loaderRef.current;
     if (!loader) return;
@@ -212,11 +269,34 @@ export default function LoyaltyPage() {
           fetchNextPage();
         }
       },
-      { rootMargin: "250px" }
+      { rootMargin: "300px" }
     );
 
     observer.observe(loader);
-    return () => observer.disconnect();
+
+    const handleScroll = () => {
+      if (!hasNextPage || isFetchingNextPage) return;
+      const el = loaderRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= window.innerHeight + 300) {
+        fetchNextPage();
+      }
+    };
+
+    const mainEl = document.querySelector("main");
+    if (mainEl) {
+      mainEl.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      if (mainEl) {
+        mainEl.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Query dos Resgates de Brindes Pendentes
@@ -582,18 +662,19 @@ export default function LoyaltyPage() {
               </div>
             </div>
 
-            {/* Maior Pontuação - "Quem tem mais pontos" */}
+            {/* Maior Pontuação de acordo com a Modalidade */}
             <div
               onClick={() => {
-                setSortBy("pointsBalance");
+                setHasUserChangedSort(true);
+                setSortBy(modalitySortKey);
                 setSortOrder("desc");
               }}
               className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
-                sortBy === "pointsBalance" && sortOrder === "desc"
+                sortBy === modalitySortKey && sortOrder === "desc"
                   ? "bg-amber-50/70 border-amber-300 shadow-xs ring-1 ring-amber-300"
                   : "bg-white border-slate-200/80 shadow-2xs hover:border-amber-200 hover:bg-amber-50/30"
               }`}
-              title="Clique para ordenar por quem tem mais pontos"
+              title="Clique para ordenar pela pontuação da modalidade"
             >
               <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                 <Trophy className="w-5 h-5" />
@@ -601,13 +682,22 @@ export default function LoyaltyPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1">
                   <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block truncate">
-                    Mais Pontos
+                    {program?.type === "CASHBACK"
+                      ? "Maior Cashback"
+                      : program?.type === "FREE_PRODUCT"
+                      ? "Mais Selos"
+                      : program?.type === "PROGRESSIVE_DISCOUNT"
+                      ? "Mais Compras"
+                      : "Mais Pontos"}
                   </span>
                   <Flame className="w-3.5 h-3.5 text-amber-500" />
                 </div>
                 <div className="text-lg sm:text-xl font-black text-amber-600 leading-tight truncate">
-                  {Number(summary?.maxPoints || 0).toLocaleString("pt-BR")}{" "}
-                  <span className="text-xs font-semibold text-amber-500">pts</span>
+                  {program?.type === "CASHBACK"
+                    ? formatBRL(Number(summary?.maxCashback || 0))
+                    : program?.type === "FREE_PRODUCT" || program?.type === "PROGRESSIVE_DISCOUNT"
+                    ? `${summary?.maxStamps || 0} ${program?.type === "FREE_PRODUCT" ? `/${program?.stampsRequired || 10} selos` : "pedidos"}`
+                    : `${Number(summary?.maxPoints || 0).toLocaleString("pt-BR")} pts`}
                 </div>
               </div>
             </div>
@@ -743,21 +833,19 @@ export default function LoyaltyPage() {
                 <Select
                   value={sortBy}
                   onValueChange={(val) => {
+                    setHasUserChangedSort(true);
                     setSortBy(val);
-                    setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[185px] text-sm font-medium">
+                  <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[195px] text-sm font-medium">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pointsBalance">🏆 Mais Pontos</SelectItem>
-                    <SelectItem value="currentStamps">⭐ Mais Selos / Compras</SelectItem>
-                    <SelectItem value="cashbackBalance">💳 Maior Cashback</SelectItem>
-                    <SelectItem value="totalCompleted">🎁 Mais Resgates Feitos</SelectItem>
-                    <SelectItem value="expiresAt">⏳ Validade do Ciclo</SelectItem>
-                    <SelectItem value="updatedAt">🕒 Atualizado Recentemente</SelectItem>
-                    <SelectItem value="customerName">🔤 Nome do Cliente</SelectItem>
+                    {modalitySortOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -896,7 +984,13 @@ export default function LoyaltyPage() {
                 const maxStamps = program?.stampsRequired || 10;
                 const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
                 const cardRank = idx + 1;
-                const isRankingByPoints = sortBy === "pointsBalance" && sortOrder === "desc";
+                const isRankingByModality = sortBy === modalitySortKey && sortOrder === "desc";
+                const hasScore =
+                  program?.type === "CASHBACK"
+                    ? Number(card.cashbackBalance) > 0
+                    : program?.type === "FREE_PRODUCT" || program?.type === "PROGRESSIVE_DISCOUNT"
+                    ? Number(card.currentStamps) > 0
+                    : Number(card.pointsBalance) > 0;
 
                 return (
                   <div
@@ -906,7 +1000,7 @@ export default function LoyaltyPage() {
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-slate-900 text-sm truncate flex items-center gap-1.5">
-                          {isRankingByPoints && Number(card.pointsBalance) > 0 && (
+                          {isRankingByModality && hasScore && (
                             <span className="shrink-0">
                               {cardRank === 1 ? (
                                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
@@ -1094,13 +1188,19 @@ export default function LoyaltyPage() {
                       const maxStamps = program?.stampsRequired || 10;
                       const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
                       const cardRank = idx + 1;
-                      const isRankingByPoints = sortBy === "pointsBalance" && sortOrder === "desc";
+                      const isRankingByModality = sortBy === modalitySortKey && sortOrder === "desc";
+                      const hasScore =
+                        program?.type === "CASHBACK"
+                          ? Number(card.cashbackBalance) > 0
+                          : program?.type === "FREE_PRODUCT" || program?.type === "PROGRESSIVE_DISCOUNT"
+                          ? Number(card.currentStamps) > 0
+                          : Number(card.pointsBalance) > 0;
 
                       return (
                         <tr key={card.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="font-semibold text-slate-900 flex items-center gap-2">
-                              {isRankingByPoints && Number(card.pointsBalance) > 0 && (
+                              {isRankingByModality && hasScore && (
                                 <span className="shrink-0">
                                   {cardRank === 1 ? (
                                     <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
