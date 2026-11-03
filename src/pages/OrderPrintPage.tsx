@@ -99,6 +99,7 @@ export default function OrderPrintPage() {
               <span className="shrink-0">{item.quantity}x</span>
               <span className="shrink-0 font-medium">
                 {item.categoryName ? <span className="text-[10px] text-gray-500 font-normal">[{item.categoryName}] </span> : null}
+                {item.isOrderBump ? <span className="text-[10px] font-bold text-gray-800">[PEÇA TAMBÉM] </span> : null}
                 {item.isCombo ? `[COMBO] ` : ''}{item.productName} {item.variation ? `(${item.variation})` : ''}
               </span>
               <span className="grow border-b border-dotted border-black relative top-[-4px] mx-1"></span>
