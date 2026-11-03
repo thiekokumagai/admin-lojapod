@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { FileSpreadsheet, Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { getApiBaseUrl } from "@/services/api";
+import { apiFetch } from "@/services/api";
 
 export function SheetOrdersImportForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -43,9 +43,7 @@ export function SheetOrdersImportForm() {
       formData.append("file", selectedFile);
 
       const token = localStorage.getItem("token") || "";
-      const baseUrl = getApiBaseUrl();
-
-      const response = await fetch(`${baseUrl}/imports/orders/sheet`, {
+      const response = await apiFetch("/imports/orders/sheet", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

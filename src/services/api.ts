@@ -51,6 +51,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       headers.set("Content-Type", "application/json");
     }
 
+    headers.delete("Authorization");
     const token = tokenOverride ?? accessToken;
 
     if (token) {
