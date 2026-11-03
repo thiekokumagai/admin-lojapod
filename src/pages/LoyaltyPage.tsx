@@ -513,6 +513,7 @@ export default function LoyaltyPage() {
     setSearchTerm("");
     setStatusFilter("ALL");
     setFilterType("ALL");
+    setHasUserChangedSort(true);
     setSortBy("updatedAt");
     setSortOrder("desc");
     setPage(1);
@@ -646,6 +647,9 @@ export default function LoyaltyPage() {
               onClick={() => {
                 setFilterType("ALL");
                 setStatusFilter("ALL");
+                setHasUserChangedSort(true);
+                setSortBy("updatedAt");
+                setSortOrder("desc");
               }}
               className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer flex items-center gap-3"
             >
@@ -666,15 +670,24 @@ export default function LoyaltyPage() {
             <div
               onClick={() => {
                 setHasUserChangedSort(true);
-                setSortBy(modalitySortKey);
-                setSortOrder("desc");
+                if (sortBy === modalitySortKey && sortOrder === "desc") {
+                  setSortBy("updatedAt");
+                  setSortOrder("desc");
+                } else {
+                  setSortBy(modalitySortKey);
+                  setSortOrder("desc");
+                }
               }}
               className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
                 sortBy === modalitySortKey && sortOrder === "desc"
                   ? "bg-amber-50/70 border-amber-300 shadow-xs ring-1 ring-amber-300"
                   : "bg-white border-slate-200/80 shadow-2xs hover:border-amber-200 hover:bg-amber-50/30"
               }`}
-              title="Clique para ordenar pela pontuação da modalidade"
+              title={
+                sortBy === modalitySortKey && sortOrder === "desc"
+                  ? "Clique para remover a ordenação por pontuação"
+                  : "Clique para ordenar pela pontuação da modalidade"
+              }
             >
               <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                 <Trophy className="w-5 h-5" />
@@ -947,6 +960,7 @@ export default function LoyaltyPage() {
                       <X
                         className="w-3 h-3 cursor-pointer hover:text-red-500"
                         onClick={() => {
+                          setHasUserChangedSort(true);
                           setSortBy("updatedAt");
                           setSortOrder("desc");
                           setPage(1);
