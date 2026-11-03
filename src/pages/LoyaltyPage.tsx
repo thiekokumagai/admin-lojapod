@@ -189,17 +189,12 @@ export default function LoyaltyPage() {
     }
   }, [program?.type]);
 
-  // Quando o programa carregar pela primeira vez, ajusta automaticamente a ordenação padrão para a modalidade
-  useEffect(() => {
-    if (!hasUserChangedSort && program?.type) {
-      setSortBy(modalitySortKey);
-    }
-  }, [program?.type, modalitySortKey, hasUserChangedSort]);
-
   // Opções de ordenação filtradas exclusivamente de acordo com a modalidade ou mais recente
   const modalitySortOptions = useMemo(() => {
     const type = program?.type || "FREE_PRODUCT";
     const options: { value: string; label: string }[] = [];
+
+    options.push({ value: "updatedAt", label: "🕒 Mais Recente" });
 
     if (type === "POINTS_DISCOUNT") {
       options.push({ value: "pointsBalance", label: "🏆 Mais Pontos" });
@@ -213,8 +208,6 @@ export default function LoyaltyPage() {
       options.push({ value: "pointsBalance", label: "🏆 Mais Pontos" });
       options.push({ value: "currentStamps", label: "⭐ Mais Selos / Compras" });
     }
-
-    options.push({ value: "updatedAt", label: "🕒 Mais Recente" });
 
     if (type !== "PROGRESSIVE_DISCOUNT") {
       options.push({ value: "totalCompleted", label: "🎁 Mais Resgates Feitos" });
@@ -650,6 +643,7 @@ export default function LoyaltyPage() {
                 setHasUserChangedSort(true);
                 setSortBy("updatedAt");
                 setSortOrder("desc");
+                setSearchTerm("");
               }}
               className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer flex items-center gap-3"
             >
