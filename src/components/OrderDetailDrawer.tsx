@@ -785,6 +785,11 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                           ) : null}
                           <span className="text-sm font-bold text-slate-700 leading-snug break-words block" title={item.productName}>
                             {item.productName}
+                            {item.isOrderBump && (
+                              <span className="inline-block ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+                                Peça também
+                              </span>
+                            )}
                           </span>
                           {item.variation && (
                             <span className="block text-xs text-slate-400 font-medium mt-0.5 break-words">

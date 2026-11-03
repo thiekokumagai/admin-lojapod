@@ -14,6 +14,8 @@ export interface OrderItem {
   categoryName?: string;
   comboId?: string | null;
   isCombo?: boolean;
+  isOrderBump?: boolean;
+  orderBumpId?: string | null;
   comboSnapshot?: {
     comboId: string;
     comboName: string;

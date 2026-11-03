@@ -47,6 +47,10 @@ import {
   Loader2,
   X,
   CheckCircle2,
+  Eye,
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { buildImageUrl } from "@/utils/image-url";
@@ -235,8 +239,10 @@ export default function OrderBumpsPage() {
   });
 
   const totalActive = orderBumps.filter((b) => b.isActive).length;
-  const totalGeneral = orderBumps.filter((b) => b.triggerType === "ALL").length;
-  const totalConditional = orderBumps.filter((b) => b.triggerType !== "ALL").length;
+  const totalViews = orderBumps.reduce((sum, b) => sum + (b.viewsCount || 0), 0);
+  const totalConversions = orderBumps.reduce((sum, b) => sum + (b.conversionsCount || 0), 0);
+  const totalRevenue = orderBumps.reduce((sum, b) => sum + Number(b.totalRevenue || 0), 0);
+  const conversionRate = totalViews > 0 ? ((totalConversions / totalViews) * 100).toFixed(1) : "0.0";
 
   const selectedSuggestedProduct = products.find((p) => p.id === formSuggestedProductId);
 
@@ -256,26 +262,52 @@ export default function OrderBumpsPage() {
         </Button>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Cards de Resumo & Métricas */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-emerald-500 shadow-xs">
           <CardHeader className="py-4">
-            <CardDescription className="text-xs uppercase font-semibold">Regras Ativas</CardDescription>
+            <CardDescription className="text-xs uppercase font-semibold flex items-center justify-between">
+              <span>Regras Ativas</span>
+              <Layers className="h-4 w-4 text-emerald-500" />
+            </CardDescription>
             <CardTitle className="text-2xl font-bold text-emerald-600">{totalActive}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500 shadow-xs">
           <CardHeader className="py-4">
-            <CardDescription className="text-xs uppercase font-semibold">Sugestões Gerais</CardDescription>
-            <CardTitle className="text-2xl font-bold">{totalGeneral}</CardTitle>
+            <CardDescription className="text-xs uppercase font-semibold flex items-center justify-between">
+              <span>Visualizações</span>
+              <Eye className="h-4 w-4 text-blue-500" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-blue-600">{totalViews}</CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card className="border-l-4 border-l-purple-500 shadow-xs">
+          <CardHeader className="py-4">
+            <CardDescription className="text-xs uppercase font-semibold flex items-center justify-between">
+              <span>Vendas via Bump</span>
+              <ShoppingCart className="h-4 w-4 text-purple-500" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-purple-600">
+              {totalConversions}
+              <span className="text-xs font-normal text-muted-foreground ml-2">
+                ({conversionRate}%)
+              </span>
+            </CardTitle>
           </CardHeader>
         </Card>
 
         <Card className="border-l-4 border-l-amber-500 shadow-xs">
           <CardHeader className="py-4">
-            <CardDescription className="text-xs uppercase font-semibold">Sugestões Condicionais</CardDescription>
-            <CardTitle className="text-2xl font-bold">{totalConditional}</CardTitle>
+            <CardDescription className="text-xs uppercase font-semibold flex items-center justify-between">
+              <span>Receita Gerada</span>
+              <DollarSign className="h-4 w-4 text-amber-500" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-amber-600">
+              R$ {totalRevenue.toFixed(2).replace(".", ",")}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -393,6 +425,24 @@ export default function OrderBumpsPage() {
                   </div>
                 </div>
 
+                {/* Métricas no Card Mobile */}
+                <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-xl text-center border border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Views</span>
+                    <span className="font-semibold text-slate-700">{bump.viewsCount || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Vendas</span>
+                    <span className="font-bold text-purple-600">{bump.conversionsCount || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Receita</span>
+                    <span className="font-bold text-emerald-600">
+                      R$ {Number(bump.totalRevenue || 0).toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                   <Button
                     variant="outline"
@@ -426,83 +476,108 @@ export default function OrderBumpsPage() {
                 <TableRow>
                   <TableHead>Produto Sugerido</TableHead>
                   <TableHead>Gatilho de Disparo</TableHead>
-                  <TableHead>Preço no Carrinho</TableHead>
-                  <TableHead className="text-center">Prioridade</TableHead>
+                  <TableHead>Preço na Sacola</TableHead>
+                  <TableHead className="text-center">Visualizações</TableHead>
+                  <TableHead className="text-center">Vendas</TableHead>
+                  <TableHead className="text-center">Conversão</TableHead>
+                  <TableHead className="text-center">Receita</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBumps.map((bump) => (
-                  <TableRow key={bump.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {bump.suggestedProduct?.images?.[0]?.url ? (
-                          <img
-                            src={buildImageUrl(bump.suggestedProduct.images[0].url)}
-                            alt={bump.suggestedProduct.title}
-                            className="h-12 w-12 rounded-xl object-cover border min-w-12 min-h-12 block"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-xl bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-12 min-h-12">
-                            <Package className="h-5 w-5" />
+                {filteredBumps.map((bump) => {
+                  const views = bump.viewsCount || 0;
+                  const convs = bump.conversionsCount || 0;
+                  const rate = views > 0 ? ((convs / views) * 100).toFixed(1) : "0.0";
+                  const rev = Number(bump.totalRevenue || 0);
+
+                  return (
+                    <TableRow key={bump.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {bump.suggestedProduct?.images?.[0]?.url ? (
+                            <img
+                              src={buildImageUrl(bump.suggestedProduct.images[0].url)}
+                              alt={bump.suggestedProduct.title}
+                              className="h-12 w-12 rounded-xl object-cover border min-w-12 min-h-12 block"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-xl bg-muted border flex items-center justify-center text-muted-foreground text-xs min-w-12 min-h-12">
+                              <Package className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-foreground">
+                              {bump.suggestedProduct?.title || "Produto não identificado"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Título: <strong>{bump.title}</strong>
+                            </span>
                           </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        {bump.triggerType === "ALL" && (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            Qualquer Pedido
+                          </Badge>
                         )}
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm text-foreground">
-                            {bump.suggestedProduct?.title || "Produto não identificado"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Título: <strong>{bump.title}</strong>
-                          </span>
+                        {bump.triggerType === "CATEGORY" && (
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            Categoria: {bump.triggerCategory?.title || "Categoria"}
+                          </Badge>
+                        )}
+                        {bump.triggerType === "PRODUCT" && (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            Produto: {bump.triggerProduct?.title || "Produto"}
+                          </Badge>
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        {bump.customPrice ? (
+                          <div className="font-bold text-emerald-600 text-sm">
+                            R$ {Number(bump.customPrice).toFixed(2).replace(".", ",")}
+                          </div>
+                        ) : bump.discountPercent ? (
+                          <div className="font-bold text-emerald-600 text-sm">
+                            {bump.discountPercent}% OFF
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground font-medium">Preço Normal</div>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-center font-medium text-xs text-slate-600">
+                        {views}
+                      </TableCell>
+
+                      <TableCell className="text-center font-bold text-xs text-purple-600">
+                        {convs}
+                      </TableCell>
+
+                      <TableCell className="text-center font-semibold text-xs">
+                        {views > 0 ? (
+                          <span className="text-emerald-600 font-bold">{rate}%</span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-center font-bold text-xs text-slate-800">
+                        R$ {rev.toFixed(2).replace(".", ",")}
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                          <Switch
+                            checked={bump.isActive}
+                            onCheckedChange={() => toggleMutation.mutate(bump.id)}
+                          />
                         </div>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      {bump.triggerType === "ALL" && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                          Qualquer Pedido
-                        </Badge>
-                      )}
-                      {bump.triggerType === "CATEGORY" && (
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                          Categoria: {bump.triggerCategory?.title || "Categoria"}
-                        </Badge>
-                      )}
-                      {bump.triggerType === "PRODUCT" && (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                          Produto: {bump.triggerProduct?.title || "Produto"}
-                        </Badge>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      {bump.customPrice ? (
-                        <div className="font-bold text-emerald-600 text-sm">
-                          R$ {Number(bump.customPrice).toFixed(2).replace(".", ",")}
-                        </div>
-                      ) : bump.discountPercent ? (
-                        <div className="font-bold text-emerald-600 text-sm">
-                          {bump.discountPercent}% OFF
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground font-medium">Preço Normal</div>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-center font-medium text-xs">
-                      {bump.priority}
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center">
-                        <Switch
-                          checked={bump.isActive}
-                          onCheckedChange={() => toggleMutation.mutate(bump.id)}
-                        />
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -531,7 +606,8 @@ export default function OrderBumpsPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
               </TableBody>
             </Table>
           </div>
