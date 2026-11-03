@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Order, OrderStatus } from "@/types/order";
 import { OrderKanbanCard } from "./OrderKanbanCard";
 import { Clock, PackageCheck, Truck, CheckCircle2, Inbox } from "lucide-react";
@@ -99,7 +99,28 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
   updatingOrderId,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const config = columnConfigs[status] || columnConfigs.PENDING;
+
+  // Whenever the status changes (e.g. switching tabs on mobile), immediately reset scroll to top
+  React.useLayoutEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [status]);
+
+  // When the list of orders changes/shrinks, ensure the scroll position is not beyond available content
+  React.useLayoutEffect(() => {
+    if (scrollContainerRef.current) {
+      const maxScroll = Math.max(
+        0,
+        scrollContainerRef.current.scrollHeight - scrollContainerRef.current.clientHeight
+      );
+      if (scrollContainerRef.current.scrollTop > maxScroll) {
+        scrollContainerRef.current.scrollTop = maxScroll;
+      }
+    }
+  }, [orders.length]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -164,7 +185,10 @@ export const OrderKanbanColumn: React.FC<OrderKanbanColumnProps> = ({
       </div>
 
       {/* Cards Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 overscroll-contain pr-2">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-3 space-y-3 overscroll-contain pr-2 kanban-mobile-scroll-area"
+      >
         {orders.length === 0 ? (
           <div className="h-full min-h-[220px] flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-slate-200/90 bg-white/40">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">

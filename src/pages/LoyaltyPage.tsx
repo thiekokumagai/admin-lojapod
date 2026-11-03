@@ -23,6 +23,18 @@ import {
   Layers,
   BellRing,
   Check,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Trophy,
+  Filter,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  Coins,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -109,7 +121,11 @@ export default function LoyaltyPage() {
   const [activeTab, setActiveTab] = useState("cards");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [filterType, setFilterType] = useState("ALL");
+  const [sortBy, setSortBy] = useState("updatedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(15);
 
   // Modal de Configurações
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -155,13 +171,16 @@ export default function LoyaltyPage() {
 
   // Query dos Cartões
   const { data: cardsData, isLoading: isLoadingCards } = useQuery({
-    queryKey: ["loyalty-cards", searchTerm, statusFilter, page],
+    queryKey: ["loyalty-cards", searchTerm, statusFilter, filterType, sortBy, sortOrder, page, limit],
     queryFn: () =>
       loyaltyService.listCards({
         search: searchTerm || undefined,
         status: statusFilter,
+        filterType,
+        sortBy,
+        sortOrder,
         page,
-        limit: 15,
+        limit,
       }),
   });
 
@@ -368,6 +387,55 @@ export default function LoyaltyPage() {
 
   const currentProgramType = PROGRAM_TYPES.find((t) => t.id === (program?.type || "FREE_PRODUCT")) || PROGRAM_TYPES[0];
 
+  const isFilterActive =
+    !!searchTerm ||
+    statusFilter !== "ALL" ||
+    filterType !== "ALL" ||
+    sortBy !== "updatedAt" ||
+    sortOrder !== "desc";
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("ALL");
+    setFilterType("ALL");
+    setSortBy("updatedAt");
+    setSortOrder("desc");
+    setPage(1);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortOrder("desc");
+    }
+    setPage(1);
+  };
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-3.5 h-3.5 text-slate-300 opacity-60 group-hover:opacity-100 transition-opacity" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-primary shrink-0" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-primary shrink-0" />
+    );
+  };
+
+  const balanceSortKey =
+    program?.type === "CASHBACK"
+      ? "cashbackBalance"
+      : program?.type === "FREE_PRODUCT" || program?.type === "PROGRESSIVE_DISCOUNT"
+      ? "currentStamps"
+      : "pointsBalance";
+
+  const totalItems = cardsData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+  const startItem = totalItems === 0 ? 0 : (page - 1) * limit + 1;
+  const endItem = Math.min(page * limit, totalItems);
+
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden min-w-0">
       {/* Header */}
@@ -461,41 +529,329 @@ export default function LoyaltyPage() {
 
         {/* ABA 1: Clientes e Cartões */}
         <TabsContent value="cards" className="space-y-4">
-          {/* Toolbar de Busca e Filtros */}
-          <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative w-full sm:flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Buscar por cliente ou telefone..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10 h-11 rounded-xl bg-white border-slate-200 font-medium text-sm"
-              />
+          {/* KPI Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Total Clientes */}
+            <div
+              onClick={() => {
+                setFilterType("ALL");
+                setStatusFilter("ALL");
+                setPage(1);
+              }}
+              className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer flex items-center gap-3"
+            >
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block truncate">
+                  Total Clientes
+                </span>
+                <div className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+                  {cardsData?.summary?.totalCards ?? cardsData?.total ?? 0}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select
-                value={statusFilter}
-                onValueChange={(val) => {
-                  setStatusFilter(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[170px] text-sm font-medium">
-                  <SelectValue placeholder="Status do Cartão" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Todos os status</SelectItem>
-                  <SelectItem value="ACTIVE">Em Progresso</SelectItem>
-                  <SelectItem value="COMPLETED">Completo (Prêmio)</SelectItem>
-                  <SelectItem value="REDEEMED">Resgatado</SelectItem>
-                  <SelectItem value="EXPIRED">Expirado</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Maior Pontuação - "Quem tem mais pontos" */}
+            <div
+              onClick={() => {
+                setSortBy("pointsBalance");
+                setSortOrder("desc");
+                setPage(1);
+              }}
+              className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
+                sortBy === "pointsBalance" && sortOrder === "desc"
+                  ? "bg-amber-50/70 border-amber-300 shadow-xs ring-1 ring-amber-300"
+                  : "bg-white border-slate-200/80 shadow-2xs hover:border-amber-200 hover:bg-amber-50/30"
+              }`}
+              title="Clique para ordenar por quem tem mais pontos"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block truncate">
+                    Mais Pontos
+                  </span>
+                  <Flame className="w-3.5 h-3.5 text-amber-500" />
+                </div>
+                <div className="text-lg sm:text-xl font-black text-amber-600 leading-tight truncate">
+                  {Number(cardsData?.summary?.maxPoints || 0).toLocaleString("pt-BR")}{" "}
+                  <span className="text-xs font-semibold text-amber-500">pts</span>
+                </div>
+              </div>
             </div>
+
+            {/* Prontos para Resgate */}
+            <div
+              onClick={() => {
+                setFilterType(filterType === "READY_REWARD" ? "ALL" : "READY_REWARD");
+                setPage(1);
+              }}
+              className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
+                filterType === "READY_REWARD"
+                  ? "bg-emerald-50/70 border-emerald-300 shadow-xs ring-1 ring-emerald-300"
+                  : "bg-white border-slate-200/80 shadow-2xs hover:border-emerald-200 hover:bg-emerald-50/30"
+              }`}
+              title="Clique para filtrar clientes com prêmio pronto"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <Gift className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block truncate">
+                  Prêmio Pronto
+                </span>
+                <div className="text-lg sm:text-xl font-black text-emerald-600 leading-tight">
+                  {cardsData?.summary?.readyToRedeemCount ?? 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Vencendo em 7 dias */}
+            <div
+              onClick={() => {
+                setFilterType(filterType === "EXPIRING_SOON" ? "ALL" : "EXPIRING_SOON");
+                setPage(1);
+              }}
+              className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
+                filterType === "EXPIRING_SOON"
+                  ? "bg-orange-50/70 border-orange-300 shadow-xs ring-1 ring-orange-300"
+                  : "bg-white border-slate-200/80 shadow-2xs hover:border-orange-200 hover:bg-orange-50/30"
+              }`}
+              title="Clique para filtrar clientes expirando em até 7 dias"
+            >
+              <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider block truncate">
+                  Vencendo Logo
+                </span>
+                <div className="text-lg sm:text-xl font-black text-orange-600 leading-tight">
+                  {cardsData?.summary?.expiringSoonCount ?? 0}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Toolbar de Busca, Filtros e Ordenação */}
+          <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+              {/* Campo de Busca */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Buscar por cliente ou telefone..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  className="pl-10 pr-9 h-11 rounded-xl bg-white border-slate-200 font-medium text-sm"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setPage(1);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    title="Limpar busca"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filtro de Saldo / Tipo */}
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={filterType}
+                  onValueChange={(val) => {
+                    setFilterType(val);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[175px] text-sm font-medium">
+                    <SelectValue placeholder="Filtro de Saldo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todos os saldos</SelectItem>
+                    <SelectItem value="WITH_POINTS">💰 Com Pontos (&gt; 0)</SelectItem>
+                    <SelectItem value="WITH_STAMPS">⭐ Com Selos (&gt; 0)</SelectItem>
+                    <SelectItem value="WITH_CASHBACK">💳 Com Cashback (&gt; 0)</SelectItem>
+                    <SelectItem value="WITH_BALANCE">💎 Qualquer Saldo Ativo</SelectItem>
+                    <SelectItem value="READY_REWARD">🎁 Prêmio Pronto</SelectItem>
+                    <SelectItem value="EXPIRING_SOON">⏳ Vencendo em 7 dias</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro de Status do Cartão */}
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) => {
+                    setStatusFilter(val);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[155px] text-sm font-medium">
+                    <SelectValue placeholder="Status do Cartão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todos os status</SelectItem>
+                    <SelectItem value="ACTIVE">Em Progresso</SelectItem>
+                    <SelectItem value="COMPLETED">Completo (Prêmio)</SelectItem>
+                    <SelectItem value="REDEEMED">Resgatado</SelectItem>
+                    <SelectItem value="EXPIRED">Expirado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Seletor de Ordenação */}
+              <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <Select
+                  value={sortBy}
+                  onValueChange={(val) => {
+                    setSortBy(val);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 w-full sm:min-w-[185px] text-sm font-medium">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pointsBalance">🏆 Mais Pontos</SelectItem>
+                    <SelectItem value="currentStamps">⭐ Mais Selos / Compras</SelectItem>
+                    <SelectItem value="cashbackBalance">💳 Maior Cashback</SelectItem>
+                    <SelectItem value="totalCompleted">🎁 Mais Resgates Feitos</SelectItem>
+                    <SelectItem value="expiresAt">⏳ Validade do Ciclo</SelectItem>
+                    <SelectItem value="updatedAt">🕒 Atualizado Recentemente</SelectItem>
+                    <SelectItem value="customerName">🔤 Nome do Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Botão de Inverter Ordem (Asc / Desc) */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+                    setPage(1);
+                  }}
+                  title={
+                    sortOrder === "desc"
+                      ? "Ordem decrescente (Maior para menor). Clique para inverter."
+                      : "Ordem crescente (Menor para maior). Clique para inverter."
+                  }
+                  className="h-11 w-11 rounded-xl border-slate-200 shrink-0 bg-white hover:bg-slate-50"
+                >
+                  {sortOrder === "desc" ? (
+                    <ArrowDownWideNarrow className="w-4 h-4 text-primary" />
+                  ) : (
+                    <ArrowUpNarrowWide className="w-4 h-4 text-primary" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Barra de Filtros Ativos e Botão Limpar */}
+            {isFilterActive && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-slate-400 font-medium flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5" /> Ativos:
+                  </span>
+                  {searchTerm && (
+                    <Badge variant="secondary" className="gap-1 bg-slate-100 text-slate-700 font-normal">
+                      Busca: "{searchTerm}"
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-red-500"
+                        onClick={() => {
+                          setSearchTerm("");
+                          setPage(1);
+                        }}
+                      />
+                    </Badge>
+                  )}
+                  {filterType !== "ALL" && (
+                    <Badge variant="secondary" className="gap-1 bg-amber-50 text-amber-800 border-amber-200 font-normal">
+                      Saldo:{" "}
+                      {filterType === "WITH_POINTS"
+                        ? "Com Pontos"
+                        : filterType === "WITH_STAMPS"
+                        ? "Com Selos"
+                        : filterType === "WITH_CASHBACK"
+                        ? "Com Cashback"
+                        : filterType === "READY_REWARD"
+                        ? "Prêmio Pronto"
+                        : filterType === "EXPIRING_SOON"
+                        ? "Vencendo em 7 dias"
+                        : "Com Saldo Ativo"}
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-red-500"
+                        onClick={() => {
+                          setFilterType("ALL");
+                          setPage(1);
+                        }}
+                      />
+                    </Badge>
+                  )}
+                  {statusFilter !== "ALL" && (
+                    <Badge variant="secondary" className="gap-1 bg-blue-50 text-blue-800 border-blue-200 font-normal">
+                      Status: {statusFilter}
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-red-500"
+                        onClick={() => {
+                          setStatusFilter("ALL");
+                          setPage(1);
+                        }}
+                      />
+                    </Badge>
+                  )}
+                  {(sortBy !== "updatedAt" || sortOrder !== "desc") && (
+                    <Badge variant="secondary" className="gap-1 bg-purple-50 text-purple-800 border-purple-200 font-normal">
+                      Ordenado:{" "}
+                      {sortBy === "pointsBalance"
+                        ? "Pontos"
+                        : sortBy === "currentStamps"
+                        ? "Selos"
+                        : sortBy === "cashbackBalance"
+                        ? "Cashback"
+                        : sortBy === "totalCompleted"
+                        ? "Resgates"
+                        : sortBy === "expiresAt"
+                        ? "Validade"
+                        : sortBy === "customerName"
+                        ? "Nome"
+                        : "Data"}{" "}
+                      ({sortOrder === "desc" ? "Maior ➔ Menor" : "Menor ➔ Maior"})
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-red-500"
+                        onClick={() => {
+                          setSortBy("updatedAt");
+                          setSortOrder("desc");
+                          setPage(1);
+                        }}
+                      />
+                    </Badge>
+                  )}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetFilters}
+                  className="h-7 text-xs text-slate-500 hover:text-red-600 gap-1 px-2"
+                >
+                  <X className="w-3 h-3" /> Limpar Filtros
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Cards Mobile (Padronização de Layout da Loja) */}
@@ -509,9 +865,11 @@ export default function LoyaltyPage() {
                 Nenhum cliente encontrado com os filtros atuais.
               </div>
             ) : (
-              cardsData?.data.map((card) => {
+              cardsData?.data.map((card, idx) => {
                 const maxStamps = program?.stampsRequired || 10;
                 const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
+                const cardRank = (page - 1) * limit + idx + 1;
+                const isRankingByPoints = sortBy === "pointsBalance" && sortOrder === "desc";
 
                 return (
                   <div
@@ -521,6 +879,27 @@ export default function LoyaltyPage() {
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-slate-900 text-sm truncate flex items-center gap-1.5">
+                          {isRankingByPoints && Number(card.pointsBalance) > 0 && (
+                            <span className="shrink-0">
+                              {cardRank === 1 ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                                  🥇 1º
+                                </span>
+                              ) : cardRank === 2 ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-300">
+                                  🥈 2º
+                                </span>
+                              ) : cardRank === 3 ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-900/80 border border-amber-200">
+                                  🥉 3º
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 font-mono">
+                                  #{cardRank}
+                                </span>
+                              )}
+                            </span>
+                          )}
                           <User className="w-4 h-4 text-slate-400 shrink-0" />
                           <span className="truncate">{card.customerName || "Cliente sem nome"}</span>
                         </div>
@@ -529,9 +908,7 @@ export default function LoyaltyPage() {
                           <span className="truncate">{formatPhoneNumber(card.customerPhone)}</span>
                         </div>
                       </div>
-                      <div className="shrink-0">
-                        {getStatusBadge(card.status)}
-                      </div>
+                      <div className="shrink-0">{getStatusBadge(card.status)}</div>
                     </div>
 
                     <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-2 border border-slate-100 min-w-0">
@@ -545,14 +922,36 @@ export default function LoyaltyPage() {
                           </div>
                         ) : program?.type === "POINTS_DISCOUNT" ? (
                           <div className="font-bold text-amber-600 text-sm truncate">
-                            {card.pointsBalance} pts
-                            <span className="block text-[10px] text-slate-400 font-normal truncate">
-                              {formatBRL((Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05))}
+                            <span className="flex items-center gap-1">
+                              <Coins className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              {Number(card.pointsBalance || 0).toLocaleString("pt-BR")} pts
+                            </span>
+                            <span className="block text-[10px] text-slate-400 font-normal truncate mt-0.5">
+                              {formatBRL(
+                                (Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05)
+                              )}
                             </span>
                           </div>
                         ) : program?.type === "PROGRESSIVE_DISCOUNT" ? (
                           <div className="font-bold text-slate-900 text-sm truncate">
                             {card.currentStamps} pedidos
+                          </div>
+                        ) : program?.type === "HYBRID" ? (
+                          <div className="space-y-1 min-w-0">
+                            <div className="font-bold text-slate-900 text-sm truncate">
+                              {card.currentStamps} <span className="text-slate-400 font-normal">/ {maxStamps} selos</span>
+                            </div>
+                            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-300 ${
+                                  card.currentStamps >= maxStamps ? "bg-emerald-500" : "bg-primary"
+                                }`}
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
+                              {Number(card.pointsBalance || 0).toLocaleString("pt-BR")} pts
+                            </span>
                           </div>
                         ) : (
                           <div className="space-y-1 min-w-0">
@@ -575,9 +974,7 @@ export default function LoyaltyPage() {
                         <span className="text-[10px] sm:text-[11px] text-slate-400 uppercase font-bold tracking-wider block mb-0.5">
                           Ciclos
                         </span>
-                        <span className="font-bold text-slate-800 text-xs">
-                          {card.totalCompleted}x 🏆
-                        </span>
+                        <span className="font-bold text-slate-800 text-xs">{card.totalCompleted}x 🏆</span>
                       </div>
                     </div>
 
@@ -609,11 +1006,43 @@ export default function LoyaltyPage() {
               <table className="w-full text-left text-sm text-slate-600">
                 <thead className="bg-slate-50/80 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
                   <tr>
-                    <th className="px-5 py-4">Cliente / Contato</th>
-                    <th className="px-5 py-4 text-center">Progresso / Saldo</th>
+                    <th
+                      className="px-5 py-4 cursor-pointer select-none hover:text-slate-900 transition-colors group"
+                      onClick={() => handleSort("customerName")}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Cliente / Contato</span>
+                        {renderSortIcon("customerName")}
+                      </div>
+                    </th>
+                    <th
+                      className="px-5 py-4 text-center cursor-pointer select-none hover:text-slate-900 transition-colors group"
+                      onClick={() => handleSort(balanceSortKey)}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Progresso / Saldo</span>
+                        {renderSortIcon(balanceSortKey)}
+                      </div>
+                    </th>
                     <th className="px-5 py-4 text-center">Status</th>
-                    <th className="px-5 py-4">Validade do Ciclo</th>
-                    <th className="px-5 py-4 text-center">Resgates</th>
+                    <th
+                      className="px-5 py-4 cursor-pointer select-none hover:text-slate-900 transition-colors group"
+                      onClick={() => handleSort("expiresAt")}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Validade do Ciclo</span>
+                        {renderSortIcon("expiresAt")}
+                      </div>
+                    </th>
+                    <th
+                      className="px-5 py-4 text-center cursor-pointer select-none hover:text-slate-900 transition-colors group"
+                      onClick={() => handleSort("totalCompleted")}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Resgates</span>
+                        {renderSortIcon("totalCompleted")}
+                      </div>
+                    </th>
                     <th className="px-5 py-4 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -631,16 +1060,39 @@ export default function LoyaltyPage() {
                       </td>
                     </tr>
                   ) : (
-                    cardsData?.data.map((card) => {
+                    cardsData?.data.map((card, idx) => {
                       const maxStamps = program?.stampsRequired || 10;
                       const progressPct = Math.min(100, Math.round((card.currentStamps / maxStamps) * 100));
+                      const cardRank = (page - 1) * limit + idx + 1;
+                      const isRankingByPoints = sortBy === "pointsBalance" && sortOrder === "desc";
 
                       return (
                         <tr key={card.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="font-semibold text-slate-900 flex items-center gap-2">
-                              <User className="w-4 h-4 text-slate-400" />
-                              {card.customerName || "Cliente sem nome"}
+                              {isRankingByPoints && Number(card.pointsBalance) > 0 && (
+                                <span className="shrink-0">
+                                  {cardRank === 1 ? (
+                                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
+                                      🥇 1º
+                                    </span>
+                                  ) : cardRank === 2 ? (
+                                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-300">
+                                      🥈 2º
+                                    </span>
+                                  ) : cardRank === 3 ? (
+                                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-900/80 border border-amber-200">
+                                      🥉 3º
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 font-mono">
+                                      #{cardRank}
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                              <User className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>{card.customerName || "Cliente sem nome"}</span>
                             </div>
                             <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
                               <Phone className="w-3.5 h-3.5 text-slate-400" />
@@ -655,10 +1107,16 @@ export default function LoyaltyPage() {
                                 <span className="block text-[11px] text-slate-400 font-normal">Saldo de cashback</span>
                               </div>
                             ) : program?.type === "POINTS_DISCOUNT" ? (
-                              <div className="font-bold text-amber-600 text-sm">
-                                {card.pointsBalance} pts
-                                <span className="block text-[11px] text-slate-400 font-normal">
-                                  equivale a {formatBRL((Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05))}
+                              <div className="flex flex-col items-center">
+                                <div className="font-extrabold text-amber-600 text-sm flex items-center justify-center gap-1">
+                                  <Coins className="w-4 h-4 text-amber-500 shrink-0" />
+                                  <span>{Number(card.pointsBalance || 0).toLocaleString("pt-BR")} pts</span>
+                                </div>
+                                <span className="block text-[11px] text-slate-400 font-normal mt-0.5">
+                                  equivale a{" "}
+                                  {formatBRL(
+                                    (Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05)
+                                  )}
                                 </span>
                               </div>
                             ) : program?.type === "PROGRESSIVE_DISCOUNT" ? (
@@ -668,7 +1126,9 @@ export default function LoyaltyPage() {
                                 </div>
                                 <span className="text-[11px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                                   {(() => {
-                                    const tiers = Array.isArray(program?.progressiveTiers) ? [...program.progressiveTiers].sort((a: any, b: any) => a.minOrders - b.minOrders) : [];
+                                    const tiers = Array.isArray(program?.progressiveTiers)
+                                      ? [...program.progressiveTiers].sort((a: any, b: any) => a.minOrders - b.minOrders)
+                                      : [];
                                     const qualified = tiers.filter((t: any) => card.currentStamps >= t.minOrders);
                                     const current = qualified.length > 0 ? qualified[qualified.length - 1] : null;
                                     return current ? `${current.discountPercent}% OFF Ativo` : "Sem desconto ainda";
@@ -689,7 +1149,11 @@ export default function LoyaltyPage() {
                                   />
                                 </div>
                                 <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                  {card.pointsBalance} pts ({formatBRL((Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05))})
+                                  {Number(card.pointsBalance || 0).toLocaleString("pt-BR")} pts (
+                                  {formatBRL(
+                                    (Number(card.pointsBalance) || 0) * (Number(program.pointsRedemptionValue) || 0.05)
+                                  )}
+                                  )
                                 </span>
                               </div>
                             ) : (
@@ -751,6 +1215,64 @@ export default function LoyaltyPage() {
               </table>
             </div>
           </div>
+
+          {/* Paginação */}
+          {totalItems > 0 && (
+            <div className="bg-white/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+              <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                <span>
+                  Mostrando <strong className="text-slate-800">{startItem}</strong> a{" "}
+                  <strong className="text-slate-800">{endItem}</strong> de{" "}
+                  <strong className="text-slate-800">{totalItems}</strong> participantes
+                </span>
+                <span className="text-slate-300 hidden sm:inline">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Itens por página:</span>
+                  <Select
+                    value={String(limit)}
+                    onValueChange={(val) => {
+                      setLimit(Number(val));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[72px] text-xs font-semibold rounded-lg bg-slate-50 border-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15</SelectItem>
+                      <SelectItem value="30">30</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-2.5 rounded-lg text-xs font-medium"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Anterior
+                </Button>
+                <div className="px-2 font-bold text-slate-700 text-xs">
+                  {page} / {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-8 px-2.5 rounded-lg text-xs font-medium"
+                >
+                  Próxima <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* ABA 2: Brindes Resgatados para o Dono Entregar */}

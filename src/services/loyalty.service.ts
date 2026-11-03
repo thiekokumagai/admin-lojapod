@@ -81,6 +81,17 @@ export interface LoyaltyCard {
   redemptions?: LoyaltyRewardRedemption[];
 }
 
+export interface LoyaltySummary {
+  totalCards: number;
+  totalPointsInCirculation: number;
+  totalCashbackInCirculation: number;
+  maxPoints: number;
+  maxStamps: number;
+  maxCashback: number;
+  readyToRedeemCount: number;
+  expiringSoonCount: number;
+}
+
 export interface LoyaltyListResponse {
   data: LoyaltyCard[];
   total: number;
@@ -88,6 +99,7 @@ export interface LoyaltyListResponse {
   limit: number;
   program: LoyaltyProgram | null;
   pendingRedemptionsCount?: number;
+  summary?: LoyaltySummary;
 }
 
 export const loyaltyService = {
@@ -118,12 +130,23 @@ export const loyaltyService = {
     return res.json();
   },
 
-  listCards: async (params?: { search?: string; status?: string; page?: number; limit?: number }): Promise<LoyaltyListResponse> => {
+  listCards: async (params?: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+    filterType?: string;
+  }): Promise<LoyaltyListResponse> => {
     const sp = new URLSearchParams();
     if (params?.search) sp.append("search", params.search);
     if (params?.status) sp.append("status", params.status);
     if (params?.page) sp.append("page", String(params.page));
     if (params?.limit) sp.append("limit", String(params.limit));
+    if (params?.sortBy) sp.append("sortBy", params.sortBy);
+    if (params?.sortOrder) sp.append("sortOrder", params.sortOrder);
+    if (params?.filterType) sp.append("filterType", params.filterType);
 
     const res = await apiFetch(`/loyalty/cards?${sp.toString()}`);
     if (!res.ok) throw new Error("Erro ao listar cartões de fidelidade");

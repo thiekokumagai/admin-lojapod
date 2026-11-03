@@ -131,6 +131,17 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
     );
   }
 
+  const handleSelectMobileStatus = (statusId: typeof activeMobileStatus) => {
+    setActiveMobileStatus(statusId);
+    // Assegura que o container de scroll mobile volte ao topo (0)
+    requestAnimationFrame(() => {
+      const scrollEl = document.querySelector(".kanban-mobile-scroll-area");
+      if (scrollEl) {
+        scrollEl.scrollTop = 0;
+      }
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Kanban Info / Mobile Tab Bar */}
@@ -146,7 +157,7 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveMobileStatus(item.id)}
+                onClick={() => handleSelectMobileStatus(item.id)}
                 className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all ${
                   isSelected
                     ? item.activeColor
@@ -187,6 +198,7 @@ export const OrderKanbanBoard: React.FC<OrderKanbanBoardProps> = ({
       {/* Mobile View: Shows the active single column at comfortable full width */}
       <div className="md:hidden">
         <OrderKanbanColumn
+          key={activeMobileStatus}
           status={activeMobileStatus}
           orders={groupedOrders[activeMobileStatus]}
           timeZone={timeZone}
