@@ -123,7 +123,6 @@ export default function LoyaltyPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL");
-  const [hasUserChangedSort, setHasUserChangedSort] = useState(false);
   const [sortBy, setSortBy] = useState("updatedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const PAGE_SIZE = 25;
@@ -188,6 +187,12 @@ export default function LoyaltyPage() {
         return "updatedAt";
     }
   }, [program?.type]);
+
+  useEffect(() => {
+    if (!program?.type) return;
+    setSortBy(modalitySortKey);
+    setSortOrder("desc");
+  }, [modalitySortKey, program?.type]);
 
   // Opções de ordenação filtradas exclusivamente de acordo com a modalidade ou mais recente
   const modalitySortOptions = useMemo(() => {
@@ -506,7 +511,6 @@ export default function LoyaltyPage() {
     setSearchTerm("");
     setStatusFilter("ALL");
     setFilterType("ALL");
-    setHasUserChangedSort(true);
     setSortBy("updatedAt");
     setSortOrder("desc");
     setPage(1);
@@ -640,7 +644,6 @@ export default function LoyaltyPage() {
               onClick={() => {
                 setFilterType("ALL");
                 setStatusFilter("ALL");
-                setHasUserChangedSort(true);
                 setSortBy("updatedAt");
                 setSortOrder("desc");
                 setSearchTerm("");
@@ -663,7 +666,6 @@ export default function LoyaltyPage() {
             {/* Maior Pontuação de acordo com a Modalidade */}
             <div
               onClick={() => {
-                setHasUserChangedSort(true);
                 if (sortBy === modalitySortKey && sortOrder === "desc") {
                   setSortBy("updatedAt");
                   setSortOrder("desc");
@@ -954,7 +956,6 @@ export default function LoyaltyPage() {
                       <X
                         className="w-3 h-3 cursor-pointer hover:text-red-500"
                         onClick={() => {
-                          setHasUserChangedSort(true);
                           setSortBy("updatedAt");
                           setSortOrder("desc");
                           setPage(1);
