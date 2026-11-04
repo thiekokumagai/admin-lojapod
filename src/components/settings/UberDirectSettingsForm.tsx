@@ -255,11 +255,13 @@ export function UberDirectSettingsForm() {
                     <span>Para corridas reais (faturamento), clique em <strong>Switch to production</strong> no portal e troque o <strong>Ambiente da API</strong> acima para <em>Produção</em></span>
                   </li>
                 </ol>
-                <div className="pt-2 rounded-lg overflow-hidden border border-violet-200">
+                <div className="pt-2 rounded-lg overflow-hidden border border-violet-200 bg-white">
                   <img
                     src="/uber-direct-developer.png"
                     alt="Tela do Portal Uber Direct Developer mostrando Customer ID, Client ID e Client Secret"
-                    className="w-full object-contain"
+                    className="w-full object-contain max-h-52 cursor-zoom-in"
+                    onClick={(e) => { const el = e.currentTarget; el.style.maxHeight = el.style.maxHeight === 'none' ? '13rem' : 'none'; }}
+                    title="Clique para ampliar"
                   />
                 </div>
                 <div className="pt-1">
