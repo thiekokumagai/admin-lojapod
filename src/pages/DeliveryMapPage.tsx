@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatWhatsAppNumber, openWhatsApp } from "@/utils/whatsapp";
+import { getStoreTimezone } from "@/utils/date-timezone";
 
 // Helpers para URLs universais do Google Maps e Waze para celular
 export function buildGoogleMapsRouteUrl(
@@ -184,6 +185,7 @@ export default function DeliveryMapPage() {
   // Fetch a generous amount of recent orders to find the active ones
   const { data: ordersData, isLoading: isLoadingOrders } = useOrders("", "ALL", "", "", 1, 200);
   const { data: settings } = useSettings();
+  const storeTimezone = getStoreTimezone(settings);
   const queryClient = useQueryClient();
 
   // Socket.io for Real-time Orders Update
@@ -1114,6 +1116,15 @@ export default function DeliveryMapPage() {
                 route.optimizedOrders.forEach((o, i) => {
                   wppText += `*PARADA ${i + 1} - ${String.fromCharCode(65 + i)}*\n`;
                   wppText += `- Pedido: #${o.orderNumber}\n`;
+                  const orderCreatedAt = new Date(o.createdAt);
+                  if (!Number.isNaN(orderCreatedAt.getTime())) {
+                    const createdAtLocal = new Intl.DateTimeFormat("pt-BR", {
+                      timeZone: storeTimezone,
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    }).format(orderCreatedAt);
+                    wppText += `- Recebido em: ${createdAtLocal} (${storeTimezone})\n`;
+                  }
                   wppText += `- Cliente: ${o.customerName}\n`;
                   if (o.customerPhone) {
                     wppText += `- Fone: ${o.customerPhone}\n`;
