@@ -111,8 +111,8 @@ export default function CourierDetailsPage() {
     return true;
   }) || [];
 
-  const totalFee = filteredTransactions.filter(t => t.type === "FEE").reduce((acc, t) => acc + t.amount, 0);
-  const totalReceived = filteredTransactions.filter(t => t.type === "PAYMENT").reduce((acc, t) => acc + t.amount, 0);
+  const totalFee = filteredTransactions.filter(t => t.type === "FEE").reduce((acc, t) => acc + Number(t.amount), 0);
+  const totalReceived = filteredTransactions.filter(t => t.type === "PAYMENT").reduce((acc, t) => acc + Number(t.amount), 0);
   const totalDeliveries = filteredTransactions.filter(t => t.type === "FEE").length;
 
   return (
@@ -219,7 +219,7 @@ export default function CourierDetailsPage() {
                     </span>
                   </div>
                   <span className={`font-black ${tx.type === "FEE" ? "text-emerald-600" : "text-rose-600"}`}>
-                    {tx.type === "FEE" ? "+" : "-"} {formatCurrency(tx.amount)}
+                    {tx.type === "FEE" ? "+" : "-"} {formatCurrency(Number(tx.amount))}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -287,7 +287,7 @@ export default function CourierDetailsPage() {
                       )}
                     </TableCell>
                     <TableCell className={`text-right font-black ${tx.type === "FEE" ? "text-emerald-600" : "text-rose-600"}`}>
-                      {tx.type === "FEE" ? "+" : "-"} {formatCurrency(tx.amount)}
+                      {tx.type === "FEE" ? "+" : "-"} {formatCurrency(Number(tx.amount))}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

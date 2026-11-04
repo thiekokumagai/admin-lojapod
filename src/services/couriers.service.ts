@@ -4,7 +4,7 @@ export interface CourierTransaction {
   id: string;
   courierId: string;
   type: 'FEE' | 'PAYMENT';
-  amount: number;
+  amount: number | string;
   description: string;
   date: string;
 }
