@@ -787,7 +787,7 @@ export default function DeliveryMapPage() {
                           
                           const sortedOrders = sortOrdersByProximity(ar.orders, storeLocation);
 
-                          let wppText = `*ROTA DE ENTREGAS - Podemais (Reenvio)*\n`;
+                          let wppText = `*ROTA DE ENTREGAS (Reenvio)*\n`;
                           wppText += `Motoboy: ${courier.name}\n`;
                           wppText += `Total de Entregas: ${sortedOrders.length}\n\n`;
 
@@ -1103,7 +1103,7 @@ export default function DeliveryMapPage() {
                 if (!courier) return;
 
                 // 1. Generate text and open WhatsApp
-                let wppText = `*ROTA DE ENTREGAS - Podemais*\n`;
+                let wppText = `*ROTA DE ENTREGAS*\n`;
                 wppText += `Motoboy: ${courier.name}\n`;
                 wppText += `Total de Entregas: ${route.optimizedOrders.length}\n`;
                 if (deliveryFee) {
