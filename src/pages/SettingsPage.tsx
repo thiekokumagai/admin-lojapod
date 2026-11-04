@@ -4,8 +4,9 @@ import { PaymentGatewaysSettingsForm } from "@/components/settings/PaymentGatewa
 import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
 import { PaymentRulesSettingsForm } from "@/components/settings/PaymentRulesSettingsForm";
 import { BusinessHoursSettingsForm } from "@/components/settings/BusinessHoursSettingsForm";
+import { UberDirectSettingsForm } from "@/components/settings/UberDirectSettingsForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, QrCode, Percent, Truck, Clock, Globe } from "lucide-react";
+import { Store, QrCode, Percent, Truck, Clock, Globe, Car } from "lucide-react";
 import DomainPage from "@/pages/DomainPage";
 
 export default function SettingsPage() {
@@ -14,12 +15,12 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações da Loja</h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie a identidade visual, formas de pagamento, regras de taxa/desconto e formas de entrega do seu e-commerce.
+          Gerencie a identidade visual, formas de pagamento, regras de taxa/desconto, entregas e integração com o Uber Direct.
         </p>
       </div>
 
       <Tabs defaultValue="geral" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-2 h-auto p-1.5 bg-muted/60">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 gap-2 h-auto p-1.5 bg-muted/60">
           <TabsTrigger value="geral" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Store className="h-4 w-4" />
             Identidade Visual
@@ -31,6 +32,10 @@ export default function SettingsPage() {
           <TabsTrigger value="entrega" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Truck className="h-4 w-4" />
             Frete &amp; Entrega
+          </TabsTrigger>
+          <TabsTrigger value="uber" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
+            <Car className="h-4 w-4 text-emerald-600" />
+            Uber Direct
           </TabsTrigger>
           <TabsTrigger value="horarios" className="flex items-center gap-2 py-2 px-3 justify-center text-xs font-semibold">
             <Clock className="h-4 w-4" />
@@ -54,6 +59,10 @@ export default function SettingsPage() {
 
         <TabsContent value="entrega" className="space-y-4 outline-none">
           <DeliverySettingsForm />
+        </TabsContent>
+
+        <TabsContent value="uber" className="space-y-4 outline-none">
+          <UberDirectSettingsForm />
         </TabsContent>
 
         <TabsContent value="horarios" className="space-y-4 outline-none">

@@ -103,6 +103,19 @@ export interface StoreSettings {
   enableStockAlertNotification?: boolean;
   showVariationsOnCard?: boolean;
 
+  // Uber Direct
+  uberDirectEnabled?: boolean;
+  uberDirectAutoDispatch?: boolean;
+  uberDirectClientId?: string | null;
+  uberDirectClientSecret?: string | null;
+  uberDirectCustomerId?: string | null;
+  uberDirectEnvironment?: string;
+  uberDirectPickupInstructions?: string | null;
+  uberDirectPickupPhone?: string | null;
+  uberDirectBatchSize?: number;
+  uberDirectMaxAngleDelta?: number;
+  uberDirectDispatchDelayMinutes?: number;
+
   createdAt?: string;
   updatedAt?: string;
 }

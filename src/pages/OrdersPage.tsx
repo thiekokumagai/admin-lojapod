@@ -280,6 +280,45 @@ export default function OrdersPage() {
     updateStatusMutation.mutate({ id, payload: { status: newStatus } });
   };
 
+  const [isDispatchingUber, setIsDispatchingUber] = useState(false);
+
+  const handleDispatchUberRoute = async () => {
+    try {
+      setIsDispatchingUber(true);
+      const res = await dispatchUberBatchedRoutes();
+      toast({
+        title: "Rotas Uber Direct",
+        description: res.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao despachar Uber",
+        description: err.message || "Tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDispatchingUber(false);
+    }
+  };
+
+  const handleDispatchSingleUber = async (orderId: string) => {
+    try {
+      const res = await dispatchSingleOrderUber(orderId);
+      toast({
+        title: "Uber Direct Acionado!",
+        description: "Motorista solicitado com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao acionar Uber",
+        description: err.message || "Verifique as configurações",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleKanbanUpdateStatus = (id: string, newStatus: OrderStatus) => {
     if (updatingOrderId) return;
     setUpdatingOrderId(id);
