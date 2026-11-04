@@ -8,10 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  Car, Zap, Compass, ShieldCheck, Key, Phone, FileText,
-  CheckCircle2, ExternalLink, ChevronDown, ChevronUp, Clock,
+  Car, Zap, Compass, Key, Phone, FileText,
+  CheckCircle2, ExternalLink, ChevronDown, ChevronUp, Clock, Eye,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 /** Formata para exibição: +55 (DD) NNNNN-NNNN */
 function formatPhone(raw: string): string {
@@ -40,13 +45,13 @@ export function UberDirectSettingsForm() {
   const [uberDirectClientId, setUberDirectClientId] = useState("");
   const [uberDirectClientSecret, setUberDirectClientSecret] = useState("");
   const [uberDirectCustomerId, setUberDirectCustomerId] = useState("");
-  const [uberDirectEnvironment, setUberDirectEnvironment] = useState("sandbox");
   const [uberDirectPickupInstructions, setUberDirectPickupInstructions] = useState("");
   const [uberDirectPickupPhone, setUberDirectPickupPhone] = useState("");
   const [uberDirectBatchSize, setUberDirectBatchSize] = useState(3);
   const [uberDirectMaxAngleDelta, setUberDirectMaxAngleDelta] = useState(45);
   const [uberDirectDispatchDelayMinutes, setUberDirectDispatchDelayMinutes] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -55,9 +60,7 @@ export function UberDirectSettingsForm() {
       setUberDirectClientId(settings.uberDirectClientId || "");
       setUberDirectClientSecret(settings.uberDirectClientSecret || "");
       setUberDirectCustomerId(settings.uberDirectCustomerId || "");
-      setUberDirectEnvironment(settings.uberDirectEnvironment || "sandbox");
       setUberDirectPickupInstructions(settings.uberDirectPickupInstructions || "");
-      // Load phone formatted
       const raw = settings.uberDirectPickupPhone || "";
       setUberDirectPickupPhone(raw ? formatPhone(raw) : "");
       setUberDirectBatchSize(settings.uberDirectBatchSize ?? 3);
@@ -79,7 +82,6 @@ export function UberDirectSettingsForm() {
         uberDirectClientId: uberDirectClientId.trim() || null,
         uberDirectClientSecret: uberDirectClientSecret.trim() || null,
         uberDirectCustomerId: uberDirectCustomerId.trim() || null,
-        uberDirectEnvironment,
         uberDirectPickupInstructions: uberDirectPickupInstructions.trim() || null,
         uberDirectPickupPhone: uberDirectPickupPhone ? toE164(uberDirectPickupPhone) : null,
         uberDirectBatchSize: Number(uberDirectBatchSize) || 3,
@@ -129,33 +131,42 @@ export function UberDirectSettingsForm() {
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          {/* Automação e Modo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
-              <div className="flex items-center justify-between">
+          {/* Automação e Delay */}
+          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm font-bold text-slate-800">Disparo 100% Automático</span>
+                  <span className="text-sm font-bold text-slate-800">Disparo 100% Automático ao Marcar "Separado"</span>
                 </div>
-                <Switch
-                  checked={uberDirectAutoDispatch}
-                  onCheckedChange={setUberDirectAutoDispatch}
-                  disabled={!uberDirectEnabled}
-                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Quando ativado, assim que você marcar o pedido como <strong>"Separado"</strong>, o sistema aciona a Uber automaticamente sem necessidade de telas extras.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Quando ativado, assim que você ou sua equipe marcar o status do pedido como <strong>"Separado"</strong> no painel de pedidos ou kanban, o sistema requisita imediatamente a Uber sem telas extras.
-              </p>
+              <Switch
+                checked={uberDirectAutoDispatch}
+                onCheckedChange={setUberDirectAutoDispatch}
+                disabled={!uberDirectEnabled}
+              />
+            </div>
 
-              {/* Delay configurável */}
-              {uberDirectAutoDispatch && (
-                <div className="pt-2 border-t border-slate-200 space-y-1.5">
+            {/* Delay configurável */}
+            {uberDirectAutoDispatch && (
+              <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-50/60 p-3 rounded-lg border border-amber-200/60">
+                <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 text-slate-500" />
-                    <Label className="text-xs font-semibold text-slate-700">
-                      Aguardar antes de chamar o Uber (minutos)
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <Label className="text-xs font-bold text-slate-800">
+                      Aguardar antes de chamar o Uber (Janela de Agrupamento)
                     </Label>
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {uberDirectDispatchDelayMinutes === 0
+                      ? "0 min (Imediato) — O Uber é chamado no mesmo instante em que o pedido é separado."
+                      : `Aguardará ${uberDirectDispatchDelayMinutes} min após "Separado" para juntar outros pedidos que forem separados no mesmo rumo.`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
                   <Input
                     type="number"
                     min="0"
@@ -163,38 +174,22 @@ export function UberDirectSettingsForm() {
                     value={uberDirectDispatchDelayMinutes}
                     onChange={(e) => setUberDirectDispatchDelayMinutes(Math.max(0, Math.min(30, Number(e.target.value))))}
                     disabled={!uberDirectEnabled}
-                    className="text-xs h-8 w-28"
+                    className="text-xs h-9 w-20 bg-white font-semibold text-center"
                   />
-                  <p className="text-[11px] text-muted-foreground">
-                    {uberDirectDispatchDelayMinutes === 0
-                      ? "Imediato — o Uber é chamado no instante em que o pedido é marcado como Separado."
-                      : `O sistema aguardará ${uberDirectDispatchDelayMinutes} min após "Separado" antes de acionar o mototaxi — útil para agrupar pedidos da mesma rota.`}
-                  </p>
+                  <span className="text-xs font-medium text-slate-600">minutos</span>
                 </div>
-              )}
-            </div>
-
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-bold text-slate-800">Ambiente da API</span>
               </div>
-              <Select
-                value={uberDirectEnvironment}
-                onValueChange={setUberDirectEnvironment}
-                disabled={!uberDirectEnabled}
-              >
-                <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Selecione o ambiente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sandbox">Sandbox (Ambiente de Testes / Simulação)</SelectItem>
-                  <SelectItem value="production">Produção (Corridas Reais com Faturamento)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-muted-foreground">
-                Recomendamos testar primeiro em Sandbox para certificar que os dados de coleta e entrega estão formatados.
-              </p>
+            )}
+
+            <div className="flex items-start gap-2.5 pt-2 text-[11px] text-emerald-800 bg-emerald-50/90 p-3 rounded-lg border border-emerald-200">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold">Regra de Segurança para Uber Direct (Só Ida):</span>
+                <p className="text-emerald-700 leading-relaxed">
+                  O despacho automático aciona a Uber apenas para pedidos com <strong>PIX ou Cartão já pago online</strong> (onde o motorista apenas entrega o pacote e vai embora).
+                  Pedidos a cobrar na entrega (dinheiro ou maquininha de cartão) <strong>não</strong> chamam a Uber automaticamente, ficando disponíveis no painel para seus <strong>entregadores próprios</strong> retornarem com a máquina e o valor.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -203,7 +198,7 @@ export function UberDirectSettingsForm() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Key className="h-4 w-4 text-violet-600" />
-                <h3 className="text-sm font-bold text-slate-900">Credenciais do Portal Uber Developers</h3>
+                <h3 className="text-sm font-bold text-slate-900">Credenciais do Portal Uber Direct</h3>
               </div>
               <Button
                 type="button"
@@ -229,7 +224,7 @@ export function UberDirectSettingsForm() {
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">1</span>
                     <span>Acesse o portal Uber Direct e faça login com a conta da loja:<br />
                       <a href="https://direct.uber.com" target="_blank" rel="noopener noreferrer"
-                        className="text-violet-600 hover:underline font-mono inline-flex items-center gap-1">
+                        className="text-violet-600 hover:underline font-mono inline-flex items-center gap-1 font-semibold">
                         direct.uber.com <ExternalLink className="h-3 w-3" />
                       </a>
                     </span>
@@ -240,7 +235,7 @@ export function UberDirectSettingsForm() {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">3</span>
-                    <span>Copie o campo <strong>Customer ID</strong> (ex: <code className="bg-violet-100 px-1 rounded">987abcd1-1234-5678-a987</code>) e cole no campo <strong>UBER_CUSTOMER_ID</strong> abaixo</span>
+                    <span>Copie o campo <strong>Customer ID</strong> e cole no campo <strong>UBER_CUSTOMER_ID</strong> abaixo</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">4</span>
@@ -248,25 +243,28 @@ export function UberDirectSettingsForm() {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">5</span>
-                    <span>Clique em <strong>Reveal</strong> ao lado do campo <strong>Client secret</strong> (o segundo, marcado "Set this as your authorization header"), copie e cole no campo <strong>UBER_CLIENT_SECRET</strong> abaixo</span>
+                    <span>Clique em <strong>Reveal</strong> no <strong>Client secret</strong> (marcado "Set this as your authorization header"), copie e cole no campo <strong>UBER_CLIENT_SECRET</strong></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">6</span>
-                    <span>Para corridas reais (faturamento), clique em <strong>Switch to production</strong> no portal e troque o <strong>Ambiente da API</strong> acima para <em>Produção</em></span>
+                    <span>No portal da Uber, quando quiser corridas reais e faturamento, clique no botão <strong>Switch to production</strong>. As credenciais geradas lá já definem se a corrida é teste ou real automaticamente.</span>
                   </li>
                 </ol>
-                <div className="pt-2 rounded-lg overflow-hidden border border-violet-200 bg-white">
-                  <img
-                    src="/uber-direct-developer.png"
-                    alt="Tela do Portal Uber Direct Developer mostrando Customer ID, Client ID e Client Secret"
-                    className="w-full object-contain max-h-52 cursor-zoom-in"
-                    onClick={(e) => { const el = e.currentTarget; el.style.maxHeight = el.style.maxHeight === 'none' ? '13rem' : 'none'; }}
-                    title="Clique para ampliar"
-                  />
-                </div>
-                <div className="pt-1">
+
+                <div className="pt-2 flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsImageModalOpen(true)}
+                    className="gap-1.5 text-violet-700 border-violet-300 hover:bg-violet-100 text-xs h-8"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Ver imagem de exemplo do painel Uber
+                  </Button>
+
                   <a href="https://direct.uber.com/settings/developer" target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" className="gap-1.5 text-violet-700 border-violet-300 hover:bg-violet-100 text-xs h-7">
+                    <Button variant="default" size="sm" className="gap-1.5 bg-violet-700 hover:bg-violet-800 text-white text-xs h-8">
                       <ExternalLink className="h-3 w-3" />
                       Abrir Portal Uber Direct Developer
                     </Button>
@@ -279,7 +277,7 @@ export function UberDirectSettingsForm() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">UBER_CLIENT_ID</Label>
                 <Input
-                  placeholder="Ex: d_client_id_..."
+                  placeholder="Ex: XYZABC-12XXXXXXXXXXXXXX"
                   value={uberDirectClientId}
                   onChange={(e) => setUberDirectClientId(e.target.value)}
                   disabled={!uberDirectEnabled}
@@ -302,7 +300,7 @@ export function UberDirectSettingsForm() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">UBER_CUSTOMER_ID</Label>
                 <Input
-                  placeholder="Ex: cus_abc123456"
+                  placeholder="Ex: 987abcd1-1234-5678-a987"
                   value={uberDirectCustomerId}
                   onChange={(e) => setUberDirectCustomerId(e.target.value)}
                   disabled={!uberDirectEnabled}
@@ -403,6 +401,30 @@ export function UberDirectSettingsForm() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal Popup da Imagem de Exemplo */}
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="max-w-4xl p-6 bg-slate-950 border-slate-800 text-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <Key className="h-5 w-5 text-violet-400" />
+              Onde encontrar as credenciais no Portal Uber Direct Developer
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-3 rounded-xl overflow-hidden border border-slate-800 bg-black/60 flex items-center justify-center p-2">
+            <img
+              src="/uber-direct-developer.png"
+              alt="Tela do Portal Uber Direct Developer mostrando Customer ID, Client ID e Client Secret"
+              className="w-full h-auto object-contain max-h-[70vh] rounded-lg"
+            />
+          </div>
+          <div className="mt-3 text-xs text-slate-400 bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+            <p>
+              💡 <strong>Dica:</strong> Acesse o portal em <strong>direct.uber.com</strong>, entre em <strong>Management</strong> → <strong>Developer</strong>. Copie o <strong>Customer ID</strong>, <strong>Client ID</strong> e o <strong>Client secret</strong>. O botão <em>"Switch to production"</em> alterna entre simulação de testes e entregas reais com cobrança.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
