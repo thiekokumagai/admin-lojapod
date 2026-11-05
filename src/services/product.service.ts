@@ -210,6 +210,16 @@ export async function replaceProductImage(productId: string, imageId: string, fi
   return normalizeProduct(data);
 }
 
+export async function reorderProductImages(productId: string, imageIds: string[]): Promise<ProductResponse> {
+  const response = await apiFetch(`/products/${productId}/images/order`, {
+    method: "PUT",
+    body: JSON.stringify({ imageIds }),
+  });
+
+  const data = (await response.json()) as ProductApiResponse;
+  return normalizeProduct(data);
+}
+
 export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
   await apiFetch(`/products/${productId}/images/${imageId}`, {
     method: "DELETE",

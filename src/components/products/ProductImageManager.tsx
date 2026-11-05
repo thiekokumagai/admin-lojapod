@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
-import { Crop, Eye, ImageIcon, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Crop, Eye, Trash2, Upload } from "lucide-react";
 import { buildImageUrl } from "@/utils/image-url";
+import { getCroppedFileFromUrl } from "@/utils/image-crop";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -38,69 +39,12 @@ type ProductImageManagerProps = {
   onUpdatePendingImage?: (id: string, newFile: File) => void;
   onDeleteImage: (imageId: string) => void;
   onReplaceImage?: (imageId: string, file: File) => Promise<void> | void;
+  /** Recebe os IDs das imagens salvas na nova ordem (a primeira é a principal). */
+  onReorderImages?: (imageIds: string[]) => void;
+  isReordering?: boolean;
 };
 
 const MAX_IMAGES = 6;
-
-function createImageElement(src: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", reject);
-    image.src = src;
-  });
-}
-
-async function getCroppedFile(file: File, area: Area) {
-  const imageUrl = URL.createObjectURL(file);
-  const image = await createImageElement(imageUrl);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = area.width;
-  canvas.height = area.height;
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    URL.revokeObjectURL(imageUrl);
-    throw new Error("Não foi possível preparar o crop da imagem");
-  }
-
-  context.drawImage(
-    image,
-    area.x,
-    area.y,
-    area.width,
-    area.height,
-    0,
-    0,
-    area.width,
-    area.height,
-  );
-
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob((value) => resolve(value), file.type || "image/jpeg", 0.92);
-  });
-
-  URL.revokeObjectURL(imageUrl);
-
-  if (!blob) {
-    throw new Error("Não foi possível finalizar o crop da imagem");
-  }
-
-  return new File([blob], file.name, { type: blob.type || file.type });
-}
-
-async function getCroppedFileFromUrl(imageUrl: string, area: Area, fileName: string) {
-  const response = await fetch(imageUrl);
-  if (!response.ok) {
-    throw new Error("Não foi possível carregar a imagem para recorte");
-  }
-
-  const blob = await response.blob();
-  const file = new File([blob], fileName, { type: blob.type || "image/jpeg" });
-  return getCroppedFile(file, area);
-}
 
 export function ProductImageManager({
   images,
@@ -113,6 +57,8 @@ export function ProductImageManager({
   onUpdatePendingImage,
   onDeleteImage,
   onReplaceImage,
+  onReorderImages,
+  isReordering = false,
 }: ProductImageManagerProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [savedCropTarget, setSavedCropTarget] = useState<SavedImageCropTarget | null>(null);
@@ -215,6 +161,14 @@ export function ProductImageManager({
     }
   }, [croppedAreaPixels, onReplaceImage, savedCropTarget]);
 
+  const handleMoveSavedImage = (from: number, to: number) => {
+    if (!onReorderImages || to < 0 || to >= images.length) return;
+    const ids = images.map((img) => img.id);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    onReorderImages(ids);
+  };
+
   const slots = Array.from({ length: MAX_IMAGES }, (_, index) => {
     const savedImage = images[index];
     if (savedImage) {
@@ -229,12 +183,20 @@ export function ProductImageManager({
     return { type: "empty" as const, key: `empty-${index}`, index };
   });
 
+  const actionBtn =
+    "flex h-6 w-6 items-center justify-center rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent";
+
   return (
     <Card className="rounded-3xl">
       <CardHeader>
-        <CardTitle className="text-xl">Fotos do produto</CardTitle>
+        <div className="flex items-baseline justify-between gap-2">
+          <CardTitle className="text-xl">Fotos do produto</CardTitle>
+          <span className="text-xs text-muted-foreground shrink-0">
+            {totalImages}/{MAX_IMAGES}
+          </span>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <input
           ref={inputRef}
           type="file"
@@ -243,118 +205,126 @@ export function ProductImageManager({
           className="hidden"
           onChange={handleSelectFiles}
         />
-        <div className="flex flex-wrap gap-3 pb-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {slots.map((slot) => {
-            if (slot.type === "saved") {
-              return (
-                <div key={slot.key} className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-muted border border-border">
-                  <img
-                    src={buildImageUrl(slot.image.url)}
-                    alt={`Imagem ${slot.index + 1}`}
-                    className="h-full w-full object-cover cursor-pointer transition-transform duration-200 group-hover:scale-105"
-                    onClick={() => setPreviewIndex(slot.index)}
-                  />
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                  
-                  {/* View large image button */}
-                  <button
-                    type="button"
-                    onClick={() => setPreviewIndex(slot.index)}
-                    title="Ver imagem grande"
-                    className="absolute left-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm hover:bg-background transition-transform"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </button>
+            if (slot.type === "empty") return null;
 
-                  <button
-                    type="button"
-                    onClick={() => onDeleteImage(slot.image.id)}
-                    disabled={isDeletingImage || isUpdatingImage}
-                    title="Excluir imagem"
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm hover:opacity-90"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                  {onReplaceImage ? (
-                    <button
-                      type="button"
-                      onClick={() => setSavedCropTarget({ id: slot.image.id, url: slot.image.url })}
-                      disabled={isUpdatingImage || isDeletingImage}
-                      title="Recortar imagem"
-                      className="absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:opacity-90"
-                    >
-                      <Crop className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                </div>
-              );
-            }
-
-            if (slot.type === "pending") {
-              return (
-                <div key={slot.key} className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-muted border border-border">
-                  <img
-                    src={slot.image.previewUrl}
-                    alt={slot.image.name}
-                    className="h-full w-full object-cover cursor-pointer transition-transform duration-200 group-hover:scale-105"
-                    onClick={() => setPreviewIndex(slot.index)}
-                  />
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                  {/* View large image button */}
-                  <button
-                    type="button"
-                    onClick={() => setPreviewIndex(slot.index)}
-                    title="Ver imagem grande"
-                    className="absolute left-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm hover:bg-background transition-transform"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onRemovePendingImage(slot.image.id)}
-                    disabled={isUploading}
-                    title="Remover imagem"
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm hover:opacity-90"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                  {onUpdatePendingImage ? (
-                    <button
-                      type="button"
-                      onClick={() => setPendingCropTarget({ id: slot.image.id })}
-                      disabled={isUploading}
-                      title="Recortar imagem"
-                      className="absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:opacity-90"
-                    >
-                      <Crop className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                </div>
-              );
-            }
+            const isSaved = slot.type === "saved";
+            const isMain = slot.index === 0;
+            const src = isSaved ? buildImageUrl(slot.image.url) : slot.image.previewUrl;
+            const busy = isSaved ? isDeletingImage || isUpdatingImage || isReordering : isUploading;
+            const canReorder = isSaved && !!onReorderImages && images.length > 1;
+            const canCrop = isSaved ? !!onReplaceImage : !!onUpdatePendingImage;
 
             return (
-              <button
+              <div
                 key={slot.key}
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                disabled={remainingSlots === 0 || isUploading}
-                className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 hover:bg-muted/80 transition-colors"
+                className={`group relative aspect-square overflow-hidden rounded-xl border bg-muted ${
+                  isMain ? "ring-2 ring-primary ring-offset-1" : ""
+                }`}
               >
-                <ImageIcon className="h-8 w-8" />
-                {remainingSlots > 0 ? (
-                  <span className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Plus className="h-3.5 w-3.5" />
+                <img
+                  src={src}
+                  alt={isSaved ? `Imagem ${slot.index + 1}` : slot.image.name}
+                  className="h-full w-full cursor-pointer object-cover"
+                  onClick={() => setPreviewIndex(slot.index)}
+                />
+
+                {isMain ? (
+                  <span className="pointer-events-none absolute left-1 top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    Principal
+                  </span>
+                ) : !isSaved ? (
+                  <span className="pointer-events-none absolute left-1 top-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    Nova
                   </span>
                 ) : null}
-              </button>
+
+                <button
+                  type="button"
+                  onClick={() => (isSaved ? onDeleteImage(slot.image.id) : onRemovePendingImage(slot.image.id))}
+                  disabled={busy}
+                  title={isSaved ? "Excluir imagem" : "Remover imagem"}
+                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/60 to-transparent p-1">
+                  {canReorder ? (
+                    <button
+                      type="button"
+                      onClick={() => handleMoveSavedImage(slot.index, slot.index - 1)}
+                      disabled={slot.index === 0 || busy}
+                      title="Mover para a esquerda"
+                      className={actionBtn}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <span className="h-6 w-6" />
+                  )}
+
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewIndex(slot.index)}
+                      title="Ver imagem grande"
+                      className={actionBtn}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    {canCrop ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isSaved
+                            ? setSavedCropTarget({ id: slot.image.id, url: slot.image.url })
+                            : setPendingCropTarget({ id: slot.image.id })
+                        }
+                        disabled={busy}
+                        title="Recortar imagem"
+                        className={actionBtn}
+                      >
+                        <Crop className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {canReorder ? (
+                    <button
+                      type="button"
+                      onClick={() => handleMoveSavedImage(slot.index, slot.index + 1)}
+                      disabled={slot.index === images.length - 1 || busy}
+                      title="Mover para a direita"
+                      className={actionBtn}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <span className="h-6 w-6" />
+                  )}
+                </div>
+              </div>
             );
           })}
+
+          {remainingSlots > 0 && (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={isUploading}
+              className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed bg-muted/20 px-1 text-center text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Upload className="mb-1 h-6 w-6" />
+              <span className="text-[11px] font-medium">{totalImages === 0 ? "Adicionar fotos" : "Adicionar"}</span>
+            </button>
+          )}
         </div>
 
-        <p className="text-xs text-muted-foreground">Máximo de {MAX_IMAGES} fotos por produto. Clique na foto para ver em tamanho grande.</p>
+        <p className="text-xs text-muted-foreground">
+          JPG, PNG ou WebP. A primeira imagem é a principal (aparece na vitrine e nos pedidos). Use as setas para reordenar e toque na foto para ver em tamanho grande.
+        </p>
 
         {/* Large Image Modal */}
         <ImagePreviewModal

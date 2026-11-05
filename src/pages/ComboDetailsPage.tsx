@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Trash2, Plus, Package, Upload, Loader2, Sparkles, Check, X, Boxes } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Plus, Package, Upload, Loader2, Sparkles, Check, X, Boxes, ChevronLeft, ChevronRight, Eye, Crop } from "lucide-react";
+import { ImagePreviewModal } from "@/components/common/ImagePreviewModal";
+import { ImageCropDialog } from "@/components/common/ImageCropDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +32,16 @@ import type { ProductResponse } from "@/types/product";
 import type { Category } from "@/types/category";
 import { DatePicker } from "@/components/ui/date-picker";
 
+
+const MAX_COMBO_IMAGES = 6;
+
+type ComboGalleryImage = {
+  url?: string; // caminho já salvo no storage
+  file?: File; // arquivo novo, enviado ao salvar
+  preview: string;
+  originalPreview?: string; // imagem antes do recorte (permite recortar de novo sem perder qualidade)
+};
+
 export default function ComboDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,9 +61,10 @@ export default function ComboDetailsPage() {
   const [endDate, setEndDate] = useState("");
   const [maxPerOrder, setMaxPerOrder] = useState("");
   const [maxTotalSales, setMaxTotalSales] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Galeria do combo: a primeira imagem é a principal (vira imageUrl na API)
+  const [galleryImages, setGalleryImages] = useState<ComboGalleryImage[]>([]);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
 
   const [items, setItems] = useState<ComboItemInput[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -116,9 +129,9 @@ export default function ComboDetailsPage() {
       setEndDate(combo.endDate ? combo.endDate.slice(0, 10) : "");
       setMaxPerOrder(combo.maxPerOrder ? String(combo.maxPerOrder) : "");
       setMaxTotalSales(combo.maxTotalSales ? String(combo.maxTotalSales) : "");
-      setImageUrl(combo.imageUrl || "");
-      setImagePreview(combo.imageUrl ? buildImageUrl(combo.imageUrl) : null);
-      setImageFile(null);
+      const storedImages =
+        combo.images && combo.images.length > 0 ? combo.images : combo.imageUrl ? [combo.imageUrl] : [];
+      setGalleryImages(storedImages.map((url) => ({ url, preview: buildImageUrl(url) })));
       setItems(
         (combo.items || []).map((ci) => ({
           productId: ci.productId,
@@ -136,11 +149,52 @@ export default function ComboDetailsPage() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // permite selecionar o mesmo arquivo de novo
+    if (files.length === 0) return;
+
+    const available = MAX_COMBO_IMAGES - galleryImages.length;
+    if (available <= 0) {
+      toast.error(`O combo pode ter no máximo ${MAX_COMBO_IMAGES} imagens.`);
+      return;
     }
+    if (files.length > available) {
+      toast.warning(`Apenas ${available} imagem(ns) adicionada(s). Limite de ${MAX_COMBO_IMAGES} por combo.`);
+    }
+    const added = files.slice(0, available).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+    setGalleryImages((prev) => [...prev, ...added]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setGalleryImages((prev) => {
+      const target = prev[index];
+      if (target?.file) URL.revokeObjectURL(target.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleApplyCrop = (index: number, file: File) => {
+    setGalleryImages((prev) =>
+      prev.map((img, i) => {
+        if (i !== index) return img;
+        if (img.file && img.preview !== img.originalPreview) URL.revokeObjectURL(img.preview);
+        return {
+          file,
+          preview: URL.createObjectURL(file),
+          originalPreview: img.originalPreview || img.preview,
+        };
+      })
+    );
+  };
+
+  const handleMoveImage = (from: number, to: number) => {
+    setGalleryImages((prev) => {
+      if (to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   };
 
   // Cálculo da soma dos preços individuais dos componentes
@@ -233,10 +287,15 @@ export default function ComboDetailsPage() {
     try {
       setIsSaving(true);
 
-      let finalImageUrl = imageUrl;
-      if (imageFile) {
-        const uploadRes = await comboService.uploadImage(imageFile);
-        finalImageUrl = uploadRes.url;
+      // Envia as imagens novas mantendo a ordem da galeria
+      const finalImages: string[] = [];
+      for (const img of galleryImages) {
+        if (img.file) {
+          const uploadRes = await comboService.uploadImage(img.file);
+          finalImages.push(uploadRes.url);
+        } else if (img.url) {
+          finalImages.push(img.url);
+        }
       }
 
       const cleanedDescription = description ? description.replace(/<p><\/p>/g, "").trim() : "";
@@ -244,7 +303,7 @@ export default function ComboDetailsPage() {
       const payload = {
         name: name.trim(),
         description: cleanedDescription || undefined,
-        imageUrl: finalImageUrl || undefined,
+        images: finalImages,
         categoryId: !categoryId || categoryId === "none" ? null : categoryId,
         price: priceNum,
         isActive,
@@ -450,47 +509,125 @@ export default function ComboDetailsPage() {
                   </div>
                 </div>
 
-                {/* Upload de Imagem */}
+                {/* Galeria de Imagens */}
                 <div className="space-y-2 md:col-span-2 min-w-0">
-                  <Label className="text-sm font-semibold">Imagem do Combo</Label>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full min-w-0 max-w-full">
-                    {imagePreview ? (
-                      <div className="relative w-28 h-28 shrink-0 rounded-xl overflow-hidden border bg-muted">
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Label className="text-sm font-semibold">Imagens do Combo</Label>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {galleryImages.length}/{MAX_COMBO_IMAGES}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {galleryImages.map((img, index) => (
+                      <div
+                        key={img.preview}
+                        className={`relative aspect-square rounded-xl overflow-hidden border bg-muted ${
+                          index === 0 ? "ring-2 ring-primary ring-offset-1" : ""
+                        }`}
+                      >
+                        <img
+                          src={img.preview}
+                          alt={`Imagem ${index + 1}`}
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => setPreviewIndex(index)}
+                        />
+                        {index === 0 && (
+                          <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-bold">
+                            Principal
+                          </span>
+                        )}
                         <button
                           type="button"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                            setImageUrl("");
-                          }}
+                          onClick={() => handleRemoveImage(index)}
                           className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
                           title="Remover imagem"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
+                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 p-1 bg-gradient-to-t from-black/60 to-transparent">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveImage(index, index - 1)}
+                            disabled={index === 0}
+                            className="p-1 text-white rounded-full hover:bg-white/20 disabled:opacity-30"
+                            title="Mover para a esquerda"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewIndex(index)}
+                              className="p-1 text-white rounded-full hover:bg-white/20"
+                              title="Ver imagem grande"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCropIndex(index)}
+                              className="p-1 text-white rounded-full hover:bg-white/20"
+                              title="Recortar imagem"
+                            >
+                              <Crop className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveImage(index, index + 1)}
+                            disabled={index === galleryImages.length - 1}
+                            className="p-1 text-white rounded-full hover:bg-white/20 disabled:opacity-30"
+                            title="Mover para a direita"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="w-28 h-28 shrink-0 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
-                        <Upload className="w-7 h-7 mb-1" />
-                        <span className="text-[11px]">Sem foto</span>
-                      </div>
+                    ))}
+
+                    {galleryImages.length < MAX_COMBO_IMAGES && (
+                      <label className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground bg-muted/20 hover:bg-muted/40 hover:border-primary/50 cursor-pointer transition-colors text-center px-1">
+                        <Upload className="w-6 h-6 mb-1" />
+                        <span className="text-[11px] font-medium">
+                          {galleryImages.length === 0 ? "Adicionar fotos" : "Adicionar"}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className="sr-only"
+                        />
+                      </label>
                     )}
-                    <div className="flex-1 min-w-0 w-full space-y-1">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="cursor-pointer text-sm w-full max-w-full"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        JPG, PNG ou WebP. Será otimizado automaticamente para vitrine.
-                      </p>
-                    </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG ou WebP. A primeira imagem é a principal (aparece na listagem e nos pedidos). Use as setas para reordenar e toque na foto para ver em tamanho grande.
+                  </p>
                 </div>
               </div>
             </div>
+
+            <ImagePreviewModal
+              isOpen={previewIndex !== null}
+              initialIndex={previewIndex ?? 0}
+              images={galleryImages.map((img) => ({ url: img.url ?? img.preview }))}
+              onClose={() => setPreviewIndex(null)}
+              title="Foto do Combo"
+            />
+
+            <ImageCropDialog
+              imageUrl={
+                cropIndex !== null && galleryImages[cropIndex]
+                  ? galleryImages[cropIndex].originalPreview || galleryImages[cropIndex].preview
+                  : null
+              }
+              fileName={`combo-${Date.now()}.jpg`}
+              onClose={() => setCropIndex(null)}
+              onApply={(file) => {
+                if (cropIndex !== null) handleApplyCrop(cropIndex, file);
+              }}
+            />
 
             {/* SEÇÃO: Componentes do Combo */}
             <div className="rounded-2xl sm:rounded-3xl border bg-card p-4 sm:p-6 shadow-sm space-y-6 w-full min-w-0 max-w-full">

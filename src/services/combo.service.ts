@@ -22,6 +22,7 @@ export interface Combo {
   name: string;
   description?: string | null;
   imageUrl?: string | null;
+  images?: string[];
   categoryId?: string | null;
   price: number;
   isActive: boolean;
@@ -44,6 +45,7 @@ export interface CreateComboPayload {
   name: string;
   description?: string;
   imageUrl?: string;
+  images?: string[];
   categoryId?: string | null;
   price: number;
   isActive?: boolean;

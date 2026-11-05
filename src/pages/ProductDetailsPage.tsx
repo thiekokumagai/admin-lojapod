@@ -13,6 +13,7 @@ import {
   createProduct,
   createProductItems,
   deleteProductImage,
+  reorderProductImages,
   getProductById,
   getProductItems,
   linkProductVariations,
@@ -479,6 +480,19 @@ export default function ProductDetailsPage() {
     },
   });
 
+  const reorderImagesMutation = useMutation({
+    mutationFn: ({ currentProductId, imageIds }: { currentProductId: string; imageIds: string[]; previous: ProductImage[] }) =>
+      reorderProductImages(currentProductId, imageIds),
+    onSuccess: (product) => {
+      setImages(product.images);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (_, variables) => {
+      setImages(variables.previous);
+      toast({ variant: "destructive", title: "Não foi possível reordenar as imagens" });
+    },
+  });
+
   const replaceImageMutation = useMutation({
     mutationFn: ({ currentProductId, imageId, file }: { currentProductId: string; imageId: string; file: File }) =>
       replaceProductImage(currentProductId, imageId, file),
@@ -907,6 +921,14 @@ export default function ProductDetailsPage() {
             onReplaceImage={async (imageId, file) => {
               if (!productId) return;
               await replaceImageMutation.mutateAsync({ currentProductId: productId, imageId, file });
+            }}
+            isReordering={reorderImagesMutation.isPending}
+            onReorderImages={(imageIds) => {
+              if (!productId) return;
+              const previous = images;
+              // atualização otimista: mostra a nova ordem na hora
+              setImages(imageIds.map((id) => previous.find((img) => img.id === id)!).filter(Boolean));
+              reorderImagesMutation.mutate({ currentProductId: productId, imageIds, previous });
             }}
           />
         </Suspense>
