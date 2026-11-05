@@ -29,6 +29,7 @@ import { OrderStatus, PaymentStatus } from "@/types/order";
 import { getStoreTimezone, getTodayRangeUtc } from "@/utils/date-timezone";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
   PENDING: { label: "Pendente", bg: "bg-amber-100/80 text-amber-700", text: "text-amber-700" },
@@ -519,17 +520,15 @@ export default function OrdersPage() {
           <>
             {/* Desktop View (hidden sm:flex) */}
             <div className="hidden sm:flex sm:items-center gap-2">
-              <Input 
-                type="date" 
+              <DatePicker 
                 value={startDate}
-                onChange={(e) => { setStartDate(e.target.value); }}
+                onChange={(v) => { setStartDate(v); }}
                 className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
               />
               <span className="text-slate-400 font-medium">até</span>
-              <Input 
-                type="date" 
+              <DatePicker 
                 value={endDate}
-                onChange={(e) => { setEndDate(e.target.value); }}
+                onChange={(v) => { setEndDate(v); }}
                 className="h-11 border-slate-200 focus-visible:ring-emerald-600 rounded-xl font-medium text-slate-600 w-full"
               />
             </div>
@@ -609,21 +608,17 @@ export default function OrdersPage() {
                     <div className="grid grid-cols-2 gap-2.5 pt-1">
                       <div className="min-w-0">
                         <label className="text-xs font-semibold text-slate-500 block mb-1">Data Inicial</label>
-                        <Input
-                          type="date"
+                        <DatePicker
                           value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          style={{ WebkitTapHighlightColor: "transparent" }}
+                          onChange={(v) => setStartDate(v)}
                           className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
                         />
                       </div>
                       <div className="min-w-0">
                         <label className="text-xs font-semibold text-slate-500 block mb-1">Data Final</label>
-                        <Input
-                          type="date"
+                        <DatePicker
                           value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          style={{ WebkitTapHighlightColor: "transparent" }}
+                          onChange={(v) => setEndDate(v)}
                           className="block h-10 w-full min-w-0 max-w-full border-slate-200 focus-visible:ring-emerald-600 focus:ring-emerald-600 rounded-xl font-medium text-slate-700 text-xs px-2 bg-white box-border"
                         />
                       </div>

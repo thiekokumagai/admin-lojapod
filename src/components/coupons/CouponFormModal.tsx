@@ -9,6 +9,7 @@ import { useCreateCoupon, useUpdateCoupon } from "@/hooks/useCoupons";
 import { Coupon } from "@/services/coupon.service";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Props {
   isOpen: boolean;
@@ -215,11 +216,10 @@ export default function CouponFormModal({ isOpen, onClose, coupon }: Props) {
 
               <div className="space-y-1.5 sm:space-y-2 col-span-1 sm:col-span-2">
                 <Label htmlFor="validUntilDate" className="text-slate-700 font-bold text-sm">Data de Validade</Label>
-                <Input 
+                <DatePicker 
                   id="validUntilDate" 
-                  type="date" 
                   value={validUntilDate}
-                  onChange={(e) => setValidUntilDate(e.target.value)}
+                  onChange={(v) => setValidUntilDate(v)}
                   className="h-11 rounded-xl border-slate-200 focus-visible:ring-violet-600 font-medium"
                 />
               </div>

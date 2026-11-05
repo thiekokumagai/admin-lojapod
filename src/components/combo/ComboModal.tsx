@@ -31,6 +31,7 @@ import {
 } from "@/services/combo.service";
 import type { ProductResponse } from "@/types/product";
 import type { Category } from "@/types/category";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ComboModalProps {
   isOpen: boolean;
@@ -593,21 +594,19 @@ export function ComboModal({
 
                 <div className="space-y-2">
                   <Label htmlFor="combo-start">Disponível a partir de</Label>
-                  <Input
+                  <DatePicker
                     id="combo-start"
-                    type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(v) => setStartDate(v)}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="combo-end">Disponível até</Label>
-                  <Input
+                  <DatePicker
                     id="combo-end"
-                    type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(v) => setEndDate(v)}
                   />
                 </div>
 

@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { billingService, BillingOverview, BillingStatus, BillingSubscription, BillingPlan } from '@/services/billing.service';
+import { DatePicker } from "@/components/ui/date-picker";
 
 const labels: Record<BillingStatus, string> = {
   TRIALING: 'Em teste',
@@ -482,11 +483,10 @@ export default function SuperAdminBillingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Data Fim do Trial</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={editForm.trialEndsAt}
-                    onChange={(e) => {
-                      const val = e.target.value;
+                    onChange={(v) => {
+                      const val = v;
                       setEditForm((prev) => ({
                         ...prev,
                         trialEndsAt: val,
@@ -498,7 +498,7 @@ export default function SuperAdminBillingPage() {
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Data Próxima Renovação</label>
-                  <input type="date" value={editForm.currentPeriodEndsAt} onChange={(e) => setEditForm((prev) => ({ ...prev, currentPeriodEndsAt: e.target.value }))} className="w-full px-3 py-2 border rounded-xl font-medium" />
+                  <DatePicker value={editForm.currentPeriodEndsAt} onChange={(v) => setEditForm((prev) => ({ ...prev, currentPeriodEndsAt: v }))} className="w-full px-3 py-2 border rounded-xl font-medium" />
                 </div>
               </div>
             </div>

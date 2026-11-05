@@ -28,6 +28,7 @@ import { getProducts } from "@/services/product.service";
 import { getCategories } from "@/services/category.service";
 import type { ProductResponse } from "@/types/product";
 import type { Category } from "@/types/category";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export default function ComboDetailsPage() {
   const { id } = useParams();
@@ -630,11 +631,10 @@ export default function ComboDetailsPage() {
                   <Label htmlFor="combo-start" className="text-sm font-semibold">
                     Disponível a partir de
                   </Label>
-                  <Input
+                  <DatePicker
                     id="combo-start"
-                    type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(v) => setStartDate(v)}
                     className="w-full"
                   />
                 </div>
@@ -643,11 +643,10 @@ export default function ComboDetailsPage() {
                   <Label htmlFor="combo-end" className="text-sm font-semibold">
                     Disponível até
                   </Label>
-                  <Input
+                  <DatePicker
                     id="combo-end"
-                    type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(v) => setEndDate(v)}
                     className="w-full"
                   />
                 </div>

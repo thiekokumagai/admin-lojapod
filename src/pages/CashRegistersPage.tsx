@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cashRegisterService } from "@/services/cash-register.service";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export default function CashRegistersPage() {
   const queryClient = useQueryClient();
@@ -231,23 +232,21 @@ export default function CashRegistersPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data de Início</Label>
-                <Input
-                  type="date"
+                <DatePicker
                   required
                   value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
+                  onChange={(v) =>
+                    setFormData({ ...formData, startDate: v })
                   }
                 />
               </div>
               <div className="space-y-2">
                 <Label>Data de Fim</Label>
-                <Input
-                  type="date"
+                <DatePicker
                   required
                   value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
+                  onChange={(v) =>
+                    setFormData({ ...formData, endDate: v })
                   }
                 />
               </div>

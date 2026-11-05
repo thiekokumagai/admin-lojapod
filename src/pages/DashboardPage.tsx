@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
 import { OnboardingWidget } from "@/components/admin/OnboardingWidget";
 import { useOrders } from "@/hooks/useOrders";
+import { DatePicker } from "@/components/ui/date-picker";
 
 type FilterType = "today" | "7days" | "30days" | "6months" | "year" | "custom";
 type ActiveTab = "vendas" | "estoque";
@@ -358,20 +359,18 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-muted-foreground">Data Inicial</label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={customStart}
-                        onChange={(e) => setCustomStart(e.target.value)}
+                        onChange={(v) => setCustomStart(v)}
                         className="w-full bg-background border border-input rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         required
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-muted-foreground">Data Final</label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={customEnd}
-                        onChange={(e) => setCustomEnd(e.target.value)}
+                        onChange={(v) => setCustomEnd(v)}
                         className="w-full bg-background border border-input rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         required
                       />
