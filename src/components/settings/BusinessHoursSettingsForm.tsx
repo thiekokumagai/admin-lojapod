@@ -219,7 +219,7 @@ export function BusinessHoursSettingsForm() {
 
                 <div>
                   <Label className="text-sm font-semibold mb-2 block">Selecione os dias</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 pr-8 sm:pr-0">
                     {WEEKDAYS.map((day) => {
                       const isSelected = rule.days.includes(day.value);
                       return (
@@ -227,7 +227,7 @@ export function BusinessHoursSettingsForm() {
                           key={day.value}
                           type="button"
                           onClick={() => toggleDay(rule.id, day.value)}
-                          className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
+                          className={`h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
                             isSelected
                               ? "bg-primary text-primary-foreground"
                               : "bg-slate-200 text-slate-500 hover:bg-slate-300"
@@ -286,12 +286,12 @@ export function BusinessHoursSettingsForm() {
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-6 border-t mt-6">
-          <Button size="sm" variant="outline" onClick={handleAddRule}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-6 border-t mt-6">
+          <Button size="sm" variant="outline" onClick={handleAddRule} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-1" />
             Nova Configuração
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending}>
+          <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending} className="w-full sm:w-auto">
             <Save className="h-4 w-4 mr-1" />
             {updateSettingsMutation.isPending ? "Salvando..." : "Salvar Configurações"}
           </Button>

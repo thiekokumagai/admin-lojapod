@@ -657,9 +657,9 @@ export default function DeliveryMapPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-180px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:h-[calc(100vh-180px)]">
         {/* Sidebar List */}
-        <div className="lg:col-span-1 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-full overflow-hidden">
+        <div className="lg:col-span-1 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col h-[65vh] min-h-[380px] lg:h-full lg:min-h-0 overflow-hidden">
           <ScrollArea className="flex-1 pr-3">
             <div className="space-y-4 pb-4">
               

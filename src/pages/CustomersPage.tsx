@@ -217,10 +217,10 @@ export default function CustomersPage() {
                         e.stopPropagation();
                         openWhatsApp(customer.phone, `Olá ${customer.name}`);
                       }}
-                      className="w-9 h-9 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors border border-emerald-200/60"
+                      className="w-8 h-8 shrink-0 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center text-emerald-600 hover:text-emerald-700 transition-colors border border-emerald-200/60"
                       title="Chamar no WhatsApp"
                     >
-                      <img src="/whatsapp.svg" alt="WhatsApp" className="h-4.5 w-4.5" />
+                      <img src="/whatsapp.svg" alt="WhatsApp" className="h-4 w-4 shrink-0" />
                     </button>
                   )}
                   <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400">

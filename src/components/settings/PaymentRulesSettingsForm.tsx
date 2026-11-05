@@ -229,7 +229,7 @@ export function PaymentRulesSettingsForm() {
               {rules.map((rule) => (
                 <div
                   key={rule.id}
-                  className="grid grid-cols-2 sm:grid-cols-12 gap-4 p-4 rounded-lg border bg-slate-50/50 sm:bg-transparent sm:p-0 sm:border-none sm:rounded-none items-start sm:items-center relative"
+                  className="grid grid-cols-2 sm:grid-cols-12 gap-4 [&>*]:min-w-0 p-4 rounded-lg border bg-slate-50/50 sm:bg-transparent sm:p-0 sm:border-none sm:rounded-none items-start sm:items-center relative"
                 >
                   {/* Forma de Pagamento */}
                   <div className="col-span-2 sm:col-span-3">
@@ -360,12 +360,12 @@ export function PaymentRulesSettingsForm() {
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-6 border-t mt-6">
-          <Button size="sm" variant="outline" onClick={handleAddRule}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-6 border-t mt-6">
+          <Button size="sm" variant="outline" onClick={handleAddRule} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-1" />
             Nova Configuração
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending}>
+          <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending} className="w-full sm:w-auto">
             <Save className="h-4 w-4 mr-1" />
             {updateSettingsMutation.isPending ? "Salvando..." : "Salvar Configurações"}
           </Button>
