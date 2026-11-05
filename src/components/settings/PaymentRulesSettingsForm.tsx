@@ -10,17 +10,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Percent, Settings, Save } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
+import { Checkbox } from "@/components/ui/checkbox";
+
+const PROMO_PAYMENT_OPTIONS = [
+  { value: "pix", label: "PIX" },
+  { value: "debit", label: "Cartão de Débito" },
+  { value: "credit", label: "Cartão de Crédito" },
+  { value: "cash", label: "Dinheiro" },
+  { value: "meal_voucher", label: "Vale refeição" },
+  { value: "food_voucher", label: "Vale alimentação" },
+];
+
 export function PaymentRulesSettingsForm() {
   const { data: settings, isLoading } = useSettings();
   const updateSettingsMutation = useUpdateSettings();
 
   const [rules, setRules] = useState<PaymentRule[]>([]);
+  const [promoMethods, setPromoMethods] = useState<string[]>(["pix"]);
 
   useEffect(() => {
     if (settings) {
       setRules(settings.paymentRules || []);
+      setPromoMethods(settings.promoPaymentMethods ?? ["pix"]);
     }
   }, [settings]);
+
+  const togglePromoMethod = (value: string, checked: boolean) => {
+    setPromoMethods((prev) =>
+      checked ? Array.from(new Set([...prev, value])) : prev.filter((m) => m !== value)
+    );
+  };
 
   const handleAddRule = () => {
     const newRule: PaymentRule = {
@@ -127,6 +146,7 @@ export function PaymentRulesSettingsForm() {
     try {
       await updateSettingsMutation.mutateAsync({
         paymentRules: rules,
+        promoPaymentMethods: promoMethods,
       });
 
       toast({
@@ -164,6 +184,27 @@ export function PaymentRulesSettingsForm() {
             <p className="text-xs text-muted-foreground">
               Adicione regras de desconto, taxas e juros de parcelas para as formas de pagamento.
             </p>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-lg border p-4">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-sm">Preço promocional</h3>
+            <p className="text-xs text-muted-foreground">
+              Escolha em quais formas de pagamento o preço promocional é mantido. Nas demais, o
+              cliente paga o preço normal do produto.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {PROMO_PAYMENT_OPTIONS.map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={promoMethods.includes(opt.value)}
+                  onCheckedChange={(checked) => togglePromoMethod(opt.value, checked === true)}
+                />
+                {opt.label}
+              </label>
+            ))}
           </div>
         </div>
 

@@ -175,9 +175,9 @@ export default function OrderPrintPage() {
         <p>Pagamento: <span className="font-bold">{order.paymentType}</span></p>
         <p>Forma de pagamento: <span className="font-bold">{
           order.paymentMethod === 'pix' ? 'Pix' :
-          order.paymentMethod === 'credito' ? 'Cartão de Crédito' :
-          order.paymentMethod === 'debito' ? 'Cartão de Débito' :
-          order.paymentMethod === 'dinheiro' ? 'Dinheiro' :
+          (order.paymentMethod === 'credit' || order.paymentMethod === 'credito') ? 'Cartão de Crédito' :
+          (order.paymentMethod === 'debit' || order.paymentMethod === 'debito') ? 'Cartão de Débito' :
+          (order.paymentMethod === 'cash' || order.paymentMethod === 'dinheiro') ? 'Dinheiro' :
           (order.paymentMethod === 'meal_voucher' || order.paymentMethod === 'vale_refeicao') ? 'Vale refeição' :
           (order.paymentMethod === 'food_voucher' || order.paymentMethod === 'vale_alimentacao') ? 'Vale alimentação' :
           order.paymentMethod

@@ -10,6 +10,7 @@ import type { Customer, CustomerAddress } from "@/services/customers.service";
 import type { Coupon } from "@/services/coupon.service";
 import { createOrder } from "@/services/order.service";
 import { useToast } from "@/components/ui/use-toast";
+import { isPromoAllowed } from "@/utils/promoPayment";
 import { buildImageUrl } from "@/utils/image-url";
 import { useSettings } from "@/hooks/useSettings";
 import { useFreight } from "@/hooks/useFreight";
@@ -70,7 +71,7 @@ export default function CreateOrderPage() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [creditInstallments, setCreditInstallments] = useState(1);
   const effectiveItems = orderItems.map(item => {
-    if (paymentMethod !== "PIX" && paymentMethod !== "" && item.isPromo && item.oldPrice) {
+    if (!isPromoAllowed(paymentMethod, storeSettings?.promoPaymentMethods) && item.isPromo && item.oldPrice) {
       return { ...item, price: item.oldPrice };
     }
     return item;
@@ -508,10 +509,10 @@ export default function CreateOrderPage() {
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
                       <div className="text-left sm:text-right flex flex-col sm:items-end">
-                        {item.isPromo && item.oldPrice && paymentMethod !== "PIX" && paymentMethod !== "" && (
-                          <span className="text-[10px] text-amber-500 font-bold">Sem desconto PIX</span>
+                        {item.isPromo && item.oldPrice && !isPromoAllowed(paymentMethod, storeSettings?.promoPaymentMethods) && (
+                          <span className="text-[10px] text-amber-500 font-bold">Sem preço promocional</span>
                         )}
-                        {item.isPromo && item.oldPrice && (paymentMethod === "PIX" || paymentMethod === "") && (
+                        {item.isPromo && item.oldPrice && isPromoAllowed(paymentMethod, storeSettings?.promoPaymentMethods) && (
                           <span className="text-[11px] text-muted-foreground line-through">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.oldPrice * item.quantity)}
                           </span>

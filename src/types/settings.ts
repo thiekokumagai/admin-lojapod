@@ -90,6 +90,8 @@ export interface StoreSettings {
   deliveryType?: string; // "NO_FEE", "FIXED_FEE", "TO_COMBINE", "DISTANCE"
   deliveryFixedFee?: number | null;
   paymentRules: PaymentRule[];
+  /** Formas de pagamento que mantêm o preço promocional. Padrão: ["pix"] */
+  promoPaymentMethods?: string[];
   installmentRules?: InstallmentRule[] | null;
   
   templateId?: 'classic' | 'menu-express' | 'urban' | 'urban';
