@@ -16,27 +16,30 @@ self.addEventListener('message', (event) => {
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Listen to Push event
+// IMPORTANTE: no iOS/Safari todo push DEVE exibir uma notificação visível.
+// Se o handler terminar sem chamar showNotification, o Safari revoga a
+// inscrição silenciosamente após alguns pushes.
 self.addEventListener('push', (event) => {
+  let data = { title: 'Loja Pod', body: 'Você tem uma nova notificação' };
   if (event.data) {
-    let data;
     try {
       data = event.data.json();
     } catch (e) {
       data = { title: 'Nova notificação', body: event.data.text() };
     }
-    let iconUrl = '/favicon-192x192.png';
-    if (data.data && data.data.icon) {
-      iconUrl = data.data.icon;
-    }
-
-    const options = {
-      body: data.body,
-      icon: iconUrl,
-      data: data.data || {},
-      vibrate: [100, 50, 100],
-    };
-    event.waitUntil(self.registration.showNotification(data.title || 'Loja Pod', options));
   }
+  let iconUrl = '/favicon-192x192.png';
+  if (data.data && data.data.icon) {
+    iconUrl = data.data.icon;
+  }
+
+  const options = {
+    body: data.body,
+    icon: iconUrl,
+    data: data.data || {},
+    vibrate: [100, 50, 100],
+  };
+  event.waitUntil(self.registration.showNotification(data.title || 'Loja Pod', options));
 });
 
 // Listen to Notification click event
