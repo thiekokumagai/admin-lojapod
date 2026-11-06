@@ -17,8 +17,8 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-// activate: precisa tocar em "Ativar" | denied: bloqueado nos Ajustes | install: iPhone fora da tela inicial
-type PushIssue = 'activate' | 'denied' | 'install' | null;
+// activate: precisa tocar em "Ativar" (inclui bloqueado) | install: iPhone fora da tela inicial
+type PushIssue = 'activate' | 'install' | null;
 
 const isIOS = () =>
   typeof navigator !== 'undefined' &&
@@ -79,12 +79,9 @@ export function PushNotificationManager() {
     }
     if (!('Notification' in window) || !registration?.pushManager) return;
 
-    if (Notification.permission === 'default') {
+    if (Notification.permission !== 'granted') {
+      // 'default' ou 'denied': mostra o mesmo aviso para ativar.
       setIssue('activate');
-      return;
-    }
-    if (Notification.permission === 'denied') {
-      setIssue('denied');
       return;
     }
 
@@ -125,7 +122,7 @@ export function PushNotificationManager() {
           toast.success('Notificações ativadas com sucesso!');
         }
       } else if (permission === 'denied') {
-        setIssue('denied');
+        toast.error('Notificações bloqueadas. Abra Ajustes → Notificações, escolha este app e permita as notificações.');
       } else {
         toast.error(`Permissão para notificações negada (status: ${permission}).`);
       }
@@ -174,10 +171,6 @@ export function PushNotificationManager() {
     activate: {
       title: 'Ative as Notificações',
       text: 'Para não perder nenhuma venda, ative os alertas instantâneos de novos pedidos.',
-    },
-    denied: {
-      title: 'Notificações bloqueadas',
-      text: 'As notificações estão bloqueadas neste aparelho. Abra Ajustes → Notificações, escolha este app e permita as notificações. Depois volte aqui.',
     },
     install: {
       title: 'Instale o app na tela inicial',
