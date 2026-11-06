@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import type { SearchFilterGroup, SearchFilterItem } from "@/types/settings";
 import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key, ShieldCheck, RefreshCw, AlertCircle, Link2, ArrowUpDown } from "lucide-react";
 
 const STORE_CNAME = import.meta.env.VITE_STORE_CNAME || "cliente-lojapod-production.up.railway.app";
@@ -161,6 +162,8 @@ export function GeneralSettingsForm() {
   const [autoHideOutOfStock, setAutoHideOutOfStock] = useState(true);
   const [enableStockAlertNotification, setEnableStockAlertNotification] = useState(true);
   const [showVariationsOnCard, setShowVariationsOnCard] = useState(true);
+  const [searchFilters, setSearchFilters] = useState<SearchFilterGroup[]>([]);
+  const [uploadingFilterItem, setUploadingFilterItem] = useState<string | null>(null);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingWhiteLogo, setIsUploadingWhiteLogo] = useState(false);
@@ -219,12 +222,56 @@ export function GeneralSettingsForm() {
       setAutoHideOutOfStock(settings.autoHideOutOfStock !== undefined ? !!settings.autoHideOutOfStock : true);
       setEnableStockAlertNotification(settings.enableStockAlertNotification !== undefined ? !!settings.enableStockAlertNotification : true);
       setShowVariationsOnCard(settings.showVariationsOnCard !== undefined ? !!settings.showVariationsOnCard : true);
+      setSearchFilters(Array.isArray(settings.searchFilters) ? settings.searchFilters : []);
     }
   }, [settings]);
 
 
 
   // Uploads
+  const newId = () => Math.random().toString(36).slice(2, 10);
+
+  const addFilterGroup = () =>
+    setSearchFilters((prev) => [...prev, { id: newId(), name: "", items: [] }]);
+
+  const updateFilterGroup = (groupId: string, patch: Partial<SearchFilterGroup>) =>
+    setSearchFilters((prev) => prev.map((g) => (g.id === groupId ? { ...g, ...patch } : g)));
+
+  const removeFilterGroup = (groupId: string) =>
+    setSearchFilters((prev) => prev.filter((g) => g.id !== groupId));
+
+  const addFilterItem = (groupId: string) =>
+    setSearchFilters((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, items: [...g.items, { id: newId(), label: "" }] } : g))
+    );
+
+  const updateFilterItem = (groupId: string, itemId: string, patch: Partial<SearchFilterItem>) =>
+    setSearchFilters((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? { ...g, items: g.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }
+          : g
+      )
+    );
+
+  const removeFilterItem = (groupId: string, itemId: string) =>
+    setSearchFilters((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, items: g.items.filter((i) => i.id !== itemId) } : g))
+    );
+
+  const handleFilterItemImage = async (groupId: string, itemId: string, file?: File) => {
+    if (!file) return;
+    setUploadingFilterItem(itemId);
+    try {
+      const res = await uploadSettingsMedia(file);
+      updateFilterItem(groupId, itemId, { imageUrl: res.url });
+    } catch {
+      toast({ title: "Erro ao enviar imagem", variant: "destructive" });
+    } finally {
+      setUploadingFilterItem(null);
+    }
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -479,6 +526,15 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         autoHideOutOfStock,
         enableStockAlertNotification,
         showVariationsOnCard,
+        searchFilters: searchFilters
+          .map((g) => ({
+            ...g,
+            name: g.name.trim(),
+            items: g.items
+              .map((i) => ({ ...i, label: i.label.trim() }))
+              .filter((i) => i.label),
+          }))
+          .filter((g) => g.name && g.items.length > 0),
       });
 
       toast({
@@ -985,6 +1041,95 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
                 checked={showVariationsOnCard}
                 onCheckedChange={setShowVariationsOnCard}
               />
+            </div>
+
+            <div className="space-y-3 pt-3 border-t">
+              <div className="space-y-0.5">
+                <Label className="font-medium text-sm">Filtros da loja (marca, sabor, produto...)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Crie grupos (ex.: Sabor, Marca) e adicione itens com imagem. Na loja aparece um ícone de filtro ao lado do menu; ao clicar num item, a loja busca por aquela palavra.
+                </p>
+              </div>
+
+              {searchFilters.map((group) => (
+                <div key={group.id} className="rounded-lg border p-3 space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={group.name}
+                      placeholder="Nome do grupo (ex.: Sabor)"
+                      onChange={(e) => updateFilterGroup(group.id, { name: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remover grupo"
+                      onClick={() => removeFilterGroup(group.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {group.items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <label
+                          className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border bg-muted"
+                          title="Enviar imagem"
+                        >
+                          {item.imageUrl ? (
+                            <img src={buildImageUrl(item.imageUrl)} alt="" className="h-full w-full object-cover" />
+                          ) : uploadingFilterItem === item.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : (
+                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              handleFilterItemImage(group.id, item.id, e.target.files?.[0]);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <Input
+                          value={item.label}
+                          placeholder="Palavra da busca (ex.: Menta)"
+                          onChange={(e) => updateFilterItem(group.id, item.id, { label: e.target.value })}
+                        />
+                        {item.imageUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateFilterItem(group.id, item.id, { imageUrl: undefined })}
+                          >
+                            Sem imagem
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Remover item"
+                          onClick={() => removeFilterItem(group.id, item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={() => addFilterItem(group.id)}>
+                      + Adicionar item
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              <Button type="button" variant="outline" onClick={addFilterGroup}>
+                + Adicionar grupo de filtro
+              </Button>
             </div>
           </div>
         </div>

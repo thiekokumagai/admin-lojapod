@@ -104,6 +104,7 @@ export interface StoreSettings {
   autoHideOutOfStock?: boolean;
   enableStockAlertNotification?: boolean;
   showVariationsOnCard?: boolean;
+  searchFilters?: SearchFilterGroup[];
 
   // Uber Direct
   uberDirectEnabled?: boolean;
@@ -120,4 +121,16 @@ export interface StoreSettings {
 
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface SearchFilterItem {
+  id: string;
+  label: string;
+  imageUrl?: string;
+}
+
+export interface SearchFilterGroup {
+  id: string;
+  name: string;
+  items: SearchFilterItem[];
 }
