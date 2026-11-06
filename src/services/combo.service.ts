@@ -114,7 +114,10 @@ export const comboService = {
     const res = await apiFetch(`/combos/${id}/toggle-active`, {
       method: "PATCH",
     });
-    if (!res.ok) throw new Error("Erro ao alterar status do combo");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Erro ao alterar status do combo");
+    }
     return res.json();
   },
 

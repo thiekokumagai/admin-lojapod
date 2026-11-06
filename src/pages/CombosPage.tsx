@@ -85,43 +85,34 @@ export default function CombosPage() {
     setSelectedIds([]);
   };
 
-  const handleBulkEnable = async (ids: string[]) => {
+  const bulkToggle = async (ids: string[], enable: boolean) => {
+    const verb = enable ? "ativados" : "desativados";
     try {
       setIsBulkPending(true);
+      let ok = 0;
+      const failures: string[] = [];
       for (const id of ids) {
         const c = combos.find((item) => item.id === id);
-        if (c && !c.isActive) {
-          await comboService.toggleActive(id);
+        try {
+          await comboService.update(id, { isActive: enable });
+          ok++;
+        } catch (err: any) {
+          failures.push(`${c?.name ?? id}: ${err.message || "erro"}`);
         }
       }
-      toast.success("Combos ativados com sucesso!");
+      if (ok > 0) toast.success(`${ok} combo(s) ${verb} com sucesso!`);
+      if (failures.length > 0) {
+        toast.error(`${failures.length} combo(s) não puderam ser ${verb}:\n${failures.join("\n")}`);
+      }
       setSelectedIds([]);
       loadCombos();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao ativar combos.");
     } finally {
       setIsBulkPending(false);
     }
   };
 
-  const handleBulkDisable = async (ids: string[]) => {
-    try {
-      setIsBulkPending(true);
-      for (const id of ids) {
-        const c = combos.find((item) => item.id === id);
-        if (c && c.isActive) {
-          await comboService.toggleActive(id);
-        }
-      }
-      toast.success("Combos desativados com sucesso!");
-      setSelectedIds([]);
-      loadCombos();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao desativar combos.");
-    } finally {
-      setIsBulkPending(false);
-    }
-  };
+  const handleBulkEnable = (ids: string[]) => bulkToggle(ids, true);
+  const handleBulkDisable = (ids: string[]) => bulkToggle(ids, false);
 
   const handleBulkDelete = async (ids: string[]) => {
     try {
