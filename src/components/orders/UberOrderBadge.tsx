@@ -19,6 +19,9 @@ interface UberOrderBadgeProps {
 export function UberOrderBadge({ order, className = "" }: UberOrderBadgeProps) {
   const { data: settings } = useSettings();
 
+  // Pedido entregue (concluído): não exibe nada da Uber
+  if (order.status === "COMPLETED") return null;
+
   if (order.uberDeliveryId) {
     return (
       <Badge

@@ -54,3 +54,12 @@ export async function testUberAuth(): Promise<{
   const response = await apiFetch(`/uber/test-auth`);
   return response.json();
 }
+
+export async function refreshUberDeliveryStatus(orderId: string): Promise<{
+  status: string;
+  trackingUrl?: string | null;
+  fee?: number | null;
+}> {
+  const response = await apiFetch(`/uber/orders/${orderId}/status`);
+  return response.json();
+}

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { dispatchSingleOrderUber, getUberDirectStatus } from "@/services/uber.service";
+import { dispatchSingleOrderUber, getUberDirectStatus, refreshUberDeliveryStatus } from "@/services/uber.service";
 import { OrderStatus } from "@/types/order";
 import { customersService } from "@/services/customers.service";
 import { getProductById } from "@/services/product.service";
@@ -131,6 +131,30 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
     retry: false,
   });
   const uberReady = !!(uberStatus?.enabled && uberStatus?.hasCredentials);
+
+  // Ao abrir o pedido, consulta a Uber para atualizar o status da corrida (enquanto não estiver finalizada)
+  const uberOrderId = order?.id;
+  const uberDeliveryId = order?.uberDeliveryId;
+  const uberDeliveryStatus = order?.uberDeliveryStatus;
+  useEffect(() => {
+    if (!isOpen || !uberOrderId || !uberDeliveryId) return;
+    const finalStatuses = ["delivered", "canceled", "cancelled", "returned"];
+    if (finalStatuses.includes((uberDeliveryStatus || "").toLowerCase())) return;
+    let cancelled = false;
+    refreshUberDeliveryStatus(uberOrderId)
+      .then((res) => {
+        if (cancelled) return;
+        if (res?.status && res.status !== uberDeliveryStatus) {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+        }
+      })
+      .catch(() => {
+        // falha na consulta: mantém o último status salvo
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, uberOrderId, uberDeliveryId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCallUber = async () => {
     if (!order) return;
@@ -1249,13 +1273,15 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
               </div>
 
               {/* Uber Direct Section */}
-              {(order.uberDeliveryId || (uberReady && !readOnly && order.deliveryModality !== "STORE_PICKUP" && order.status !== "CANCELLED")) && (
+              {(order.uberDeliveryId || (uberReady && order.status !== "COMPLETED" && !readOnly && order.deliveryModality !== "STORE_PICKUP" && order.status !== "CANCELLED")) && (
                 <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm space-y-2 mt-4">
                   <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Uber Direct</span>
                   {order.uberDeliveryId ? (
                     <>
                       <div className="text-xs text-slate-600 font-medium space-y-1">
-                        <div>Status: <span className="font-bold text-slate-800">{translateUberStatus(order.uberDeliveryStatus)}</span></div>
+                        {order.status !== "COMPLETED" && (
+                          <div>Status: <span className="font-bold text-slate-800">{translateUberStatus(order.uberDeliveryStatus)}</span></div>
+                        )}
                         {order.uberDeliveryFee != null && (
                           <div>Taxa: <span className="font-bold text-slate-800">R$ {Number(order.uberDeliveryFee).toFixed(2).replace(".", ",")}</span></div>
                         )}
