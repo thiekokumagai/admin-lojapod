@@ -168,7 +168,7 @@ export default function DeliveryMapPage() {
   });
 
   const registerFeeMutation = useMutation({
-    mutationFn: (data: { courierId: string; amount: number; description: string }) => couriersService.registerFee(data),
+    mutationFn: (data: { courierId: string; amount: number; description: string; orderIds?: string[] }) => couriersService.registerFee(data),
     onSuccess: () => {
       toast.success("Taxa registrada para o motoboy!");
       if (sendRouteModal.routeId) {

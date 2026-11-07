@@ -1,5 +1,20 @@
 import { apiFetch } from './api';
 
+export interface CourierOrder {
+  id: string;
+  orderNumber: number;
+  customerName: string;
+  neighborhood?: string;
+  totalOrder: number | string;
+  totalReceived: number | string;
+  paymentType: string;
+  paymentMethod: string;
+  paymentStatus?: string;
+  amountProvided?: number | string | null;
+  changeAmount?: number | string | null;
+  status?: string;
+}
+
 export interface CourierTransaction {
   id: string;
   courierId: string;
@@ -7,6 +22,7 @@ export interface CourierTransaction {
   amount: number | string;
   description: string;
   date: string;
+  orders?: CourierOrder[];
 }
 
 export interface Courier {
@@ -40,7 +56,7 @@ export const couriersService = {
     return response.json();
   },
 
-  registerFee: async (data: { courierId: string; amount: number; description: string }) => {
+  registerFee: async (data: { courierId: string; amount: number; description: string; orderIds?: string[] }) => {
     const response = await apiFetch('/couriers/fee', {
       method: 'POST',
       body: JSON.stringify(data),

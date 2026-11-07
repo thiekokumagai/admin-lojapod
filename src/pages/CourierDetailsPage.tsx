@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Courier, couriersService } from "@/services/couriers.service";
+import { Courier, CourierOrder, couriersService } from "@/services/couriers.service";
 import { formatCurrency, formatPhone } from "@/utils/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Trash2, ArrowUpRight, ArrowDownRight, User, Pencil } from "lucide-react";
+import { ArrowLeft, Trash2, ArrowUpRight, ArrowDownRight, User, Pencil, Wallet } from "lucide-react";
 import { format, isToday, isThisWeek, isThisMonth } from "date-fns";
 import {
   Select,
@@ -24,6 +24,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+const formatMethodName = (method?: string) => {
+  if (!method) return "Outros";
+  const m = method.toLowerCase();
+  if (m === "pix") return "Pix";
+  if (m === "credito" || m === "credit" || m === "cartão de crédito") return "Cartão de Crédito";
+  if (m === "debito" || m === "debit" || m === "cartão de débito") return "Cartão de Débito";
+  if (m === "dinheiro" || m === "cash") return "Dinheiro";
+  if (m === "meal_voucher" || m === "vale_refeicao" || m === "vale refeição" || m === "vale refeicao") return "Vale refeição";
+  if (m === "food_voucher" || m === "vale_alimentacao" || m === "vale alimentação" || m === "vale alimentacao") return "Vale alimentação";
+  return method;
+};
+
+const isPaidOnline = (o: CourierOrder) => (o.paymentType || "").toLowerCase() === "online";
+
+type MethodSummary = {
+  label: string;
+  online: boolean;
+  count: number;
+  total: number;
+  change: number;
+};
 
 export default function CourierDetailsPage() {
   const { id } = useParams();
@@ -115,6 +137,30 @@ export default function CourierDetailsPage() {
   const totalReceived = filteredTransactions.filter(t => t.type === "PAYMENT").reduce((acc, t) => acc + Number(t.amount), 0);
   const totalDeliveries = filteredTransactions.filter(t => t.type === "FEE").length;
 
+  // Pedidos levados pelo motoboy no período (vinculados às rotas/taxas)
+  const deliveredOrders = filteredTransactions
+    .filter(t => t.type === "FEE")
+    .flatMap(t => t.orders || []);
+
+  const methodSummaries: MethodSummary[] = Object.values(
+    deliveredOrders.reduce<Record<string, MethodSummary>>((acc, o) => {
+      const online = isPaidOnline(o);
+      const label = formatMethodName(o.paymentMethod);
+      const key = `${online ? "online" : "entrega"}:${label}`;
+      if (!acc[key]) acc[key] = { label, online, count: 0, total: 0, change: 0 };
+      acc[key].count += 1;
+      acc[key].total += Number(o.totalReceived ?? o.totalOrder) || 0;
+      acc[key].change += Number(o.changeAmount) || 0;
+      return acc;
+    }, {})
+  ).sort((a, b) => Number(a.online) - Number(b.online) || b.total - a.total);
+
+  const onDeliverySummaries = methodSummaries.filter(s => !s.online);
+  const onlineSummaries = methodSummaries.filter(s => s.online);
+  const totalOnDelivery = onDeliverySummaries.reduce((acc, s) => acc + s.total, 0);
+  const totalOnline = onlineSummaries.reduce((acc, s) => acc + s.total, 0);
+  const cashSummary = onDeliverySummaries.find(s => s.label === "Dinheiro");
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -204,6 +250,72 @@ export default function CourierDetailsPage() {
 
       <Card className="border-slate-200">
         <CardHeader className="bg-slate-50/50 border-b py-4">
+          <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-slate-500" />
+            Conferência de Recebimentos
+            <span className="text-xs font-medium text-slate-400">({deliveredOrders.length} {deliveredOrders.length === 1 ? "pedido" : "pedidos"})</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          {deliveredOrders.length === 0 ? (
+            <div className="text-center py-6 text-gray-500 text-sm">
+              Nenhum pedido vinculado a este motoboy no período.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="border rounded-xl overflow-hidden">
+                <div className="bg-amber-50 px-4 py-2.5 flex justify-between items-center border-b border-amber-100">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-800">Cobrado na entrega (com o motoboy)</span>
+                  <span className="font-black text-amber-700">{formatCurrency(totalOnDelivery)}</span>
+                </div>
+                {onDeliverySummaries.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-slate-500">Nenhum pedido cobrado na entrega.</p>
+                ) : (
+                  <ul className="divide-y">
+                    {onDeliverySummaries.map(s => (
+                      <li key={s.label} className="px-4 py-2.5 flex justify-between items-center text-sm">
+                        <span className="font-semibold text-slate-700">
+                          {s.label} <span className="text-xs font-medium text-slate-400">({s.count})</span>
+                        </span>
+                        <span className="font-bold text-slate-800">{formatCurrency(s.total)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {cashSummary && cashSummary.change > 0 && (
+                  <p className="px-4 py-2 text-[11px] text-slate-500 bg-slate-50 border-t">
+                    Troco levado para os pedidos em dinheiro: <strong>{formatCurrency(cashSummary.change)}</strong>
+                  </p>
+                )}
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="bg-sky-50 px-4 py-2.5 flex justify-between items-center border-b border-sky-100">
+                  <span className="text-xs font-bold uppercase tracking-wider text-sky-800">Já pago online</span>
+                  <span className="font-black text-sky-700">{formatCurrency(totalOnline)}</span>
+                </div>
+                {onlineSummaries.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-slate-500">Nenhum pedido pago online.</p>
+                ) : (
+                  <ul className="divide-y">
+                    {onlineSummaries.map(s => (
+                      <li key={s.label} className="px-4 py-2.5 flex justify-between items-center text-sm">
+                        <span className="font-semibold text-slate-700">
+                          {s.label} <span className="text-xs font-medium text-slate-400">({s.count})</span>
+                        </span>
+                        <span className="font-bold text-slate-800">{formatCurrency(s.total)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200">
+        <CardHeader className="bg-slate-50/50 border-b py-4">
           <CardTitle className="text-base font-bold text-slate-700">Histórico de Corridas e Pagamentos</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -217,6 +329,16 @@ export default function CourierDetailsPage() {
                     <span className="text-xs text-slate-500 font-medium mt-1">
                       {format(new Date(tx.date), "dd/MM/yyyy HH:mm")}
                     </span>
+                    {tx.orders && tx.orders.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5">
+                        {tx.orders.map(o => (
+                          <li key={o.id} className="text-[11px] font-medium text-slate-500">
+                            #{o.orderNumber} · {formatMethodName(o.paymentMethod)}
+                            {isPaidOnline(o) ? " (online)" : ""} · {formatCurrency(Number(o.totalReceived ?? o.totalOrder))}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <span className={`font-black ${tx.type === "FEE" ? "text-emerald-600" : "text-rose-600"}`}>
                     {tx.type === "FEE" ? "+" : "-"} {formatCurrency(Number(tx.amount))}
@@ -272,6 +394,16 @@ export default function CourierDetailsPage() {
                     </TableCell>
                     <TableCell className="font-semibold text-slate-700">
                       {tx.description}
+                      {tx.orders && tx.orders.length > 0 && (
+                        <ul className="mt-1.5 space-y-0.5">
+                          {tx.orders.map(o => (
+                            <li key={o.id} className="text-xs font-medium text-slate-500">
+                              #{o.orderNumber} · {o.customerName} · {formatMethodName(o.paymentMethod)}
+                              {isPaidOnline(o) ? " (online)" : ""} · <span className="text-slate-700">{formatCurrency(Number(o.totalReceived ?? o.totalOrder))}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </TableCell>
                     <TableCell>
                       {tx.type === "FEE" ? (
