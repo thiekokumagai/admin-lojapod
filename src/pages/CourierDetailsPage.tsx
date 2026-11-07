@@ -39,6 +39,14 @@ const formatMethodName = (method?: string) => {
 
 const isPaidOnline = (o: CourierOrder) => (o.paymentType || "").toLowerCase() === "online";
 
+const isOrderPaid = (o: CourierOrder) => o.paymentStatus === "PAID" && Number(o.totalReceived) > 0;
+
+// Pago: valor efetivamente recebido. Ainda não baixado: total a cobrar do pedido.
+const orderAmount = (o: CourierOrder) =>
+  isOrderPaid(o) ? Number(o.totalReceived) : Number(o.totalOrder) || 0;
+
+const pendingTag = (o: CourierOrder) => (isOrderPaid(o) ? "" : " (não baixado)");
+
 type MethodSummary = {
   label: string;
   online: boolean;
@@ -149,7 +157,7 @@ export default function CourierDetailsPage() {
       const key = `${online ? "online" : "entrega"}:${label}`;
       if (!acc[key]) acc[key] = { label, online, count: 0, total: 0, change: 0 };
       acc[key].count += 1;
-      acc[key].total += Number(o.totalReceived ?? o.totalOrder) || 0;
+      acc[key].total += orderAmount(o);
       acc[key].change += Number(o.changeAmount) || 0;
       return acc;
     }, {})
@@ -334,7 +342,7 @@ export default function CourierDetailsPage() {
                         {tx.orders.map(o => (
                           <li key={o.id} className="text-[11px] font-medium text-slate-500">
                             #{o.orderNumber} · {formatMethodName(o.paymentMethod)}
-                            {isPaidOnline(o) ? " (online)" : ""} · {formatCurrency(Number(o.totalReceived ?? o.totalOrder))}
+                            {isPaidOnline(o) ? " (online)" : ""} · {formatCurrency(orderAmount(o))}{pendingTag(o)}
                           </li>
                         ))}
                       </ul>
@@ -399,7 +407,8 @@ export default function CourierDetailsPage() {
                           {tx.orders.map(o => (
                             <li key={o.id} className="text-xs font-medium text-slate-500">
                               #{o.orderNumber} · {o.customerName} · {formatMethodName(o.paymentMethod)}
-                              {isPaidOnline(o) ? " (online)" : ""} · <span className="text-slate-700">{formatCurrency(Number(o.totalReceived ?? o.totalOrder))}</span>
+                              {isPaidOnline(o) ? " (online)" : ""} · <span className="text-slate-700">{formatCurrency(orderAmount(o))}</span>
+                              {!isOrderPaid(o) && <span className="text-amber-600"> (não baixado)</span>}
                             </li>
                           ))}
                         </ul>
