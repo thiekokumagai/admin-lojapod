@@ -96,33 +96,37 @@ export default function DashboardPage() {
     startStr: string,
     endStr: string
   ) => {
+    // Envia a data LOCAL (YYYY-MM-DD). A API converte para início/fim do dia
+    // no fuso da loja. Usar toISOString() aqui jogava o fim do dia para o dia
+    // seguinte em UTC, fazendo "Hoje" virar 2 dias (e perder o gráfico por hora).
+    const toLocalDateStr = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = toLocalDateStr(today);
 
     if (currentFilter === "today") {
-      return { start: startOfToday.toISOString(), end: endOfToday.toISOString() };
+      return { start: todayStr, end: todayStr };
     } else if (currentFilter === "7days") {
-      const start = new Date(startOfToday);
+      const start = new Date(today);
       start.setDate(start.getDate() - 6);
-      return { start: start.toISOString(), end: endOfToday.toISOString() };
+      return { start: toLocalDateStr(start), end: todayStr };
     } else if (currentFilter === "30days") {
-      const start = new Date(startOfToday);
+      const start = new Date(today);
       start.setDate(start.getDate() - 29);
-      return { start: start.toISOString(), end: endOfToday.toISOString() };
+      return { start: toLocalDateStr(start), end: todayStr };
     } else if (currentFilter === "6months") {
-      const start = new Date(startOfToday);
+      const start = new Date(today);
       start.setMonth(start.getMonth() - 6);
-      return { start: start.toISOString(), end: endOfToday.toISOString() };
+      return { start: toLocalDateStr(start), end: todayStr };
     } else if (currentFilter === "year") {
-      const start = new Date(startOfToday);
+      const start = new Date(today);
       start.setFullYear(start.getFullYear() - 1);
-      return { start: start.toISOString(), end: endOfToday.toISOString() };
+      return { start: toLocalDateStr(start), end: todayStr };
     } else if (currentFilter === "custom") {
       if (!startStr || !endStr) return null;
-      const start = new Date(startStr + "T00:00:00");
-      const end = new Date(endStr + "T23:59:59");
-      return { start: start.toISOString(), end: end.toISOString() };
+      return { start: startStr.split("T")[0], end: endStr.split("T")[0] };
     }
     return null;
   }, []);
