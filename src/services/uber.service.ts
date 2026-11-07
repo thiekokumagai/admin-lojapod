@@ -44,3 +44,13 @@ export async function dispatchUberBatchedRoutes(orderIds?: string[]): Promise<{
   return response.json();
 }
 
+
+export async function testUberAuth(): Promise<{
+  ok: boolean;
+  environment: string;
+  message?: string;
+  error?: string;
+}> {
+  const response = await apiFetch(`/uber/test-auth`);
+  return response.json();
+}

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
+import { testInfinitePayConnection } from "@/services/payments.service";
 import { CreditCard, Save, Copy, ExternalLink, Zap, ShieldCheck } from "lucide-react";
 
 export function PaymentGatewaysSettingsForm() {
@@ -19,6 +20,7 @@ export function PaymentGatewaysSettingsForm() {
   const [infinitePayApiKey, setInfinitePayApiKey] = useState("");
   const [infinitePayAssuredInstallments, setInfinitePayAssuredInstallments] = useState(1);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -47,6 +49,26 @@ export function PaymentGatewaysSettingsForm() {
       description: "Cole esta URL nas configurações de Webhook do seu painel InfinitePay.",
     });
     setTimeout(() => setCopiedWebhook(false), 2500);
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const result = await testInfinitePayConnection();
+      if (result.ok) {
+        toast({
+          title: "Conexão com a InfinitePay OK",
+          description: "Foi gerado um link de teste de R$ 1,00 (não é cobrado se ninguém pagar).",
+        });
+        if (result.checkoutUrl) window.open(result.checkoutUrl, "_blank", "noopener");
+      } else {
+        toast({ variant: "destructive", title: "Falha na conexão", description: result.error || "Erro desconhecido" });
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro ao testar", description: err.message || "Tente novamente" });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const handleSave = async () => {
@@ -218,7 +240,16 @@ export function PaymentGatewaysSettingsForm() {
         )}
 
         {/* Botão de Salvar */}
-        <div className="flex justify-end pt-4 border-t">
+        <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleTestConnection}
+            disabled={isTesting || !infinitePayHandle.trim()}
+          >
+            {isTesting ? "Testando..." : "Testar conexão"}
+          </Button>
           <Button
             size="sm"
             onClick={handleSave}

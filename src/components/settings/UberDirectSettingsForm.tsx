@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { testUberAuth } from "@/services/uber.service";
 import {
   Car, Zap, Compass, Key, Phone, FileText,
   CheckCircle2, ExternalLink, ChevronDown, ChevronUp, Clock, Eye,
@@ -50,6 +51,7 @@ export function UberDirectSettingsForm() {
   const [uberDirectBatchSize, setUberDirectBatchSize] = useState(3);
   const [uberDirectMaxAngleDelta, setUberDirectMaxAngleDelta] = useState(45);
   const [uberDirectDispatchDelayMinutes, setUberDirectDispatchDelayMinutes] = useState(0);
+  const [isTesting, setIsTesting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
@@ -91,6 +93,22 @@ export function UberDirectSettingsForm() {
       toast.success("Configurações do Uber Direct salvas com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao salvar configurações do Uber Direct: " + (err.message || "Tente novamente"));
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const result = await testUberAuth();
+      if (result.ok) {
+        toast.success(`Conexão com a Uber OK (${result.environment})`);
+      } else {
+        toast.error(result.error || "Falha ao autenticar na Uber");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao testar conexão: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -390,7 +408,18 @@ export function UberDirectSettingsForm() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end items-stretch sm:items-center gap-3 pt-4 border-t">
+            <span className="text-[11px] text-muted-foreground sm:mr-auto">
+              O teste usa as credenciais já salvas. Salve antes de testar.
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTestConnection}
+              disabled={isTesting || !isConfigured}
+            >
+              {isTesting ? "Testando..." : "Testar conexão"}
+            </Button>
             <Button
               onClick={handleSave}
               disabled={updateSettingsMutation.isPending || isLoading}

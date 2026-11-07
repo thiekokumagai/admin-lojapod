@@ -1,6 +1,7 @@
 ﻿import React, { useState } from "react";
 import { Order, OrderStatus } from "@/types/order";
 import { Badge } from "@/components/ui/badge";
+import { UberOrderBadge } from "@/components/orders/UberOrderBadge";
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu, 
@@ -303,6 +304,8 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
             <span className="truncate">{deliverySummary}</span>
           </Badge>
         )}
+
+        <UberOrderBadge order={order} />
 
         {/* Loyalty Badge */}
         {order.loyaltyRedemption && (

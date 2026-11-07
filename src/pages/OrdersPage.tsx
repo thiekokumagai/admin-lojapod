@@ -12,6 +12,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { UberOrderBadge } from "@/components/orders/UberOrderBadge";
 import { 
   Table, 
   TableBody, 
@@ -28,6 +29,7 @@ import { OrderKanbanBoard } from "@/components/orders/kanban/OrderKanbanBoard";
 import { OrderStatus, PaymentStatus } from "@/types/order";
 import { getStoreTimezone, getTodayRangeUtc } from "@/utils/date-timezone";
 import { io } from "socket.io-client";
+import { dispatchSingleOrderUber, dispatchUberBatchedRoutes } from "@/services/uber.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -698,6 +700,7 @@ export default function OrdersPage() {
                               Retirada
                             </Badge>
                           )}
+                          <UberOrderBadge order={order} />
                         </div>
                         <span className="font-mono font-bold text-slate-400 text-xs">#{order.orderNumber} • {new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -832,6 +835,7 @@ export default function OrdersPage() {
                               Retirada
                             </Badge>
                           )}
+                          <UberOrderBadge order={order} />
                           {order.observation && (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-1.5 py-0 h-5 text-[10px]" title={order.observation}>
                               OBS

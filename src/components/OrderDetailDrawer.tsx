@@ -25,6 +25,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { dispatchSingleOrderUber, getUberDirectStatus } from "@/services/uber.service";
 import { OrderStatus } from "@/types/order";
 import { customersService } from "@/services/customers.service";
 import { getProductById } from "@/services/product.service";
@@ -76,6 +78,24 @@ const paymentLabels: Record<string, string> = {
   vale_alimentacao: "Vale alimentação",
 };
 
+const UBER_STATUS_LABELS: Record<string, string> = {
+  pending: "Procurando motoboy",
+  processing: "Procurando motoboy",
+  pickup: "Motoboy a caminho da loja",
+  pickup_complete: "Pedido coletado",
+  dropoff: "A caminho do cliente",
+  delivered: "Entregue",
+  canceled: "Cancelada",
+  cancelled: "Cancelada",
+  returned: "Devolvido à loja",
+  ongoing: "Em andamento",
+};
+
+const translateUberStatus = (status?: string | null) => {
+  const key = (status || "pending").toLowerCase();
+  return UBER_STATUS_LABELS[key] || status || "Procurando motoboy";
+};
+
 export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly = false }: OrderDetailDrawerProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -101,6 +121,38 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
   const [copiedName, setCopiedName] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [isRepeating, setIsRepeating] = useState(false);
+  const [isCallingUber, setIsCallingUber] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: uberStatus } = useQuery({
+    queryKey: ["uber-status"],
+    queryFn: getUberDirectStatus,
+    enabled: isOpen && !readOnly,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const uberReady = !!(uberStatus?.enabled && uberStatus?.hasCredentials);
+
+  const handleCallUber = async () => {
+    if (!order) return;
+    setIsCallingUber(true);
+    try {
+      const res = await dispatchSingleOrderUber(order.id);
+      toast({
+        title: "Uber Direct acionado!",
+        description: res.trackingUrl ? "Corrida criada. Use o link para acompanhar." : "Corrida criada.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", order.id] });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao acionar Uber",
+        description: err?.message || "Verifique as configurações da Uber Direct.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCallingUber(false);
+    }
+  };
 
   const isPaid = order ? (order.paymentStatus === "PAID" || order.status === "CANCELLED") : false;
 
@@ -1195,6 +1247,48 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                   </div>
                 )}
               </div>
+
+              {/* Uber Direct Section */}
+              {(order.uberDeliveryId || (uberReady && !readOnly && order.deliveryModality !== "STORE_PICKUP" && order.status !== "CANCELLED")) && (
+                <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm space-y-2 mt-4">
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Uber Direct</span>
+                  {order.uberDeliveryId ? (
+                    <>
+                      <div className="text-xs text-slate-600 font-medium space-y-1">
+                        <div>Status: <span className="font-bold text-slate-800">{translateUberStatus(order.uberDeliveryStatus)}</span></div>
+                        {order.uberDeliveryFee != null && (
+                          <div>Taxa: <span className="font-bold text-slate-800">R$ {Number(order.uberDeliveryFee).toFixed(2).replace(".", ",")}</span></div>
+                        )}
+                        <div className="text-slate-400 break-all">ID: {order.uberDeliveryId}</div>
+                      </div>
+                      {order.uberTrackingUrl && (
+                        <a
+                          href={order.uberTrackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex text-xs font-bold text-violet-600 hover:text-violet-700 underline"
+                        >
+                          Acompanhar entrega
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-500">Nenhuma corrida criada para este pedido.</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCallUber}
+                        disabled={isCallingUber}
+                        className="h-8 text-xs font-bold"
+                      >
+                        {isCallingUber ? "Chamando..." : "Chamar Uber"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Observação Section */}
               {order.observation && (

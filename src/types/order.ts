@@ -55,6 +55,10 @@ export interface Order {
   paymentType: string;
   paymentMethod: string;
   deliveryModality?: string;
+  uberDeliveryId?: string | null;
+  uberTrackingUrl?: string | null;
+  uberDeliveryStatus?: string | null;
+  uberDeliveryFee?: number | null;
   street: string;
   number: string;
   neighborhood: string;
