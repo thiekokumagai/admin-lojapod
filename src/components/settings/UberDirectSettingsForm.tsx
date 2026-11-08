@@ -101,7 +101,7 @@ export function UberDirectSettingsForm() {
     try {
       const result = await testUberAuth();
       if (result.ok) {
-        toast.success(`Conexão com a Uber OK (${result.environment})`);
+        toast.success("Conexão com a Uber OK");
       } else {
         toast.error(result.error || "Falha ao autenticar na Uber");
       }
