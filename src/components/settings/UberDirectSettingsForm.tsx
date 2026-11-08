@@ -253,11 +253,11 @@ export function UberDirectSettingsForm() {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">3</span>
-                    <span>Copie o campo <strong>Customer ID</strong> e cole no campo <strong>UBER_CUSTOMER_ID</strong> abaixo</span>
+                    <span>Copie o campo <strong>User ID</strong> (também chamado de Customer ID — é o UUID que aparece na URL de exemplo) e cole no campo <strong>UBER_CUSTOMER_ID</strong> abaixo</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">4</span>
-                    <span>Copie o campo <strong>Client ID</strong> e cole no campo <strong>UBER_CLIENT_ID</strong> abaixo</span>
+                    <span>Copie o campo <strong>Developer customer ID</strong> (também chamado de Client ID) e cole no campo <strong>UBER_CLIENT_ID</strong> abaixo</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[10px]">5</span>
