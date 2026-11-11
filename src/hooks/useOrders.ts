@@ -93,15 +93,64 @@ export function useRevertReceiveOrder() {
   });
 }
 
+export const UPDATE_ORDER_STATUS_MUTATION_KEY = ["orders", "update-status"] as const;
+
+type OrderStatusPayload = { status?: OrderStatus; paymentStatus?: PaymentStatus };
+
+// Aplica o patch em qualquer formato de cache de pedidos (lista paginada, infinita ou detalhe)
+function patchOrdersCache(data: any, id: string, payload: OrderStatusPayload): any {
+  if (!data) return data;
+  const patchList = (list: any[]) =>
+    list.map((o) => (o?.id === id ? { ...o, ...payload } : o));
+
+  if (Array.isArray(data.pages)) {
+    return {
+      ...data,
+      pages: data.pages.map((p: any) =>
+        p && Array.isArray(p.data) ? { ...p, data: patchList(p.data) } : p
+      ),
+    };
+  }
+  if (Array.isArray(data.data)) {
+    return { ...data, data: patchList(data.data) };
+  }
+  if (Array.isArray(data)) {
+    return patchList(data);
+  }
+  if (data.id === id) {
+    return { ...data, ...payload };
+  }
+  return data;
+}
+
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { status?: OrderStatus; paymentStatus?: PaymentStatus } }) => 
+    mutationKey: UPDATE_ORDER_STATUS_MUTATION_KEY,
+    mutationFn: ({ id, payload }: { id: string; payload: OrderStatusPayload }) =>
       updateOrderStatus(id, payload),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["orders", id] });
+    // Atualização otimista: muda o visual na hora e a API roda em segundo plano
+    onMutate: async ({ id, payload }) => {
+      await queryClient.cancelQueries({ queryKey: ["orders"] });
+      const snapshot = queryClient.getQueriesData({ queryKey: ["orders"] });
+      queryClient.setQueriesData({ queryKey: ["orders"] }, (old: any) =>
+        patchOrdersCache(old, id, payload)
+      );
+      return { snapshot };
+    },
+    onError: (_err, _vars, context) => {
+      // Desfaz o visual se a API falhar
+      context?.snapshot?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
+      // Só revalida quando não houver outras mudanças pendentes,
+      // evitando que um refetch "desfaça" visualmente um card ainda em andamento
+      if (queryClient.isMutating({ mutationKey: UPDATE_ORDER_STATUS_MUTATION_KEY }) <= 1) {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+      }
       queryClient.invalidateQueries({ queryKey: ["cash-register-summary"] });
     },
   });

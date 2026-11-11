@@ -1,6 +1,6 @@
 import { useState, Fragment, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useInfiniteOrders, useOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { useInfiniteOrders, useOrders, useUpdateOrderStatus, UPDATE_ORDER_STATUS_MUTATION_KEY } from "@/hooks/useOrders";
 import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
@@ -103,7 +103,8 @@ export default function OrdersPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  // Com atualização otimista os cards não ficam mais bloqueados aguardando a API
+  const updatingOrderId: string | null = null;
   const [searchParams, setSearchParams] = useSearchParams();
   const limit = 20;
 
@@ -149,10 +150,9 @@ export default function OrdersPage() {
 
     socket.on('order.updated', (order) => {
       console.log('Order updated via websocket:', order);
+      // Se há mudanças otimistas pendentes, a própria mutation revalida ao terminar
+      if (queryClient.isMutating({ mutationKey: UPDATE_ORDER_STATUS_MUTATION_KEY }) > 0) return;
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      if (order && order.id) {
-        queryClient.invalidateQueries({ queryKey: ["orders", order.id] });
-      }
     });
 
     return () => {
@@ -280,7 +280,18 @@ export default function OrdersPage() {
   const updateStatusMutation = useUpdateOrderStatus();
 
   const handleUpdateStatus = (id: string, newStatus: OrderStatus) => {
-    updateStatusMutation.mutate({ id, payload: { status: newStatus } });
+    updateStatusMutation.mutate(
+      { id, payload: { status: newStatus } },
+      {
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Erro ao atualizar status",
+            description: err?.message || "Não foi possível alterar o status do pedido.",
+          });
+        },
+      }
+    );
   };
 
   const [isDispatchingUber, setIsDispatchingUber] = useState(false);
@@ -323,14 +334,9 @@ export default function OrdersPage() {
   };
 
   const handleKanbanUpdateStatus = (id: string, newStatus: OrderStatus) => {
-    if (updatingOrderId) return;
-    setUpdatingOrderId(id);
     updateStatusMutation.mutate(
       { id, payload: { status: newStatus } },
       {
-        onSettled: () => {
-          setUpdatingOrderId(null);
-        },
         onError: (err: any) => {
           toast({
             variant: "destructive",
@@ -343,14 +349,9 @@ export default function OrdersPage() {
   };
 
   const handleUpdatePaymentStatus = (id: string, newPaymentStatus: PaymentStatus) => {
-    if (updatingOrderId) return;
-    setUpdatingOrderId(id);
     updateStatusMutation.mutate(
       { id, payload: { paymentStatus: newPaymentStatus } },
       {
-        onSettled: () => {
-          setUpdatingOrderId(null);
-        },
         onSuccess: () => {
           toast({
             title: newPaymentStatus === "PAID" ? "Pagamento confirmado" : "Pagamento alterado",
