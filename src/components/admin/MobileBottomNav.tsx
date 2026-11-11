@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, Package, ShoppingBag, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { canAccessPath } from "@/lib/permissions";
 
 const mobileNavItems = [
   {
@@ -33,7 +34,7 @@ export function MobileBottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border md:hidden pb-[env(safe-area-inset-bottom)] shadow-lg">
       <div className="flex h-16 items-center justify-around px-1">
-        {mobileNavItems.map((item) => {
+        {mobileNavItems.filter((item) => canAccessPath(item.url)).map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

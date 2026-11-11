@@ -75,6 +75,8 @@ const DomainPage = lazyWithRetry(() => import("@/pages/DomainPage"));
 const StockNotificationsPage = lazyWithRetry(() => import("@/pages/StockNotificationsPage"));
 const LoyaltyPage = lazyWithRetry(() => import("@/pages/LoyaltyPage"));
 const OrderBumpsPage = lazyWithRetry(() => import("@/pages/OrderBumpsPage"));
+const UsersPage = lazyWithRetry(() => import("@/pages/UsersPage"));
+const NoAccessPage = lazyWithRetry(() => import("@/pages/NoAccessPage"));
 
 function RouteFallback() {
   return (
@@ -107,6 +109,7 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/suspended" element={<SuspendedStorePage />} />
+                <Route path="/sem-acesso" element={<NoAccessPage />} />
                 
                 {/* Rotas exclusivas do Super Admin */}
                 <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />}>
@@ -119,8 +122,8 @@ const App = () => (
                   </Route>
                 </Route>
 
-                {/* Rotas exclusivas do Admin da Loja */}
-                <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+                {/* Rotas da Loja: Admin acessa tudo; funcionários (USER) só as telas liberadas */}
+                <Route element={<ProtectedRoute allowedRoles={["ADMIN", "USER"]} checkScreenPermissions />}>
                   <Route path="/pedidos/:id/imprimir" element={<OrderPrintPage />} />
                   <Route element={<AdminLayout />}>
                     <Route path="/" element={<DashboardPage />} />
@@ -159,6 +162,7 @@ const App = () => (
                     <Route path="/variacoes/:id" element={<VariationDetailsPage />} />
                     <Route path="/importacao" element={<ImportacaoPage />} />
                     <Route path="/dominio" element={<DomainPage />} />
+                    <Route path="/usuarios" element={<UsersPage />} />
                   </Route>
                 </Route>
 

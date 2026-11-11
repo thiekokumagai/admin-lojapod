@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "@/hooks/useSettings";
 import { buildImageUrl } from "@/utils/image-url";
 import { isSuperAdmin } from "@/lib/auth";
+import { canAccessPath } from "@/lib/permissions";
 import {
   Sidebar,
   SidebarContent,
@@ -54,6 +55,10 @@ export function AdminSidebar() {
   const { data: settings } = useSettings();
   const collapsed = state === "collapsed";
   const superAdmin = isSuperAdmin();
+  const topItems = [dashboardNavItem, marketingLinkItem].filter((item) => canAccessPath(item.url));
+  const visibleSections = navSections
+    .map((section) => ({ ...section, items: section.items.filter((item) => canAccessPath(item.url)) }))
+    .filter((section) => section.items.length > 0);
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -129,42 +134,32 @@ export function AdminSidebar() {
         ) : (
           /* MENU PADRÃO DA LOJA */
           <>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={dashboardNavItem.url}
-                        end
-                        onClick={handleLinkClick}
-                        className="hover:bg-sidebar-accent/60 transition-colors"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
-                      >
-                        <dashboardNavItem.icon className="mr-2 h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{dashboardNavItem.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={marketingLinkItem.url}
-                        end
-                        onClick={handleLinkClick}
-                        className="hover:bg-sidebar-accent/60 transition-colors"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
-                      >
-                        <marketingLinkItem.icon className="mr-2 h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{marketingLinkItem.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {topItems.length > 0 && (
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {topItems.map((item) => (
+                      <SidebarMenuItem key={item.url}>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            end
+                            onClick={handleLinkClick}
+                            className="hover:bg-sidebar-accent/60 transition-colors"
+                            activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
+                          >
+                            <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                            {!collapsed && <span>{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
 
-            {navSections.map((section) => (
+            {visibleSections.map((section) => (
               <SidebarGroup key={section.label}>
                 <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
                 <SidebarGroupContent>

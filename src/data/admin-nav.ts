@@ -20,6 +20,7 @@ import {
   BellRing,
   Award,
   ListPlus,
+  UserCog,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -99,6 +100,7 @@ export const navSections = [
     label: "Configuração",
     items: [
       { title: "Configurações", url: "/configuracoes", icon: Settings },
+      { title: "Usuários", url: "/usuarios", icon: UserCog },
     ],
   },
 ];

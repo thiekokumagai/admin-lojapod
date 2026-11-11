@@ -1,11 +1,15 @@
 export const AUTH_STORAGE_KEY = "admin-auth";
 
+/** USER = funcionário da loja, com acesso restrito às telas liberadas pelo admin. */
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "USER";
+
 export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN";
+  role: UserRole;
   storeId?: string | null;
+  permissions?: string[];
 };
 
 export type AuthSession = {
@@ -38,7 +42,7 @@ export function getAuthSession(): AuthSession | null {
   }
 }
 
-export function getUserRole(): "SUPER_ADMIN" | "ADMIN" {
+export function getUserRole(): UserRole {
   const session = getAuthSession();
   if (session?.user?.role) {
     return session.user.role;
@@ -46,7 +50,7 @@ export function getUserRole(): "SUPER_ADMIN" | "ADMIN" {
   if (session?.accessToken) {
     try {
       const payload = JSON.parse(atob(session.accessToken.split('.')[1]));
-      if (payload.role === 'SUPER_ADMIN') return 'SUPER_ADMIN';
+      if (payload.role === 'SUPER_ADMIN' || payload.role === 'USER') return payload.role;
     } catch (e) {
       // ignore
     }
