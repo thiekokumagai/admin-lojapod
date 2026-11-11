@@ -22,16 +22,18 @@ const PRODUCT_INLINE_MUTATION_KEY = ["products", "inline-update"] as const;
 function patchProductsCache(data: any, fn: (product: any) => any): any {
   if (!data) return data;
   const patchList = (list: any[]) => list.map((p) => (p && typeof p === "object" ? fn(p) : p));
+  // Páginas da API vêm como { products, meta } (ou { data, meta } em outros endpoints)
+  const patchPage = (pg: any) => {
+    if (!pg || typeof pg !== "object") return pg;
+    if (Array.isArray(pg.products)) return { ...pg, products: patchList(pg.products) };
+    if (Array.isArray(pg.data)) return { ...pg, data: patchList(pg.data) };
+    return pg;
+  };
   if (Array.isArray(data.pages)) {
-    return {
-      ...data,
-      pages: data.pages.map((pg: any) =>
-        pg && Array.isArray(pg.data) ? { ...pg, data: patchList(pg.data) } : pg
-      ),
-    };
+    return { ...data, pages: data.pages.map(patchPage) };
   }
-  if (Array.isArray(data.data)) return { ...data, data: patchList(data.data) };
   if (Array.isArray(data)) return patchList(data);
+  if (Array.isArray(data.products) || Array.isArray(data.data)) return patchPage(data);
   if (typeof data === "object" && "id" in data) return fn(data);
   return data;
 }
