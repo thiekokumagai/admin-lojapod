@@ -16,6 +16,26 @@ import {
   duplicateProduct,
 } from "@/services/product.service";
 
+const PRODUCT_INLINE_MUTATION_KEY = ["products", "inline-update"] as const;
+
+// Aplica uma transformação em cada produto de qualquer formato de cache de produtos
+function patchProductsCache(data: any, fn: (product: any) => any): any {
+  if (!data) return data;
+  const patchList = (list: any[]) => list.map((p) => (p && typeof p === "object" ? fn(p) : p));
+  if (Array.isArray(data.pages)) {
+    return {
+      ...data,
+      pages: data.pages.map((pg: any) =>
+        pg && Array.isArray(pg.data) ? { ...pg, data: patchList(pg.data) } : pg
+      ),
+    };
+  }
+  if (Array.isArray(data.data)) return { ...data, data: patchList(data.data) };
+  if (Array.isArray(data)) return patchList(data);
+  if (typeof data === "object" && "id" in data) return fn(data);
+  return data;
+}
+
 const PAGE_SIZE = 100;
 
 export default function ProductsPage() {
@@ -88,38 +108,83 @@ export default function ProductsPage() {
   const categories = categoriesQuery.data ?? [];
   const isPageLoading = categoriesQuery.loading;
 
+  // ─── Helpers de atualização otimista ──────────────────────────────────────
+  const restoreSnapshot = (snapshot?: Array<[readonly unknown[], unknown]>) => {
+    snapshot?.forEach(([key, data]) => queryClient.setQueryData(key, data));
+  };
+
+  // Só revalida quando não houver outras alterações pendentes, para um refetch
+  // não "desfazer" visualmente cliques que ainda estão sendo salvos
+  const revalidateProductsWhenIdle = () => {
+    if (queryClient.isMutating({ mutationKey: PRODUCT_INLINE_MUTATION_KEY }) <= 1) {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+  };
+
   // ─── Inline Price Update ──────────────────────────────────────────────────
   const updateProductMutation = useMutation({
+    mutationKey: PRODUCT_INLINE_MUTATION_KEY,
     mutationFn: async ({ id, price, promotionalPrice, costPrice }: { id: string; price?: number; promotionalPrice?: number; costPrice?: number }) => {
       await updateProduct(id, { price, promotionalPrice, costPrice });
     },
+    // Atualização otimista: o preço muda na tela na hora e a API roda em segundo plano
+    onMutate: async ({ id, ...values }) => {
+      await queryClient.cancelQueries({ queryKey: ["products"] });
+      const snapshot = queryClient.getQueriesData({ queryKey: ["products"] });
+      const changes = Object.fromEntries(
+        Object.entries(values).filter(([, v]) => v !== undefined)
+      );
+      queryClient.setQueriesData({ queryKey: ["products"] }, (old: any) =>
+        patchProductsCache(old, (p) => (p.id === id ? { ...p, ...changes } : p))
+      );
+      return { snapshot };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Preço atualizado com sucesso" });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, context) => {
+      restoreSnapshot(context?.snapshot);
       toast({
         variant: "destructive",
         title: error.message || "Erro ao atualizar preço",
       });
     },
+    onSettled: revalidateProductsWhenIdle,
   });
 
   // ─── Inline Stock Update ──────────────────────────────────────────────────
   const updateStockMutation = useMutation({
+    mutationKey: PRODUCT_INLINE_MUTATION_KEY,
     mutationFn: async ({ itemId, type, quantity }: { itemId: string; type: 'ADD' | 'SUBTRACT'; quantity: number }) => {
       await updateProductItem(itemId, { type, quantity, observation: 'Ajuste rápido' });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({ title: "Estoque atualizado com sucesso" });
+    // Atualização otimista: a quantidade muda na tela na hora e a API roda em segundo plano
+    onMutate: async ({ itemId, type, quantity }) => {
+      await queryClient.cancelQueries({ queryKey: ["products"] });
+      const snapshot = queryClient.getQueriesData({ queryKey: ["products"] });
+      const delta = type === 'ADD' ? quantity : -quantity;
+      queryClient.setQueriesData({ queryKey: ["products"] }, (old: any) =>
+        patchProductsCache(old, (p) => {
+          if (!Array.isArray(p.items) || !p.items.some((it: any) => it?.id === itemId)) return p;
+          return {
+            ...p,
+            items: p.items.map((it: any) =>
+              it?.id === itemId ? { ...it, stock: Math.max(0, (it.stock ?? 0) + delta) } : it
+            ),
+            ...(typeof p.totalStock === "number" ? { totalStock: Math.max(0, p.totalStock + delta) } : {}),
+          };
+        })
+      );
+      return { snapshot };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, context) => {
+      restoreSnapshot(context?.snapshot);
       toast({
         variant: "destructive",
         title: error.message || "Erro ao atualizar estoque",
       });
     },
+    onSettled: revalidateProductsWhenIdle,
   });
 
   // ─── Duplicate Product ────────────────────────────────────────────────────
@@ -242,10 +307,11 @@ export default function ProductsPage() {
         onBulkEnable={(ids) => bulkEnableMutation.mutate(ids)}
         isBulkPending={isBulkPending}
         onUpdateProduct={async (id, values) => {
-          await updateProductMutation.mutateAsync({ id, ...values });
+          // Não aguarda a API: o cache já foi atualizado de forma otimista
+          updateProductMutation.mutate({ id, ...values });
         }}
         onUpdateStock={async (itemId, type, quantity) => {
-          await updateStockMutation.mutateAsync({ itemId, type, quantity });
+          updateStockMutation.mutate({ itemId, type, quantity });
         }}
         onDuplicateProduct={async (id) => {
           await duplicateProductMutation.mutateAsync(id);
