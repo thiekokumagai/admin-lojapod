@@ -196,6 +196,22 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("button", { name: "7 dias" })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("Estoque: sem botão 'Atualizar estoque'; atualiza sozinho (só nessa aba)", () => {
+    renderPage();
+    // fora da aba Estoque o /stats não se atualiza em intervalo
+    expect(hooks.useDashboardStats.mock.calls.at(-1)?.[1]).toBe(false);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Estoque" }));
+    expect(screen.queryByRole("button", { name: /Atualizar estoque/i })).toBeNull();
+    expect(screen.getByTestId("stock-auto-refresh")).toHaveTextContent("Atualiza sozinho a cada minuto");
+    expect(hooks.useDashboardStats.mock.calls.at(-1)?.[1]).toBe(60_000);
+    // a consulta de oportunidades é ligada junto com a aba
+    expect(hooks.useDashboardOpportunities).toHaveBeenCalledWith(true);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Resumo" }));
+    expect(hooks.useDashboardStats.mock.calls.at(-1)?.[1]).toBe(false);
+  });
+
   it("Estoque não usa período: o filtro some", () => {
     renderPage();
     fireEvent.click(screen.getByRole("tab", { name: "Estoque" }));

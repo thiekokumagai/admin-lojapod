@@ -19,6 +19,7 @@ import { StockTab } from "@/components/dashboard/StockTab";
 import { TopProducts } from "@/components/dashboard/TopProducts";
 import {
   DEFAULT_RANKING_SORT,
+  STOCK_AUTO_REFRESH_MS,
   useDashboardCategories,
   useDashboardRanking,
   useDashboardStats,
@@ -68,7 +69,8 @@ export default function DashboardPage() {
     [filter, appliedCustom],
   );
 
-  const statsQuery = useDashboardStats(range);
+  // Na aba Estoque os números de estoque (que vêm do /stats) se atualizam sozinhos.
+  const statsQuery = useDashboardStats(range, activeTab === "estoque" ? STOCK_AUTO_REFRESH_MS : false);
   const categoryId = selectedCategory === "all" ? undefined : selectedCategory;
   const rankingQuery = useDashboardRanking(range, categoryId, rankingSort);
   const diagnosisQuery = useStoreDiagnosis(range, activeTab === "resumo");
@@ -179,7 +181,7 @@ export default function DashboardPage() {
       </div>
 
       {activeTab === "estoque" ? (
-        <StockTab stats={stats} loading={loading} onRefreshStats={() => void statsQuery.refetch()} />
+        <StockTab stats={stats} loading={loading} />
       ) : awaitingCustomDates ? (
         <Card className="border border-dashed border-border rounded-2xl">
           <CardContent className="p-8 flex flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">

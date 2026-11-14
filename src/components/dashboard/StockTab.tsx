@@ -8,21 +8,19 @@ import { useDashboardOpportunities } from "@/hooks/useDashboard";
 interface StockTabProps {
   stats: DashboardKPIs | null;
   loading: boolean;
-  /** Recarrega também os números de estoque que vêm do /dashboard/stats. */
-  onRefreshStats: () => void;
 }
 
 /** Estoque & Risco: situação ATUAL do estoque (não depende do período escolhido no topo). */
-export function StockTab({ stats, loading, onRefreshStats }: StockTabProps) {
+export function StockTab({ stats, loading }: StockTabProps) {
   const navigate = useNavigate();
   const opportunitiesQuery = useDashboardOpportunities(true);
   const opportunitiesData = opportunitiesQuery.data ?? null;
   const loadingOpportunities = opportunitiesQuery.isPending;
 
-  const refreshStock = () => {
-    void opportunitiesQuery.refetch();
-    onRefreshStats();
-  };
+  // Sem botão de atualizar: a consulta se refaz sozinha a cada minuto (ver useDashboardOpportunities).
+  const updatedAt = opportunitiesQuery.dataUpdatedAt
+    ? new Date(opportunitiesQuery.dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   const inventoryCards = [
     {
@@ -59,19 +57,10 @@ export function StockTab({ stats, loading, onRefreshStats }: StockTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Refresh button */}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={refreshStock}
-          disabled={opportunitiesQuery.isFetching}
-          className="rounded-xl border border-border gap-2 text-xs font-semibold"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${opportunitiesQuery.isFetching ? "animate-spin" : ""}`} />
-          Atualizar estoque
-        </Button>
-      </div>
+      {/* Atualização automática: sem botão, só um aviso discreto de quando foi a última */}
+      <p className="text-[11px] text-muted-foreground" aria-live="polite" data-testid="stock-auto-refresh">
+        Atualiza sozinho a cada minuto{updatedAt ? ` · última atualização às ${updatedAt}` : ""}
+      </p>
 
       {/* Inventory KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -227,7 +216,7 @@ export function StockTab({ stats, loading, onRefreshStats }: StockTabProps) {
             <p className="text-xs font-medium text-rose-900">
               Não foi possível carregar as sugestões. {opportunitiesQuery.error?.message}
             </p>
-            <Button size="sm" variant="outline" onClick={refreshStock} className="rounded-xl gap-2">
+            <Button size="sm" variant="outline" onClick={() => void opportunitiesQuery.refetch()} className="rounded-xl gap-2">
               <RefreshCw className="h-3.5 w-3.5" />
               Tentar de novo
             </Button>

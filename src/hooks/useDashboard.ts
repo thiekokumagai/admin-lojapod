@@ -73,12 +73,14 @@ export function useDashboardProducts(range: DashboardRange | null, categoryId: s
   });
 }
 
+/** Riscos e oportunidades de estoque. Com `enabled` (aba Estoque aberta) atualiza sozinho. */
 export function useDashboardOpportunities(enabled: boolean) {
   return useQuery({
     queryKey: ["dashboard-opportunities"],
     queryFn: getDashboardOpportunities,
     enabled,
-    staleTime: 5 * 60_000,
+    staleTime: STOCK_AUTO_REFRESH_MS,
+    refetchInterval: enabled ? STOCK_AUTO_REFRESH_MS : false,
   });
 }
 
