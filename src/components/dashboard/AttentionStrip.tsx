@@ -54,14 +54,14 @@ export function AttentionStrip({ items, loading, onSeeAll }: AttentionStripProps
           </Button>
         </div>
 
-        {/* Celular: rola para o lado; telas maiores: lado a lado */}
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 snap-x sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0">
+        {/* Celular: um embaixo do outro; telas maiores: lado a lado */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {top.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => (item.actionUrl ? navigate(item.actionUrl) : onSeeAll())}
-              className="snap-start shrink-0 w-64 sm:w-auto text-left rounded-xl border border-border bg-card p-3 space-y-1 hover:shadow-md transition-shadow"
+              className="w-full text-left rounded-xl border border-border bg-card p-3 space-y-1 hover:shadow-md transition-shadow"
             >
               <span className="flex items-center gap-2">
                 <span

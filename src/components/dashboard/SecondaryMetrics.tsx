@@ -68,12 +68,12 @@ export function SecondaryMetrics({ stats, prev, loading, comparisonLabel }: Seco
   return (
     <Card className="border border-border rounded-2xl shadow-sm" data-testid="secondary-metrics">
       <CardContent className="p-3 sm:p-4">
-        {/* Celular: uma linha que rola para o lado (não empurra o resto para baixo); telas maiores: grade */}
-        <dl className="flex gap-5 overflow-x-auto snap-x pb-1 sm:pb-0 sm:grid sm:grid-cols-4 lg:grid-cols-7 sm:gap-x-4 sm:gap-y-4 sm:overflow-visible">
+        {/* Celular: 2 colunas, uma métrica embaixo da outra (sem rolagem lateral) */}
+        <dl className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-4 gap-y-4">
           {metrics.map((m) => {
             const Icon = m.icon;
             return (
-              <div key={m.label} className="min-w-[8.5rem] shrink-0 snap-start sm:min-w-0 sm:shrink space-y-1">
+              <div key={m.label} className="min-w-0 space-y-1">
                 <dt className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground leading-tight">
                   <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span className="truncate">{m.label}</span>
