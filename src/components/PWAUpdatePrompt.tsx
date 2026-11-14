@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,8 +61,13 @@ export function PWAUpdatePrompt() {
 
   if (!needRefresh) return null;
 
-  return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-[9999] flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl border-primary/40 animate-in fade-in slide-in-from-bottom-5">
+  // Portal no body + z-index acima dos modais (z-50 dos diálogos e z-[9999] do aviso de
+  // notificações) + pointer-events-auto: os diálogos Radix põem pointer-events:none no
+  // body e, sem isso, o aviso aparece mas não recebe clique.
+  return createPortal(
+    <div
+      role="alert"
+      className="pointer-events-auto fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-[10000] flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl border-primary/40 animate-in fade-in slide-in-from-bottom-5">
       <div className="flex flex-col text-sm">
         <span className="font-bold text-foreground">Nova versão disponível! 🎉</span>
         <span className="text-muted-foreground text-xs">Uma atualização do app foi encontrada.</span>
@@ -85,6 +91,7 @@ export function PWAUpdatePrompt() {
           <X className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
