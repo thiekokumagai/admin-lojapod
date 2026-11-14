@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPhone } from "@/utils/formatters";
 
 import { openWhatsApp } from "@/utils/whatsapp";
+import { OrderPaymentBadge } from "@/components/orders/OrderPaymentBadge";
 
 export default function CustomerDetailsPage() {
   const { id: customerId } = useParams<{ id: string }>();
@@ -254,13 +255,16 @@ export default function CustomerDetailsPage() {
                           <p className="font-bold text-violet-600">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.totalOrder)}
                           </p>
-                          <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold ${order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {order.status === 'PENDING' && 'PENDENTE'}
-                            {order.status === 'CONFIRMED' && 'CONFIRMADO'}
-                            {order.status === 'DISPATCHED' && 'DESPACHADO'}
-                            {order.status === 'COMPLETED' && 'CONCLUÍDO'}
-                            {order.status === 'CANCELLED' && 'CANCELADO'}
-                          </span>
+                          <div className="mt-1 flex flex-wrap justify-end gap-1">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {order.status === 'PENDING' && 'PENDENTE'}
+                              {order.status === 'CONFIRMED' && 'CONFIRMADO'}
+                              {order.status === 'DISPATCHED' && 'DESPACHADO'}
+                              {order.status === 'COMPLETED' && 'CONCLUÍDO'}
+                              {order.status === 'CANCELLED' && 'CANCELADO'}
+                            </span>
+                            <OrderPaymentBadge status={order.status} paymentStatus={order.paymentStatus} />
+                          </div>
                         </div>
                       </div>
                     ))
