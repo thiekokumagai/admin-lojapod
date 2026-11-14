@@ -12,6 +12,10 @@ export interface DashboardRange {
 }
 
 export const DEFAULT_RANKING_SORT: BestSellerSort = "quantity";
+/** Aba Estoque: atualiza sozinha a cada minuto (só com a aba aberta e a janela visível). */
+export const STOCK_AUTO_REFRESH_MS = 60_000;
+/** Quantos produtos a aba "Produtos" busca (máximo aceito pela API). */
+export const PRODUCTS_TABLE_LIMIT = 100;
 
 /**
  * KPIs, gráfico e estoque do período. Sem categoria: na API a categoria também filtra as
@@ -19,12 +23,13 @@ export const DEFAULT_RANKING_SORT: BestSellerSort = "quantity";
  * `keepPreviousData` mantém os números na tela enquanto o próximo período carrega
  * (sem skeleton piscando) e o React Query descarta respostas de filtros antigos.
  */
-export function useDashboardStats(range: DashboardRange | null) {
+export function useDashboardStats(range: DashboardRange | null, refetchInterval: number | false = false) {
   return useQuery({
     queryKey: ["dashboard-stats", range?.start, range?.end],
     queryFn: () => getDashboardStats(range!.start, range!.end, undefined, DEFAULT_RANKING_SORT),
     enabled: !!range,
     staleTime: 60_000,
+    refetchInterval,
     placeholderData: keepPreviousData,
   });
 }
@@ -41,9 +46,28 @@ export function useDashboardRanking(
   const isDefault = !categoryId && sortBy === DEFAULT_RANKING_SORT;
   return useQuery({
     queryKey: ["dashboard-ranking", range?.start, range?.end, categoryId ?? "all", sortBy],
-    queryFn: () => getDashboardStats(range!.start, range!.end, categoryId, sortBy),
+    queryFn: () => getDashboardStats(range!.start, range!.end, categoryId, sortBy, { compare: false }),
     select: (res) => res.bestSellers,
     enabled: !!range && !isDefault,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Tabela da aba "Produtos": todos os produtos do período (até PRODUCTS_TABLE_LIMIT),
+ * ordenados por faturamento; a ordenação da tela é feita no cliente.
+ */
+export function useDashboardProducts(range: DashboardRange | null, categoryId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["dashboard-products", range?.start, range?.end, categoryId ?? "all"],
+    queryFn: () =>
+      getDashboardStats(range!.start, range!.end, categoryId, "revenue", {
+        limit: PRODUCTS_TABLE_LIMIT,
+        compare: false,
+      }),
+    select: (res) => res.bestSellers,
+    enabled: enabled && !!range,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
   });
