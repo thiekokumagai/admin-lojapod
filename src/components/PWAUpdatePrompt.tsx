@@ -1,16 +1,32 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/** Depois de fechar no X, o aviso volta depois deste tempo ("lembrar depois"). */
+export const PWA_REMIND_AFTER_MS = 15 * 60 * 1000;
+
 export function PWAUpdatePrompt() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const remindTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearRemindTimer = () => {
+    if (remindTimer.current) {
+      clearTimeout(remindTimer.current);
+      remindTimer.current = null;
+    }
+  };
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    // Saiu uma versão (inclusive outra, depois de o aviso ter sido fechado): o plugin já
+    // mostra o aviso de novo; aqui só cancelamos o lembrete pendente da versão anterior.
+    onNeedRefresh() {
+      clearRemindTimer();
+    },
     onRegisteredSW(_swScriptUrl, registration) {
       if (!import.meta.env.DEV && registration) {
         // Checar por atualizações no servidor periodicamente (a cada 1h)
@@ -27,8 +43,16 @@ export function PWAUpdatePrompt() {
     },
   });
 
+  // Não deixa o lembrete pendente disparar depois de desmontar.
+  useEffect(() => clearRemindTimer, []);
+
   const handleClose = () => {
     setNeedRefresh(false);
+    clearRemindTimer();
+    remindTimer.current = setTimeout(() => {
+      remindTimer.current = null;
+      setNeedRefresh(true);
+    }, PWA_REMIND_AFTER_MS);
   };
 
   const handleReload = async () => {
@@ -36,6 +60,7 @@ export function PWAUpdatePrompt() {
     setIsUpdating(true);
 
     try {
+      clearRemindTimer();
       setNeedRefresh(false);
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.addEventListener(

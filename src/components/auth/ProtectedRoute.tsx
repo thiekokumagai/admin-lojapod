@@ -1,7 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { isAuthenticated, getUserRole, type UserRole } from "@/lib/auth";
 import { canAccessPath, getFirstAllowedPath } from "@/lib/permissions";
-import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -33,10 +32,5 @@ export function ProtectedRoute({ allowedRoles, checkScreenPermissions }: Protect
     return <Navigate to="/sem-acesso" replace />;
   }
 
-  return (
-    <>
-      <PWAUpdatePrompt />
-      <Outlet />
-    </>
-  );
+  return <Outlet />;
 }

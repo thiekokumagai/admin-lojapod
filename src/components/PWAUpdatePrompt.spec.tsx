@@ -1,30 +1,40 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 
-const state = { needRefresh: true };
-const setNeedRefresh = vi.fn();
+// Mock com estado real, como o useRegisterSW do vite-plugin-pwa (needRefresh é um useState).
+const sw: { onNeedRefresh?: () => void; initial: boolean } = { initial: true };
 const updateServiceWorker = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("virtual:pwa-register/react", () => ({
-  useRegisterSW: () => ({
-    needRefresh: [state.needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  }),
+  useRegisterSW: (options: { onNeedRefresh?: () => void } = {}) => {
+    const [needRefresh, setNeedRefresh] = useState(sw.initial);
+    sw.onNeedRefresh = () => {
+      setNeedRefresh(true);
+      options.onNeedRefresh?.();
+    };
+    return { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker };
+  },
 }));
 
-import { PWAUpdatePrompt } from "./PWAUpdatePrompt";
+import { PWAUpdatePrompt, PWA_REMIND_AFTER_MS } from "./PWAUpdatePrompt";
+
+const prompt = () => screen.queryByText(/Nova versão disponível/);
 
 describe("PWAUpdatePrompt", () => {
   beforeEach(() => {
-    state.needRefresh = true;
-    setNeedRefresh.mockClear();
+    sw.initial = true;
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("não renderiza nada sem atualização", () => {
-    state.needRefresh = false;
+    sw.initial = false;
     render(<PWAUpdatePrompt />);
-    expect(screen.queryByText(/Nova versão disponível/)).toBeNull();
+    expect(prompt()).toBeNull();
   });
 
   it("renderiza no body (fora da árvore da página), acima dos modais e clicável", () => {
@@ -53,6 +63,72 @@ describe("PWAUpdatePrompt", () => {
     // O Radix marca como aria-hidden o que já estava no body ao abrir o diálogo; só afeta leitor de tela, não o clique.
     expect(screen.getByRole("alert", { hidden: true })).toBeTruthy();
     fireEvent.click(screen.getByTitle("Fechar"));
-    expect(setNeedRefresh).toHaveBeenCalledWith(false);
+    expect(prompt()).toBeNull();
+  });
+
+  it("depois de fechar no X, o aviso volta em 15 minutos (lembrar depois)", () => {
+    expect(PWA_REMIND_AFTER_MS).toBe(15 * 60 * 1000);
+    render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTitle("Fechar"));
+    expect(prompt()).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(PWA_REMIND_AFTER_MS - 1000);
+    });
+    expect(prompt()).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(prompt()).not.toBeNull();
+  });
+
+  it("fechar de novo reinicia o intervalo", () => {
+    render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTitle("Fechar"));
+    act(() => {
+      vi.advanceTimersByTime(PWA_REMIND_AFTER_MS);
+    });
+    expect(prompt()).not.toBeNull();
+
+    fireEvent.click(screen.getByTitle("Fechar"));
+    act(() => {
+      vi.advanceTimersByTime(PWA_REMIND_AFTER_MS - 1000);
+    });
+    expect(prompt()).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(prompt()).not.toBeNull();
+  });
+
+  it("outra versão depois do X mostra o aviso na hora e cancela o lembrete antigo", () => {
+    render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTitle("Fechar"));
+    expect(prompt()).toBeNull();
+
+    act(() => {
+      sw.onNeedRefresh?.();
+    });
+    expect(prompt()).not.toBeNull();
+
+    // Fecha de novo: o lembrete antigo não pode disparar antes do novo prazo.
+    fireEvent.click(screen.getByTitle("Fechar"));
+    act(() => {
+      vi.advanceTimersByTime(PWA_REMIND_AFTER_MS - 1000);
+    });
+    expect(prompt()).toBeNull();
+  });
+
+  it("não deixa o lembrete disparar depois de desmontar", () => {
+    const { unmount } = render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTitle("Fechar"));
+    unmount();
+    expect(() =>
+      act(() => {
+        vi.advanceTimersByTime(PWA_REMIND_AFTER_MS);
+      }),
+    ).not.toThrow();
+    expect(prompt()).toBeNull();
   });
 });
