@@ -18,6 +18,8 @@ import {
   Sparkles,
   BarChart2,
   AlertTriangle,
+  PiggyBank,
+  Percent,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -26,6 +28,8 @@ import {
   DashboardKPIs,
   DashboardChartItem,
   BestSellerItem,
+  BestSellerSort,
+  DashboardMissingCost,
   DashboardOpportunitiesResponse,
 } from "@/services/dashboard.service";
 import { getCategories } from "@/services/category.service";
@@ -39,6 +43,16 @@ import { DatePicker } from "@/components/ui/date-picker";
 
 type FilterType = "today" | "7days" | "30days" | "6months" | "year" | "custom";
 type ActiveTab = "vendas" | "estoque";
+
+const formatBRL = (v: number) =>
+  `R$ ${(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+const SORT_OPTIONS: { id: BestSellerSort; label: string }[] = [
+  { id: "quantity", label: "Qtd." },
+  { id: "revenue", label: "Faturamento" },
+  { id: "profit", label: "Lucro" },
+  { id: "margin", label: "Margem" },
+];
 
 export default function DashboardPage() {
   const { data: settings, isLoading: isLoadingSettings } = useSettings();
@@ -55,6 +69,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardKPIs | null>(null);
   const [chartData, setChartData] = useState<DashboardChartItem[]>([]);
   const [bestSellers, setBestSellers] = useState<BestSellerItem[]>([]);
+  const [missingCost, setMissingCost] = useState<DashboardMissingCost | null>(null);
+  const [rankingSort, setRankingSort] = useState<BestSellerSort>("quantity");
 
   const navigate = useNavigate();
   const [opportunitiesData, setOpportunitiesData] = useState<DashboardOpportunitiesResponse | null>(null);
@@ -143,18 +159,20 @@ export default function DashboardPage() {
       const res = await getDashboardStats(
         dates?.start,
         dates?.end,
-        selectedCategory === "all" ? undefined : selectedCategory
+        selectedCategory === "all" ? undefined : selectedCategory,
+        rankingSort
       );
 
       setStats(res.stats);
       setChartData(res.chartData);
       setBestSellers(res.bestSellers);
+      setMissingCost(res.semCusto);
     } catch (err) {
       console.error("Erro ao buscar dados do dashboard", err);
     } finally {
       setLoading(false);
     }
-  }, [filter, customStart, customEnd, selectedCategory, getFilterDates]);
+  }, [filter, customStart, customEnd, selectedCategory, rankingSort, getFilterDates]);
 
   useEffect(() => {
     fetchDashboard();
@@ -200,6 +218,19 @@ export default function DashboardPage() {
       value: stats ? stats.totalProdutosVendidos : 0,
       icon: Package,
       color: "text-amber-600 bg-amber-100",
+    },
+    {
+      label: "Lucro Bruto",
+      value: stats ? formatBRL(stats.lucroBruto) : "R$ 0,00",
+      icon: PiggyBank,
+      color: "text-emerald-600 bg-emerald-100",
+    },
+    {
+      label: "Margem Bruta",
+      // null = sem venda com custo cadastrado; "--" em vez de uma margem falsa
+      value: stats?.margemBruta != null ? `${stats.margemBruta.toLocaleString("pt-BR")}%` : "--",
+      icon: Percent,
+      color: "text-sky-600 bg-sky-100",
     },
     {
       label: "Visitas",
@@ -412,6 +443,25 @@ export default function DashboardPage() {
             })}
           </div>
 
+          {/* Aviso: produtos vendidos sem custo cadastrado ficam fora do lucro/margem */}
+          {!loading && missingCost && missingCost.count > 0 && (
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="text-xs space-y-1">
+                <p className="font-bold">
+                  {missingCost.count} {missingCost.count === 1 ? "produto vendido sem custo cadastrado" : "produtos vendidos sem custo cadastrado"}
+                </p>
+                <p>
+                  Eles ficam fora do lucro e da margem ({formatBRL(missingCost.receitaLiquida)} em vendas). Cadastre o custo no produto para o lucro ficar completo.
+                  {" "}
+                  {missingCost.produtos.slice(0, 5).map((p) => p.title).join(", ")}
+                  {missingCost.count > 5 ? "…" : ""}
+                </p>
+                <p className="text-amber-700">O lucro usa o custo atual do produto; se o custo mudou, vendas antigas refletem o custo de hoje.</p>
+              </div>
+            </div>
+          )}
+
           {/* Chart + Best Sellers */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2 border border-border rounded-2xl shadow-sm">
@@ -468,6 +518,22 @@ export default function DashboardPage() {
                   </select>
                 </div>
 
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setRankingSort(opt.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                        rankingSort === opt.id
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="flex-1 space-y-4">
                   {loading ? (
                     Array.from({ length: 4 }).map((_, idx) => (
@@ -509,8 +575,17 @@ export default function DashboardPage() {
                         <div className="text-right">
                           <p className="text-xs font-bold text-foreground">{item.quantity} un.</p>
                           <p className="text-[10px] text-muted-foreground">
-                            R$ {(item.totalRevenue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            {formatBRL(item.totalRevenue)}
                           </p>
+                          {item.lucro !== null ? (
+                            <p className="text-[10px] font-semibold text-emerald-600">
+                              Lucro {formatBRL(item.lucro)}
+                              {item.margem !== null ? ` · ${item.margem.toLocaleString("pt-BR")}%` : ""}
+                              {item.semCusto ? " *" : ""}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] font-semibold text-amber-600">Sem custo</p>
+                          )}
                         </div>
                       </div>
                     ))

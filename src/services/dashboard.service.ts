@@ -14,7 +14,23 @@ export interface DashboardKPIs {
   qtdTotalEstoque?: number;
   custoProdAtivos?: number;
   vendaTotalEstoque?: number;
+  /** Lucro bruto = itens - descontos - custo - taxa de cartão (frete fora). Só itens com custo cadastrado. */
+  lucroBruto: number;
+  /** null quando não há venda com custo cadastrado. */
+  margemBruta: number | null;
+  custoProdutosVendidos: number;
+  descontosConcedidos: number;
+  taxaCartao: number;
+  receitaItens: number;
 }
+
+export interface DashboardMissingCost {
+  count: number;
+  receitaLiquida: number;
+  produtos: { id: string; title: string }[];
+}
+
+export type BestSellerSort = "quantity" | "revenue" | "profit" | "margin";
 
 export interface DashboardChartItem {
   name: string;
@@ -28,10 +44,15 @@ export interface BestSellerItem {
   quantity: number;
   totalRevenue: number;
   imageUrl?: string;
+  /** null = nenhuma venda com custo cadastrado. */
+  lucro: number | null;
+  margem: number | null;
+  semCusto: boolean;
 }
 
 export interface DashboardStatsResponse {
   stats: DashboardKPIs;
+  semCusto: DashboardMissingCost;
   chartData: DashboardChartItem[];
   bestSellers: BestSellerItem[];
 }
@@ -39,12 +60,14 @@ export interface DashboardStatsResponse {
 export async function getDashboardStats(
   startDate?: string,
   endDate?: string,
-  categoryId?: string
+  categoryId?: string,
+  sortBy: BestSellerSort = "quantity"
 ): Promise<DashboardStatsResponse> {
   const queryParams = new URLSearchParams();
   if (startDate) queryParams.append("startDate", startDate);
   if (endDate) queryParams.append("endDate", endDate);
   if (categoryId) queryParams.append("categoryId", categoryId);
+  queryParams.append("sortBy", sortBy);
 
   const response = await apiFetch(`/dashboard/stats?${queryParams.toString()}`);
   return response.json();
