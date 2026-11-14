@@ -154,7 +154,7 @@ export function DiagnosisTab() {
       )}
 
       {/* Resultado do período */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse border border-border" />
@@ -163,13 +163,13 @@ export function DiagnosisTab() {
               const Icon = card.icon;
               return (
                 <Card key={card.label} className="border border-border rounded-2xl shadow-sm">
-                  <CardContent className="p-5 flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${card.color}`}>
+                  <CardContent className="p-4 sm:p-5 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <div className={`p-2 sm:p-3 rounded-xl shrink-0 ${card.color}`}>
                       <Icon className="h-5 w-5" />
                     </div>
-                    <div className="space-y-1 min-w-0">
-                      <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
-                      <p className="text-xl font-bold text-foreground truncate">{card.value}</p>
+                    <div className="space-y-0.5 sm:space-y-1 min-w-0 w-full">
+                      <p className="text-xs text-muted-foreground font-medium leading-tight">{card.label}</p>
+                      <p className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-foreground [overflow-wrap:anywhere]">{card.value}</p>
                       {"sub" in card && card.sub && <p className="text-[10px] text-muted-foreground">{card.sub}</p>}
                     </div>
                   </CardContent>
@@ -217,14 +217,14 @@ export function DiagnosisTab() {
                 <p className="text-xs font-semibold text-foreground">Custos fixos por item</p>
                 {data.custosFixosPorItem.map((c) => (
                   <div key={c.name} className="flex items-center gap-3 text-xs">
-                    <span className="w-32 truncate text-muted-foreground">{c.name}</span>
+                    <span className="w-24 sm:w-32 truncate text-muted-foreground">{c.name}</span>
                     <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-full rounded-full bg-amber-400"
                         style={{ width: `${maxFixed > 0 ? (c.value / maxFixed) * 100 : 0}%` }}
                       />
                     </div>
-                    <span className="w-24 text-right font-semibold text-foreground">{formatBRL(c.value)}</span>
+                    <span className="w-28 shrink-0 text-right font-semibold text-foreground whitespace-nowrap">{formatBRL(c.value)}</span>
                   </div>
                 ))}
               </div>

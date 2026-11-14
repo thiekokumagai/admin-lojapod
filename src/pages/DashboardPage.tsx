@@ -49,6 +49,12 @@ type ActiveTab = "vendas" | "estoque" | "diagnostico";
 const formatBRL = (v: number) =>
   `R$ ${(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
+// Eixo do gráfico: 12.500 -> "12,5 mil", para caber no celular.
+const formatCompact = (v: number) =>
+  Math.abs(v) >= 1000
+    ? `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`
+    : String(v);
+
 const SORT_OPTIONS: { id: BestSellerSort; label: string }[] = [
   { id: "quantity", label: "Qtd." },
   { id: "revenue", label: "Faturamento" },
@@ -423,21 +429,21 @@ export default function DashboardPage() {
           )}
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {kpiCards.map((card, idx) => {
               const IconComponent = card.icon;
               return (
                 <Card key={idx} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-5 flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${card.color}`}>
+                  <CardContent className="p-4 sm:p-5 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <div className={`p-2 sm:p-3 rounded-xl shrink-0 ${card.color}`}>
                       <IconComponent className="h-5 w-5" />
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+                    <div className="space-y-0.5 sm:space-y-1 min-w-0 w-full">
+                      <p className="text-xs text-muted-foreground font-medium leading-tight">{card.label}</p>
                       {loading ? (
                         <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
                       ) : (
-                        <p className="text-xl font-bold text-foreground">{card.value}</p>
+                        <p className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-foreground [overflow-wrap:anywhere]">{card.value}</p>
                       )}
                     </div>
                   </CardContent>
@@ -470,7 +476,7 @@ export default function DashboardPage() {
             <Card className="lg:col-span-2 border border-border rounded-2xl shadow-sm">
               <CardContent className="p-5">
                 <h2 className="text-base font-bold text-foreground mb-4">Evolução das Vendas</h2>
-                <div className="h-80 w-full">
+                <div className="h-64 sm:h-80 w-full">
                   {loading ? (
                     <div className="h-full w-full bg-muted animate-pulse rounded-2xl flex items-center justify-center text-xs text-muted-foreground">
                       Carregando gráfico...
@@ -482,10 +488,10 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData}>
+                      <BarChart data={chartData} margin={{ left: 0, right: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} />
+                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} interval="preserveStartEnd" minTickGap={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} width={56} tickFormatter={formatCompact} />
                         <Tooltip
                           contentStyle={{
                             background: "hsl(var(--card))",
@@ -572,22 +578,22 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-foreground truncate">{item.title}</p>
+                          <p className="text-xs font-bold text-foreground line-clamp-2 break-words">{item.title}</p>
                           <p className="text-[10px] text-muted-foreground">{item.categoryTitle}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0 whitespace-nowrap">
                           <p className="text-xs font-bold text-foreground">{item.quantity} un.</p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {formatBRL(item.totalRevenue)}
                           </p>
                           {item.lucro !== null ? (
-                            <p className="text-[10px] font-semibold text-emerald-600">
+                            <p className="text-[11px] font-semibold text-emerald-600">
                               Lucro {formatBRL(item.lucro)}
                               {item.margem !== null ? ` · ${item.margem.toLocaleString("pt-BR")}%` : ""}
                               {item.semCusto ? " *" : ""}
                             </p>
                           ) : (
-                            <p className="text-[10px] font-semibold text-amber-600">Sem custo</p>
+                            <p className="text-[11px] font-semibold text-amber-600">Sem custo</p>
                           )}
                         </div>
                       </div>
@@ -621,21 +627,21 @@ export default function DashboardPage() {
           </div>
 
           {/* Inventory KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
             {inventoryCards.map((card, idx) => {
               const IconComponent = card.icon;
               return (
                 <Card key={idx} className="border border-border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-5 flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${card.color}`}>
+                  <CardContent className="p-4 sm:p-5 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <div className={`p-2 sm:p-3 rounded-xl shrink-0 ${card.color}`}>
                       <IconComponent className="h-5 w-5" />
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+                    <div className="space-y-0.5 sm:space-y-1 min-w-0 w-full">
+                      <p className="text-xs text-muted-foreground font-medium leading-tight">{card.label}</p>
                       {loading ? (
                         <div className="h-6 w-24 bg-muted animate-pulse rounded-lg" />
                       ) : (
-                        <p className="text-xl font-bold text-foreground">{card.value}</p>
+                        <p className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-foreground [overflow-wrap:anywhere]">{card.value}</p>
                       )}
                     </div>
                   </CardContent>
