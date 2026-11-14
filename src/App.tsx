@@ -10,7 +10,7 @@ import { isSuperAdmin } from "@/lib/auth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
 import { DynamicFavicon } from "@/components/DynamicFavicon";
-import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import { AuthGatedPWAUpdatePrompt } from "@/components/auth/AuthGatedPWAUpdatePrompt";
 
 function lazyWithRetry<T extends React.ComponentType<any>>(
   factory: () => Promise<{ default: T }>
@@ -105,9 +105,9 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <SonnerToaster />
-        {/* Montado uma vez só, fora das rotas: aparece em qualquer tela (inclusive impressão e super-admin) sem duplicar */}
-        <PWAUpdatePrompt />
         <BrowserRouter>
+          {/* Montado uma vez só, só com login: aparece em qualquer tela logada (inclusive impressão e super-admin) sem duplicar */}
+          <AuthGatedPWAUpdatePrompt />
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />

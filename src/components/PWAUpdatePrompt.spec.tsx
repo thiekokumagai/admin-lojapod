@@ -1,19 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 
 // Mock com estado real, como o useRegisterSW do vite-plugin-pwa (needRefresh é um useState).
-const sw: { onNeedRefresh?: () => void; initial: boolean } = { initial: true };
+const sw: {
+  onNeedRefresh?: () => void;
+  initial: boolean;
+  registration: EventTarget & { installing: (EventTarget & { state: string }) | null };
+} = { initial: true, registration: Object.assign(new EventTarget(), { installing: null }) };
 const updateServiceWorker = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("virtual:pwa-register/react", () => ({
-  useRegisterSW: (options: { onNeedRefresh?: () => void } = {}) => {
+  useRegisterSW: (
+    options: {
+      onNeedRefresh?: () => void;
+      onRegisteredSW?: (url: string, reg: unknown) => void;
+    } = {},
+  ) => {
     const [needRefresh, setNeedRefresh] = useState(sw.initial);
     sw.onNeedRefresh = () => {
       setNeedRefresh(true);
       options.onNeedRefresh?.();
     };
+    useEffect(() => {
+      options.onRegisteredSW?.("/sw.js", sw.registration);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     return { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker };
   },
 }));
@@ -25,6 +38,10 @@ const prompt = () => screen.queryByText(/Nova versão disponível/);
 describe("PWAUpdatePrompt", () => {
   beforeEach(() => {
     sw.initial = true;
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: { controller: {} },
+    });
     vi.useFakeTimers();
   });
   afterEach(() => {
@@ -129,6 +146,40 @@ describe("PWAUpdatePrompt", () => {
         vi.advanceTimersByTime(PWA_REMIND_AFTER_MS);
       }),
     ).not.toThrow();
+    expect(prompt()).toBeNull();
+  });
+
+  it("enabled=false não mostra o aviso (ex.: antes do login), enabled=true mostra", () => {
+    const { rerender } = render(<PWAUpdatePrompt enabled={false} />);
+    expect(prompt()).toBeNull();
+    rerender(<PWAUpdatePrompt enabled />);
+    expect(prompt()).not.toBeNull();
+  });
+
+  const publishNewVersion = (state = "installed") => {
+    const installing = Object.assign(new EventTarget(), { state });
+    sw.registration.installing = installing;
+    sw.registration.dispatchEvent(new Event("updatefound"));
+    installing.dispatchEvent(new Event("statechange"));
+  };
+
+  it("segunda versão publicada depois do X faz o aviso voltar na hora (updatefound do registro)", () => {
+    render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTitle("Fechar"));
+    expect(prompt()).toBeNull();
+
+    act(() => publishNewVersion());
+    expect(prompt()).not.toBeNull();
+  });
+
+  it("primeira instalação (sem controller) não mostra o aviso", () => {
+    sw.initial = false;
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: { controller: null },
+    });
+    render(<PWAUpdatePrompt />);
+    act(() => publishNewVersion());
     expect(prompt()).toBeNull();
   });
 });

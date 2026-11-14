@@ -7,8 +7,35 @@ import { Button } from "@/components/ui/button";
 /** Depois de fechar no X, o aviso volta depois deste tempo ("lembrar depois"). */
 export const PWA_REMIND_AFTER_MS = 15 * 60 * 1000;
 
-export function PWAUpdatePrompt() {
+/**
+ * Avisa quando o navegador baixa e deixa em espera uma versão nova do service worker.
+ * O evento "waiting" do plugin nem sempre dispara para uma segunda versão numa aba que
+ * continua aberta; o `updatefound` do próprio registro dispara sempre.
+ */
+function watchForNewVersion(
+  registration: ServiceWorkerRegistration,
+  onNewVersion: () => void,
+) {
+  registration.addEventListener("updatefound", () => {
+    const installing = registration.installing;
+    if (!installing) return;
+    installing.addEventListener("statechange", () => {
+      // Com controller ativo é atualização; sem controller é a primeira instalação.
+      if (installing.state === "installed" && navigator.serviceWorker?.controller) {
+        onNewVersion();
+      }
+    });
+  });
+}
+
+interface PWAUpdatePromptProps {
+  /** false = o app continua checando versões, mas não mostra o aviso (ex.: antes do login). */
+  enabled?: boolean;
+}
+
+export function PWAUpdatePrompt({ enabled = true }: PWAUpdatePromptProps = {}) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const onNewVersion = useRef<() => void>(() => {});
   const remindTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearRemindTimer = () => {
@@ -22,12 +49,14 @@ export function PWAUpdatePrompt() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    // Saiu uma versão (inclusive outra, depois de o aviso ter sido fechado): o plugin já
-    // mostra o aviso de novo; aqui só cancelamos o lembrete pendente da versão anterior.
+    // Saiu uma versão: cancela o lembrete pendente da anterior (o plugin já mostra o aviso).
     onNeedRefresh() {
       clearRemindTimer();
     },
     onRegisteredSW(_swScriptUrl, registration) {
+      if (registration) {
+        watchForNewVersion(registration, () => onNewVersion.current());
+      }
       if (!import.meta.env.DEV && registration) {
         // Checar por atualizações no servidor periodicamente (a cada 1h)
         const interval = setInterval(() => {
@@ -41,6 +70,13 @@ export function PWAUpdatePrompt() {
     onRegisterError(error) {
       console.error("PWA SW Register Error:", error);
     },
+  });
+
+  useEffect(() => {
+    onNewVersion.current = () => {
+      clearRemindTimer();
+      setNeedRefresh(true);
+    };
   });
 
   // Não deixa o lembrete pendente disparar depois de desmontar.
@@ -84,7 +120,7 @@ export function PWAUpdatePrompt() {
     }
   };
 
-  if (!needRefresh) return null;
+  if (!enabled || !needRefresh) return null;
 
   // Portal no body + z-index acima dos modais (z-50 dos diálogos e z-[9999] do aviso de
   // notificações) + pointer-events-auto: os diálogos Radix põem pointer-events:none no
