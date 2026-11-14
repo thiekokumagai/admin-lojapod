@@ -22,6 +22,7 @@ export interface DashboardKPIs {
   descontosConcedidos: number;
   taxaCartao: number;
   receitaItens: number;
+  receitaComCusto: number;
 }
 
 export interface DashboardMissingCost {
@@ -44,6 +45,8 @@ export interface BestSellerItem {
   quantity: number;
   totalRevenue: number;
   imageUrl?: string;
+  /** Receita líquida (após descontos) das vendas com custo; base da margem. */
+  receitaLiquida: number;
   /** null = nenhuma venda com custo cadastrado. */
   lucro: number | null;
   margem: number | null;
@@ -127,5 +130,45 @@ export interface DashboardOpportunitiesResponse {
 
 export async function getDashboardOpportunities(): Promise<DashboardOpportunitiesResponse> {
   const response = await apiFetch('/dashboard/opportunities');
+  return response.json();
+}
+
+export type DiagnosisSeverity = "critical" | "warning" | "info" | "ok";
+
+export interface DiagnosisItem {
+  id: string;
+  severity: DiagnosisSeverity;
+  title: string;
+  detail: string;
+  /** Quanto custou (ou pode custar) no período, em R$. null = sem valor em R$. */
+  amount: number | null;
+  /** true quando o valor é uma estimativa/potencial, não algo já perdido. */
+  estimated: boolean;
+  actionLabel?: string;
+  actionUrl?: string;
+}
+
+export interface StoreDiagnosisResponse {
+  periodo: { dias: number };
+  resultado: {
+    lucroBruto: number;
+    custosFixos: number;
+    lucroLiquido: number;
+    custosFixosProporcionais: boolean;
+    pontoEquilibrioReceita: number | null;
+    pontoEquilibrioPedidos: number | null;
+    receitaLiquidaItens: number;
+    pedidos: number;
+  };
+  custosFixosPorItem: { name: string; value: number }[];
+  itens: DiagnosisItem[];
+}
+
+export async function getStoreDiagnosis(
+  startDate: string,
+  endDate: string
+): Promise<StoreDiagnosisResponse> {
+  const queryParams = new URLSearchParams({ startDate, endDate });
+  const response = await apiFetch(`/dashboard/diagnosis?${queryParams.toString()}`);
   return response.json();
 }

@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   PiggyBank,
   Percent,
+  Stethoscope,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -40,9 +41,10 @@ import { useSettings } from "@/hooks/useSettings";
 import { OnboardingWidget } from "@/components/admin/OnboardingWidget";
 import { useOrders } from "@/hooks/useOrders";
 import { DatePicker } from "@/components/ui/date-picker";
+import { DiagnosisTab } from "@/components/admin/DiagnosisTab";
 
 type FilterType = "today" | "7days" | "30days" | "6months" | "year" | "custom";
-type ActiveTab = "vendas" | "estoque";
+type ActiveTab = "vendas" | "estoque" | "diagnostico";
 
 const formatBRL = (v: number) =>
   `R$ ${(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -294,6 +296,7 @@ export default function DashboardPage() {
   const tabs: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
     { id: "vendas", label: "Visão Geral de Vendas", icon: BarChart2 },
     { id: "estoque", label: "Estoque & Risco", icon: AlertTriangle },
+    { id: "diagnostico", label: "Diagnóstico", icon: Stethoscope },
   ];
 
   return (
@@ -596,6 +599,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ─── TAB: DIAGNÓSTICO ───────────────────────────────────────────── */}
+      {activeTab === "diagnostico" && <DiagnosisTab />}
 
       {/* ─── TAB: ESTOQUE & RISCO ────────────────────────────────────────── */}
       {activeTab === "estoque" && (
