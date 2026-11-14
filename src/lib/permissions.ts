@@ -21,6 +21,7 @@ export const SCREEN_PERMISSIONS = [
 
   { key: "orders", label: "Pedidos", group: "Vendas", paths: ["/pedidos"] },
   { key: "loyalty", label: "Cartão Fidelidade", group: "Vendas", paths: ["/fidelidade"] },
+  { key: "abandoned_carts", label: "Carrinhos abandonados", group: "Vendas", paths: ["/carrinhos-abandonados"] },
   { key: "delivery_map", label: "Mapa de Entregas", group: "Vendas", paths: ["/mapa-entregas", "/entregas/rotas"] },
   { key: "couriers", label: "Motoboys", group: "Vendas", paths: ["/motoboys"] },
   { key: "customers", label: "Clientes", group: "Vendas", paths: ["/clientes"] },

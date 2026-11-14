@@ -73,6 +73,7 @@ const SuspendedStorePage = lazyWithRetry(() => import("@/pages/SuspendedStorePag
 const ImportacaoPage = lazyWithRetry(() => import("@/pages/ImportacaoPage"));
 const DomainPage = lazyWithRetry(() => import("@/pages/DomainPage"));
 const StockNotificationsPage = lazyWithRetry(() => import("@/pages/StockNotificationsPage"));
+const AbandonedCartsPage = lazyWithRetry(() => import("@/pages/AbandonedCartsPage"));
 const LoyaltyPage = lazyWithRetry(() => import("@/pages/LoyaltyPage"));
 const OrderBumpsPage = lazyWithRetry(() => import("@/pages/OrderBumpsPage"));
 const UsersPage = lazyWithRetry(() => import("@/pages/UsersPage"));
@@ -144,6 +145,7 @@ const App = () => (
                     <Route path="/combos/:id" element={<ComboDetailsPage />} />
                     <Route path="/sugestoes" element={<OrderBumpsPage />} />
                     <Route path="/avise-me" element={<StockNotificationsPage />} />
+                    <Route path="/carrinhos-abandonados" element={<AbandonedCartsPage />} />
                     <Route path="/categorias" element={<CategoriesPage />} />
                     <Route path="/cupons" element={<CouponsPage />} />
                     <Route path="/entregas" element={<Navigate to="/configuracoes" replace />} />
