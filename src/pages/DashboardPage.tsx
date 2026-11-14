@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -21,20 +21,13 @@ import {
   PiggyBank,
   Percent,
   Stethoscope,
+  WifiOff,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import {
-  getDashboardStats,
-  getDashboardOpportunities,
-  DashboardKPIs,
-  DashboardChartItem,
-  BestSellerItem,
-  BestSellerSort,
-  DashboardMissingCost,
-  DashboardOpportunitiesResponse,
-} from "@/services/dashboard.service";
-import { getCategories } from "@/services/category.service";
-import type { CategoryList } from "@/types/category";
+import type { BestSellerSort, DashboardComparison } from "@/services/dashboard.service";
 import { buildImageUrl } from "@/utils/image-url";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
@@ -42,6 +35,15 @@ import { OnboardingWidget } from "@/components/admin/OnboardingWidget";
 import { useOrders } from "@/hooks/useOrders";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DiagnosisTab } from "@/components/admin/DiagnosisTab";
+import { computeDelta, type KpiDelta } from "@/lib/kpi-delta";
+import {
+  DEFAULT_RANKING_SORT,
+  useDashboardCategories,
+  useDashboardOpportunities,
+  useDashboardRanking,
+  useDashboardStats,
+  type DashboardRange,
+} from "@/hooks/useDashboard";
 
 type FilterType = "today" | "7days" | "30days" | "6months" | "year" | "custom";
 type ActiveTab = "vendas" | "estoque" | "diagnostico";
@@ -62,179 +64,149 @@ const SORT_OPTIONS: { id: BestSellerSort; label: string }[] = [
   { id: "margin", label: "Margem" },
 ];
 
+// Envia a data LOCAL (YYYY-MM-DD). A API converte para início/fim do dia no fuso da loja.
+// Usar toISOString() aqui jogava o fim do dia para o dia seguinte em UTC, fazendo "Hoje"
+// virar 2 dias (e perder o gráfico por hora).
+const toLocalDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function getPresetRange(filter: Exclude<FilterType, "custom">): DashboardRange {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = new Date(today);
+  if (filter === "7days") start.setDate(start.getDate() - 6);
+  else if (filter === "30days") start.setDate(start.getDate() - 29);
+  else if (filter === "6months") start.setMonth(start.getMonth() - 6);
+  else if (filter === "year") start.setFullYear(start.getFullYear() - 1);
+  return { start: toLocalDateStr(start), end: toLocalDateStr(today) };
+}
+
+const COMPARISON_LABEL: Record<FilterType, string> = {
+  today: "vs. ontem",
+  "7days": "vs. 7 dias antes",
+  "30days": "vs. 30 dias antes",
+  "6months": "vs. 6 meses antes",
+  year: "vs. ano anterior",
+  custom: "vs. período anterior",
+};
+
+const formatInt = (v: number) => v.toLocaleString("pt-BR");
+const formatPct = (v: number) => `${v.toLocaleString("pt-BR")}%`;
+
 export default function DashboardPage() {
   const { data: settings, isLoading: isLoadingSettings } = useSettings();
   const { data: ordersData, isLoading: isLoadingOrders } = useOrders(undefined, undefined, undefined, undefined, 1, 1);
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("vendas");
 
   const [filter, setFilter] = useState<FilterType>("today");
+  // Datas digitadas no formulário; só viram filtro ao clicar em "Aplicar Filtro".
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [appliedCustom, setAppliedCustom] = useState<DashboardRange | null>(null);
   const [showCustomRange, setShowCustomRange] = useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardKPIs | null>(null);
-  const [chartData, setChartData] = useState<DashboardChartItem[]>([]);
-  const [bestSellers, setBestSellers] = useState<BestSellerItem[]>([]);
-  const [missingCost, setMissingCost] = useState<DashboardMissingCost | null>(null);
-  const [rankingSort, setRankingSort] = useState<BestSellerSort>("quantity");
-
-  const navigate = useNavigate();
-  const [opportunitiesData, setOpportunitiesData] = useState<DashboardOpportunitiesResponse | null>(null);
-  const [loadingOpportunities, setLoadingOpportunities] = useState(true);
-
-  const fetchOpportunities = useCallback(async () => {
-    setLoadingOpportunities(true);
-    try {
-      const res = await getDashboardOpportunities();
-      setOpportunitiesData(res);
-    } catch (err) {
-      console.error("Erro ao carregar oportunidades de estoque", err);
-    } finally {
-      setLoadingOpportunities(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchOpportunities();
-  }, [fetchOpportunities]);
-
-  const [categories, setCategories] = useState<CategoryList[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [rankingSort, setRankingSort] = useState<BestSellerSort>(DEFAULT_RANKING_SORT);
 
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const cats = await getCategories();
-        setCategories(cats);
-      } catch (err) {
-        console.error("Erro ao carregar categorias", err);
-      }
-    }
-    loadCategories();
-  }, []);
+  const range = useMemo<DashboardRange | null>(
+    () => (filter === "custom" ? appliedCustom : getPresetRange(filter)),
+    [filter, appliedCustom],
+  );
 
-  const getFilterDates = useCallback((
-    currentFilter: FilterType,
-    startStr: string,
-    endStr: string
-  ) => {
-    // Envia a data LOCAL (YYYY-MM-DD). A API converte para início/fim do dia
-    // no fuso da loja. Usar toISOString() aqui jogava o fim do dia para o dia
-    // seguinte em UTC, fazendo "Hoje" virar 2 dias (e perder o gráfico por hora).
-    const toLocalDateStr = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const statsQuery = useDashboardStats(range);
+  const categoryId = selectedCategory === "all" ? undefined : selectedCategory;
+  const rankingQuery = useDashboardRanking(range, categoryId, rankingSort);
+  const opportunitiesQuery = useDashboardOpportunities(activeTab === "estoque");
+  const { data: categories = [] } = useDashboardCategories();
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayStr = toLocalDateStr(today);
+  const statsRes = statsQuery.data;
+  const stats = statsRes?.stats ?? null;
+  const chartData = statsRes?.chartData ?? [];
+  const missingCost = statsRes?.semCusto ?? null;
+  const prev: DashboardComparison | null = statsRes?.comparacao ?? null;
 
-    if (currentFilter === "today") {
-      return { start: todayStr, end: todayStr };
-    } else if (currentFilter === "7days") {
-      const start = new Date(today);
-      start.setDate(start.getDate() - 6);
-      return { start: toLocalDateStr(start), end: todayStr };
-    } else if (currentFilter === "30days") {
-      const start = new Date(today);
-      start.setDate(start.getDate() - 29);
-      return { start: toLocalDateStr(start), end: todayStr };
-    } else if (currentFilter === "6months") {
-      const start = new Date(today);
-      start.setMonth(start.getMonth() - 6);
-      return { start: toLocalDateStr(start), end: todayStr };
-    } else if (currentFilter === "year") {
-      const start = new Date(today);
-      start.setFullYear(start.getFullYear() - 1);
-      return { start: toLocalDateStr(start), end: todayStr };
-    } else if (currentFilter === "custom") {
-      if (!startStr || !endStr) return null;
-      return { start: startStr.split("T")[0], end: endStr.split("T")[0] };
-    }
-    return null;
-  }, []);
+  // Sem nenhum dado ainda (primeira carga): skeleton. Trocando de período: mantém os
+  // números anteriores esmaecidos até chegar a resposta nova.
+  const loading = !!range && statsQuery.isPending;
+  const isStale = statsQuery.isPlaceholderData;
+  const awaitingCustomDates = filter === "custom" && !appliedCustom;
 
-  const fetchDashboard = useCallback(async () => {
-    setLoading(true);
-    try {
-      const dates = getFilterDates(filter, customStart, customEnd);
-      if (filter === "custom" && !dates) {
-        setLoading(false);
-        return;
-      }
+  const isDefaultRanking = !categoryId && rankingSort === DEFAULT_RANKING_SORT;
+  const bestSellers = (isDefaultRanking ? statsRes?.bestSellers : rankingQuery.data) ?? statsRes?.bestSellers ?? [];
+  const rankingUpdating = !isDefaultRanking && (rankingQuery.isPending || rankingQuery.isPlaceholderData);
 
-      const res = await getDashboardStats(
-        dates?.start,
-        dates?.end,
-        selectedCategory === "all" ? undefined : selectedCategory,
-        rankingSort
-      );
-
-      setStats(res.stats);
-      setChartData(res.chartData);
-      setBestSellers(res.bestSellers);
-      setMissingCost(res.semCusto);
-    } catch (err) {
-      console.error("Erro ao buscar dados do dashboard", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter, customStart, customEnd, selectedCategory, rankingSort, getFilterDates]);
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+  const opportunitiesData = opportunitiesQuery.data ?? null;
+  const loadingOpportunities = opportunitiesQuery.isPending;
 
   const handleRangeClick = (type: FilterType) => {
     setFilter(type);
-    if (type !== "custom") {
-      setShowCustomRange(false);
-    } else {
-      setShowCustomRange(true);
-    }
+    setShowCustomRange(type === "custom");
   };
 
   const handleCustomDateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (customStart && customEnd) {
-      fetchDashboard();
+      setAppliedCustom({ start: customStart.split("T")[0], end: customEnd.split("T")[0] });
     }
   };
 
-  const kpiCards = [
+  const refreshSales = () => {
+    void statsQuery.refetch();
+    if (!isDefaultRanking) void rankingQuery.refetch();
+  };
+
+  const refreshStock = () => {
+    void opportunitiesQuery.refetch();
+    void statsQuery.refetch();
+  };
+
+  const kpiCards: {
+    label: string;
+    value: string | number;
+    icon: React.ElementType;
+    color: string;
+    delta?: KpiDelta | null;
+  }[] = [
     {
       label: "Total Vendas",
+      delta: computeDelta(stats?.totalVendas, prev?.totalVendas, { kind: "percent", format: formatBRL }),
       value: stats ? `R$ ${(stats.totalVendas || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: DollarSign,
       color: "text-emerald-600 bg-emerald-100",
     },
     {
       label: "Pedidos no Período",
+      delta: computeDelta(stats?.totalPedidos, prev?.totalPedidos, { kind: "percent", format: formatInt }),
       value: stats ? stats.totalPedidos : 0,
       icon: ShoppingBag,
       color: "text-sky-600 bg-sky-100",
     },
     {
       label: "Ticket Médio",
+      delta: computeDelta(stats?.ticketMedio, prev?.ticketMedio, { kind: "percent", format: formatBRL }),
       value: stats ? `R$ ${(stats.ticketMedio || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: TrendingUp,
       color: "text-emerald-600 bg-emerald-100",
     },
     {
       label: "Produtos Vendidos",
+      delta: computeDelta(stats?.totalProdutosVendidos, prev?.totalProdutosVendidos, { kind: "percent", format: formatInt }),
       value: stats ? stats.totalProdutosVendidos : 0,
       icon: Package,
       color: "text-amber-600 bg-amber-100",
     },
     {
       label: "Lucro Bruto",
+      delta: computeDelta(stats?.lucroBruto, prev?.lucroBruto, { kind: "percent", format: formatBRL }),
       value: stats ? formatBRL(stats.lucroBruto) : "R$ 0,00",
       icon: PiggyBank,
       color: "text-emerald-600 bg-emerald-100",
     },
     {
       label: "Margem Bruta",
+      delta: computeDelta(stats?.margemBruta, prev?.margemBruta, { kind: "points", format: formatPct }),
       // null = sem venda com custo cadastrado; "--" em vez de uma margem falsa
       value: stats?.margemBruta != null ? `${stats.margemBruta.toLocaleString("pt-BR")}%` : "--",
       icon: Percent,
@@ -242,12 +214,14 @@ export default function DashboardPage() {
     },
     {
       label: "Visitas",
+      delta: computeDelta(stats?.visitas, prev?.visitas, { kind: "percent", format: formatInt }),
       value: stats?.visitas ?? "--",
       icon: Users,
       color: "text-indigo-600 bg-indigo-100",
     },
     {
       label: "Conversão",
+      delta: computeDelta(stats?.conversao, prev?.conversao, { kind: "points", format: formatPct }),
       value: stats ? `${stats.conversao}%` : "--",
       icon: MousePointerClick,
       color: "text-rose-600 bg-rose-100",
@@ -260,6 +234,7 @@ export default function DashboardPage() {
     },
     {
       label: "Carrinhos Abandonados",
+      delta: computeDelta(stats?.abandonos, prev?.abandonos, { kind: "percent", format: formatInt, invert: true }),
       value: stats?.abandonos ?? "--",
       icon: ShoppingCart,
       color: "text-amber-600 bg-amber-100",
@@ -314,7 +289,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Onboarding Widget — shown before tabs, only when data is loaded */}
-      {(!loading && !isLoadingSettings && !isLoadingOrders) && (
+      {/* Depende só de já ter dados (não do loading): assim não some e volta a cada troca de filtro */}
+      {(stats && !isLoadingSettings && !isLoadingOrders) && (
         <OnboardingWidget
           hasConfiguredStore={!!(settings?.logoUrl || settings?.pixKey || (settings?.cep && settings?.cep !== ""))}
           hasCategory={categories.length > 0}
@@ -387,11 +363,13 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               size="icon"
-              onClick={fetchDashboard}
-              disabled={loading}
+              onClick={refreshSales}
+              disabled={!range || statsQuery.isFetching}
+              aria-label="Atualizar dados de vendas"
+              title="Atualizar"
               className="rounded-xl border border-border"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${statsQuery.isFetching ? "animate-spin" : ""}`} />
             </Button>
           </div>
 
@@ -428,6 +406,44 @@ export default function DashboardPage() {
             </Card>
           )}
 
+          {awaitingCustomDates ? (
+            <Card className="border border-dashed border-border rounded-2xl">
+              <CardContent className="p-8 flex flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                <Calendar className="h-8 w-8 text-muted-foreground/50" />
+                Escolha a data inicial e a final e clique em <span className="font-semibold text-foreground">Aplicar Filtro</span>.
+              </CardContent>
+            </Card>
+          ) : statsQuery.isError && !stats ? (
+            <Card className="border border-rose-200 bg-rose-50/60 rounded-2xl">
+              <CardContent className="p-8 flex flex-col items-center justify-center gap-3 text-center">
+                <WifiOff className="h-8 w-8 text-rose-400" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-rose-900">Não foi possível carregar o dashboard</p>
+                  <p className="text-xs text-rose-700">{statsQuery.error?.message || "Verifique sua conexão e tente de novo."}</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={refreshSales} disabled={statsQuery.isFetching} className="rounded-xl gap-2">
+                  <RefreshCw className={`h-3.5 w-3.5 ${statsQuery.isFetching ? "animate-spin" : ""}`} />
+                  Tentar de novo
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+          <>
+          {/* Falhou ao atualizar mas há dados anteriores: mantém na tela e avisa */}
+          {statsQuery.isError && stats && (
+            <div role="alert" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-900">
+              <div className="flex items-center gap-2 text-xs font-medium">
+                <WifiOff className="h-4 w-4 shrink-0" />
+                Não foi possível atualizar. Os números abaixo podem estar desatualizados.
+              </div>
+              <Button size="sm" variant="outline" onClick={refreshSales} disabled={statsQuery.isFetching} className="rounded-xl gap-2 self-start sm:self-auto">
+                <RefreshCw className={`h-3.5 w-3.5 ${statsQuery.isFetching ? "animate-spin" : ""}`} />
+                Tentar de novo
+              </Button>
+            </div>
+          )}
+
+          <div className={`space-y-6 transition-opacity ${isStale ? "opacity-60" : ""}`} aria-busy={statsQuery.isFetching}>
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {kpiCards.map((card, idx) => {
@@ -445,6 +461,7 @@ export default function DashboardPage() {
                       ) : (
                         <p className="text-lg sm:text-xl font-bold leading-tight tabular-nums text-foreground [overflow-wrap:anywhere]">{card.value}</p>
                       )}
+                      {!loading && card.delta && <KpiDeltaLine delta={card.delta} label={COMPARISON_LABEL[filter]} />}
                     </div>
                   </CardContent>
                 </Card>
@@ -543,8 +560,8 @@ export default function DashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex-1 space-y-4">
-                  {loading ? (
+                <div className={`flex-1 space-y-4 transition-opacity ${rankingUpdating && bestSellers.length > 0 ? "opacity-60" : ""}`}>
+                  {loading || (rankingUpdating && bestSellers.length === 0) ? (
                     Array.from({ length: 4 }).map((_, idx) => (
                       <div key={idx} className="flex items-center gap-3 animate-pulse">
                         <div className="h-10 w-10 bg-muted rounded-xl" />
@@ -603,6 +620,9 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+          </div>
+          </>
+          )}
         </div>
       )}
 
@@ -617,11 +637,11 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchOpportunities}
-              disabled={loadingOpportunities}
+              onClick={refreshStock}
+              disabled={opportunitiesQuery.isFetching}
               className="rounded-xl border border-border gap-2 text-xs font-semibold"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loadingOpportunities ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${opportunitiesQuery.isFetching ? "animate-spin" : ""}`} />
               Atualizar estoque
             </Button>
           </div>
@@ -775,6 +795,16 @@ export default function DashboardPage() {
                   <div key={i} className="h-32 rounded-2xl bg-muted animate-pulse border border-border" />
                 ))}
               </div>
+            ) : opportunitiesQuery.isError && !opportunitiesData ? (
+              <Card className="border border-rose-200 bg-rose-50/60 rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+                <p className="text-xs font-medium text-rose-900">
+                  Não foi possível carregar as sugestões. {opportunitiesQuery.error?.message}
+                </p>
+                <Button size="sm" variant="outline" onClick={refreshStock} className="rounded-xl gap-2">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Tentar de novo
+                </Button>
+              </Card>
             ) : !opportunitiesData?.opportunities || opportunitiesData.opportunities.length === 0 ? (
               <Card className="border border-dashed border-border rounded-2xl p-6 text-center text-xs text-muted-foreground">
                 Nenhuma oportunidade urgente identificada no momento. Seu catálogo está com giro equilibrado.
@@ -840,5 +870,25 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function KpiDeltaLine({ delta, label }: { delta: KpiDelta; label: string }) {
+  const Icon = delta.direction === "up" ? ArrowUpRight : delta.direction === "down" ? ArrowDownRight : Minus;
+  const tone =
+    delta.good === null ? "text-muted-foreground" : delta.good ? "text-emerald-600" : "text-rose-600";
+  const sign = delta.direction === "up" && delta.text !== "novo" ? "+" : delta.direction === "down" ? "−" : "";
+  return (
+    <p
+      className="flex flex-wrap items-center gap-x-1 text-[11px] leading-tight"
+      title={`Período anterior: ${delta.previousText}`}
+    >
+      <span className={`inline-flex items-center font-semibold tabular-nums ${tone}`}>
+        <Icon className="h-3 w-3" aria-hidden="true" />
+        {sign}
+        {delta.text}
+      </span>
+      <span className="text-muted-foreground">{label}</span>
+    </p>
   );
 }

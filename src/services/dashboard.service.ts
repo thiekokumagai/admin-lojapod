@@ -53,8 +53,28 @@ export interface BestSellerItem {
   semCusto: boolean;
 }
 
+/**
+ * Mesmos KPIs no período anterior equivalente: mesmo tamanho e cortado no mesmo ponto
+ * (ex.: "Hoje" às 14h compara com ontem até 14h).
+ */
+export interface DashboardComparison {
+  inicio: string;
+  fim: string;
+  totalVendas: number;
+  totalPedidos: number;
+  ticketMedio: number;
+  totalProdutosVendidos: number;
+  lucroBruto: number;
+  margemBruta: number | null;
+  visitas: number;
+  conversao: number;
+  abandonos: number;
+}
+
 export interface DashboardStatsResponse {
   stats: DashboardKPIs;
+  /** null quando não há período anterior. Ausente em versões antigas da API. */
+  comparacao?: DashboardComparison | null;
   semCusto: DashboardMissingCost;
   chartData: DashboardChartItem[];
   bestSellers: BestSellerItem[];
