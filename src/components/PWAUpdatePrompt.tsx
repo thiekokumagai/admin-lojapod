@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 
 /** Depois de fechar no X, o aviso volta depois deste tempo ("lembrar depois"). */
 export const PWA_REMIND_AFTER_MS = 15 * 60 * 1000;
+/** Com a aba aberta, pergunta ao servidor se há versão nova neste intervalo. */
+export const PWA_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+/** Evita checar em rajada (foco + visibilidade disparam juntos). */
+const PWA_MIN_CHECK_GAP_MS = 60 * 1000;
 
 /**
  * Avisa quando o navegador baixa e deixa em espera uma versão nova do service worker.
@@ -58,13 +62,23 @@ export function PWAUpdatePrompt({ enabled = true }: PWAUpdatePromptProps = {}) {
         watchForNewVersion(registration, () => onNewVersion.current());
       }
       if (!import.meta.env.DEV && registration) {
-        // Checar por atualizações no servidor periodicamente (a cada 1h)
-        const interval = setInterval(() => {
-          if (navigator.onLine) {
-            registration.update().catch(() => {});
-          }
-        }, 60 * 60 * 1000);
-        return () => clearInterval(interval);
+        // Numa SPA aberta o navegador quase nunca confere o sw.js sozinho (só em navegação
+        // completa ou a cada 24h), então o app precisa pedir: de tempos em tempos e sempre
+        // que a aba volta a ficar visível ou a internet volta.
+        let lastCheck = 0;
+        const checkForUpdate = () => {
+          if (!navigator.onLine) return;
+          const now = Date.now();
+          if (now - lastCheck < PWA_MIN_CHECK_GAP_MS) return;
+          lastCheck = now;
+          registration.update().catch(() => {});
+        };
+        setInterval(checkForUpdate, PWA_CHECK_INTERVAL_MS);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") checkForUpdate();
+        });
+        window.addEventListener("focus", checkForUpdate);
+        window.addEventListener("online", checkForUpdate);
       }
     },
     onRegisterError(error) {
