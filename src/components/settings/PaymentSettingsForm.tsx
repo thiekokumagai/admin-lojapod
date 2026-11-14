@@ -17,6 +17,7 @@ export function PaymentSettingsForm() {
   const [pixKeyType, setPixKeyType] = useState<string | null>(null);
   const [pixKey, setPixKey] = useState("");
   const [pixHolder, setPixHolder] = useState("");
+  const [pixOnTerminal, setPixOnTerminal] = useState(false);
 
   const [payOnDeliveryCash, setPayOnDeliveryCash] = useState(false);
   const [payOnDeliveryCardDebit, setPayOnDeliveryCardDebit] = useState(false);
@@ -36,6 +37,7 @@ export function PaymentSettingsForm() {
       setPixKeyType(settings.pixKeyType || "EMAIL");
       setPixKey(cleanVal(settings.pixKey, ["lojapod@email.com"]));
       setPixHolder(cleanVal(settings.pixHolder, ["Loja Pod E-commerce LTDA"]));
+      setPixOnTerminal(settings.paymentGateways?.pixOnTerminal === true);
 
       setPayOnDeliveryCash(!!settings.payOnDeliveryCash);
       setPayOnDeliveryCardDebit(!!settings.payOnDeliveryCardDebit);
@@ -46,7 +48,7 @@ export function PaymentSettingsForm() {
   }, [settings]);
 
   const handleSave = async () => {
-    if (pixEnabled && (!pixKey.trim() || !pixHolder.trim())) {
+    if (pixEnabled && !pixOnTerminal && (!pixKey.trim() || !pixHolder.trim())) {
       toast({
         variant: "destructive",
         title: "Erro de validação",
@@ -61,6 +63,8 @@ export function PaymentSettingsForm() {
         pixKeyType,
         pixKey,
         pixHolder,
+        // Mantém as integrações já salvas (InfinitePay etc.) e só altera a flag
+        paymentGateways: { ...(settings?.paymentGateways || {}), pixOnTerminal },
         payOnDeliveryCash,
         payOnDeliveryCardDebit,
         payOnDeliveryCardCredit,
@@ -118,6 +122,20 @@ export function PaymentSettingsForm() {
           </div>
 
           {pixEnabled && (
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
+              <div>
+                <Label className="text-sm font-medium cursor-pointer" onClick={() => setPixOnTerminal(!pixOnTerminal)}>
+                  Pix na maquininha
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  O cliente não vê chave, titular, copia e cola nem QR code. Ele escolhe Pix e paga na maquininha, na entrega ou retirada.
+                </p>
+              </div>
+              <Switch checked={pixOnTerminal} onCheckedChange={setPixOnTerminal} />
+            </div>
+          )}
+
+          {pixEnabled && !pixOnTerminal && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <div>
                 <Label className="font-medium text-xs">Tipo de Chave</Label>

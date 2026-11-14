@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatWhatsAppNumber, openWhatsApp } from "@/utils/whatsapp";
 import { getStoreTimezone } from "@/utils/date-timezone";
+import { isOrderPaid } from "@/utils/orderPaid";
 
 // Helpers para URLs universais do Google Maps e Waze para celular
 export function buildGoogleMapsRouteUrl(
@@ -342,12 +343,8 @@ export default function DeliveryMapPage() {
   const hasCollectionRequired = useMemo(() => {
     const targetOrders = selectedMarkersList.length > 0 ? selectedMarkersList : availableMarkers;
     if (targetOrders.length === 0) return false;
-    return targetOrders.some(m => {
-      if (m.paymentStatus === 'PAID') return false;
-      const method = (m.paymentMethod || "").toLowerCase();
-      if (method.includes("pix")) return false;
-      return true; // Dinheiro, Cartão na maquininha, etc.
-    });
+    // Dinheiro, cartão na maquininha, Pix na maquininha etc. precisam de cobrança
+    return targetOrders.some(m => !isOrderPaid(m));
   }, [selectedMarkersList, availableMarkers]);
 
   const effectiveReturnToStore = customReturnToStore !== null ? customReturnToStore : hasCollectionRequired;
@@ -385,11 +382,7 @@ export default function DeliveryMapPage() {
   ): Promise<{ directions: google.maps.DirectionsResult; optimizedOrders: (Order & { lat: number; lng: number })[]; returnToStore: boolean }> => {
     if (selectedMarkers.length === 0) throw new Error("Nenhum pedido selecionado");
 
-    const ordersNeedCollection = selectedMarkers.some(m => {
-      if (m.paymentStatus === 'PAID') return false;
-      const method = m.paymentMethod?.toLowerCase() || "";
-      return !method.includes("pix");
-    });
+    const ordersNeedCollection = selectedMarkers.some(m => !isOrderPaid(m));
 
     const requiresReturn = forceReturnToStore !== undefined
       ? forceReturnToStore
@@ -757,7 +750,7 @@ export default function DeliveryMapPage() {
                             <span className="text-xs font-mono font-bold text-slate-400">#{marker.orderNumber}</span>
                           </div>
                           <p className="text-sm font-bold text-slate-800 leading-tight">{marker.customerName}</p>
-                          <p className="text-[10px] uppercase font-bold mt-0.5" style={{ color: (marker.paymentMethod?.toLowerCase().includes("pix") || marker.paymentStatus === 'PAID') ? "#10b981" : "#f59e0b" }}>
+                          <p className="text-[10px] uppercase font-bold mt-0.5" style={{ color: isOrderPaid(marker) ? "#10b981" : "#f59e0b" }}>
                             {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
                           </p>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-1 leading-snug">
@@ -817,11 +810,7 @@ export default function DeliveryMapPage() {
                             wppText += `📍 GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
                           });
 
-                          const assignedHasCollection = sortedOrders.some((o: any) => {
-                            if (o.paymentStatus === 'PAID') return false;
-                            const method = (o.paymentMethod || "").toLowerCase();
-                            return !method.includes("pix");
-                          });
+                          const assignedHasCollection = sortedOrders.some((o: any) => !isOrderPaid(o));
                           const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, sortedOrders, assignedHasCollection);
                           wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
@@ -880,7 +869,7 @@ export default function DeliveryMapPage() {
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                            <p className="text-sm font-bold text-slate-800 leading-tight">#{marker.orderNumber} - {marker.customerName}</p>
-                           <span className="text-[10px] uppercase font-bold" style={{ color: (marker.paymentMethod?.toLowerCase().includes("pix") || marker.paymentStatus === 'PAID') ? "#10b981" : "#f59e0b" }}>
+                           <span className="text-[10px] uppercase font-bold" style={{ color: isOrderPaid(marker) ? "#10b981" : "#f59e0b" }}>
                              {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
                            </span>
                         </div>

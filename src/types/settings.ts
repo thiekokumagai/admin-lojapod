@@ -76,7 +76,9 @@ export interface StoreSettings {
   pixKeyType: string | null;
   pixKey: string | null;
   pixHolder: string | null;
-  
+  /** Integrações de pagamento online por loja. `pixOnTerminal: true` esconde chave/copia e cola do cliente. */
+  paymentGateways?: Record<string, unknown> | null;
+
   payOnDeliveryCash: boolean;
   payOnDeliveryCardDebit: boolean;
   payOnDeliveryCardCredit: boolean;

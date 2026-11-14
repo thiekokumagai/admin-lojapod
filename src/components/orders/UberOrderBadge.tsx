@@ -2,11 +2,12 @@ import { Car } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSettings } from "@/hooks/useSettings";
 import type { Order } from "@/types/order";
+import { isOrderPaid } from "@/utils/orderPaid";
 
 interface UberOrderBadgeProps {
   order: Pick<
     Order,
-    "status" | "deliveryModality" | "paymentStatus" | "paymentMethod" | "uberDeliveryId" | "uberDeliveryStatus"
+    "status" | "deliveryModality" | "paymentStatus" | "paymentMethod" | "paymentType" | "uberDeliveryId" | "uberDeliveryStatus"
   >;
   className?: string;
 }
@@ -34,8 +35,8 @@ export function UberOrderBadge({ order, className = "" }: UberOrderBadgeProps) {
     );
   }
 
-  const isPaidOrPix =
-    order.paymentStatus === "PAID" || (order.paymentMethod || "").toLowerCase().includes("pix");
+  // Mesma regra da API: Pix na maquininha (entrega, pendente) não chama a Uber sozinho
+  const isPaidOrPix = isOrderPaid(order);
   const willAutoCall =
     !!settings?.uberDirectEnabled &&
     !!settings?.uberDirectAutoDispatch &&

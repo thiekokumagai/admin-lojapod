@@ -494,7 +494,7 @@ export default function OrderDetailsPage() {
                   <span className="text-slate-800 font-bold">
                     {order.paymentStatus === "PAID" 
                       ? (order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega") 
-                      : (order.paymentMethod?.toLowerCase() === "pix" ? "Online" : "Na Entrega")}
+                      : (order.paymentMethod?.toLowerCase() === "pix" && order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega")}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-500 items-center">
