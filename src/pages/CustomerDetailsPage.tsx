@@ -435,6 +435,7 @@ export default function CustomerDetailsPage() {
           isOpen={!!selectedOrderId}
           onClose={() => setSelectedOrderId(null)}
           readOnly={true}
+          allowReceive
         />
 
         {/* Modal de Confirmação de Bloqueio / Desbloqueio */}
