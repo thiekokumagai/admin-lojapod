@@ -1,3 +1,5 @@
+import type { CourierImpact } from './courier-impact';
+
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'PENDING' | 'PAID';
 
@@ -84,4 +86,6 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
+  /** Só na resposta de cancelar/reativar pedido que estava numa rota de motoboy. */
+  courierImpact?: CourierImpact | null;
 }

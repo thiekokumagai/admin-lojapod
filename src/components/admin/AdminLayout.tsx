@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 import { Key } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import CourierFeeAdjustDialog from "@/components/CourierFeeAdjustDialog";
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -224,6 +225,8 @@ export function AdminLayout() {
         </div>
       </div>
       {!superAdmin && <MobileBottomNav />}
+      {/* Aviso global: ajustar a taxa do motoboy depois de cancelar/reativar pedido que estava numa rota */}
+      <CourierFeeAdjustDialog />
     </SidebarProvider>
   );
 }

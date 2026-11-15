@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { GoogleMap, Marker, InfoWindow, DirectionsRenderer } from "@react-google-maps/api";
 import { useOrders } from "@/hooks/useOrders";
 import { useSettings } from "@/hooks/useSettings";
@@ -12,6 +12,16 @@ import { buildImageUrl } from "@/utils/image-url";
 import { io } from "socket.io-client";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Courier, couriersService } from "@/services/couriers.service";
+import { affectsCourierRoutes, analyzeRoute, shouldShowCancelledOnlyRoute } from "@/utils/courier-route";
+import {
+  buildMarkers,
+  type Coords,
+  inactiveOrderIds,
+  isActiveDeliveryOrder,
+  makeRefreshGate,
+  pruneIdSet,
+  pruneRoutes,
+} from "@/utils/delivery-map";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -143,9 +153,13 @@ const routeColors = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec
 
 export default function DeliveryMapPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [markers, setMarkers] = useState<(Order & { lat: number; lng: number })[]>([]);
+  // Só as coordenadas ficam guardadas (por id do pedido). Os marcadores saem da lista ATUAL de pedidos (ver `markers`),
+  // então um pedido cancelado some na hora, sem esperar a geocodificação.
+  const [coords, setCoords] = useState<Record<string, Coords>>({});
   const [geocoding, setGeocoding] = useState(false);
   const [routes, setRoutes] = useState<RouteGroup[]>([]);
+  const routesRef = useRef<RouteGroup[]>(routes);
+  routesRef.current = routes;
   const [selectedMarker, setSelectedMarker] = useState<(Order & { lat: number; lng: number }) | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [storeLocation, setStoreLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -156,7 +170,11 @@ export default function DeliveryMapPage() {
     onSuccess: () => {
       toast.success("Rota/Lançamento excluído com sucesso");
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["courier-route"] });
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
+    },
+    // A API explica o motivo quando recusa (ex.: rota com pedido já enviado ou entregue)
+    onError: (error: Error) => toast.error(error.message || "Erro ao excluir a rota")
   });
 
   const [sendRouteModal, setSendRouteModal] = useState<{ open: boolean, routeId: number | null }>({ open: false, routeId: null });
@@ -194,8 +212,16 @@ export default function DeliveryMapPage() {
     const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
     const socket = io(socketUrl);
 
+    // Rede de segurança 1: o socket só avisa do que acontece enquanto está conectado. Ao RECONECTAR (queda de rede,
+    // computador que dormiu) rebusca pedidos e rotas, senão um cancelamento perdido no meio nunca chegaria ao mapa.
+    let connectedBefore = false;
     socket.on('connect', () => {
       console.log('Connected to websocket server for order updates');
+      if (connectedBefore) {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: ["courier-route"] });
+      }
+      connectedBefore = true;
     });
 
     socket.on('order.new', () => {
@@ -204,25 +230,51 @@ export default function DeliveryMapPage() {
 
     socket.on('order.updated', (order) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // status dos pedidos de cada rota (decide cartão de cancelados e "Excluir"): só se o pedido tem rota
+      if (affectsCourierRoutes(order)) {
+        queryClient.invalidateQueries({ queryKey: ["courier-route"] });
+      }
       if (order && order.id) {
         queryClient.invalidateQueries({ queryKey: ["orders", order.id] });
       }
     });
 
+    // Rede de segurança 2: ao voltar para a aba (ou para a janela), rebusca uma vez. Cobre cancelamento feito em outra
+    // aba ou aparelho enquanto esta aba estava em segundo plano (o socket pode ter ficado parado). Sem intervalo/polling.
+    const allowRefresh = makeRefreshGate(3000);
+    const refreshOnFocus = () => {
+      if (document.visibilityState === 'hidden' || !allowRefresh()) return;
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["courier-route"] });
+    };
+    document.addEventListener('visibilitychange', refreshOnFocus);
+    window.addEventListener('focus', refreshOnFocus);
+
     return () => {
+      document.removeEventListener('visibilitychange', refreshOnFocus);
+      window.removeEventListener('focus', refreshOnFocus);
       socket.disconnect();
     };
   }, [queryClient]);
 
-  const activeOrders = useMemo(() => {
+  const activeOrders = useMemo<Order[]>(() => {
     if (!ordersData?.data) return [];
-    return ordersData.data.filter(
-      (order) => (order.status === "PENDING" || order.status === "CONFIRMED") && order.deliveryModality !== "STORE_PICKUP"
-    );
+    return (ordersData.data as Order[]).filter(isActiveDeliveryOrder);
   }, [ordersData]);
 
+  // Pedidos que a lista mostra e que deixaram de ser parada (cancelado, enviado, concluído, retirada)
+  const removedOrderIds = useMemo(() => inactiveOrderIds(ordersData?.data), [ordersData]);
+
+  // Marcadores = pedidos ativos AGORA + coordenadas já descobertas. Cancelou => some na hora.
+  const markers = useMemo(() => buildMarkers(activeOrders, coords), [activeOrders, coords]);
+
   useEffect(() => {
-    if (!activeOrders.length) return;
+    if (!activeOrders.length) {
+      // Era o bug: sem pedidos ativos o efeito saía sem limpar nada e o último marcador ficava no mapa
+      setCoords((prev) => (Object.keys(prev).length > 0 ? {} : prev));
+      setGeocoding(false);
+      return;
+    }
     if (!window.google?.maps) return;
 
     const geocoder = new window.google.maps.Geocoder();
@@ -230,14 +282,14 @@ export default function DeliveryMapPage() {
 
     const geocodeOrders = async () => {
       setGeocoding(true);
-      const newMarkers: (Order & { lat: number; lng: number })[] = [];
+      const newCoords: Record<string, Coords> = {};
 
       for (const order of activeOrders) {
         if (!isMounted) break;
         const addressStr = `${order.street}, ${order.number} - ${order.neighborhood}, ${order.city} - ${order.state}, ${order.cep}`;
-        
+
         if (geocodeCache[addressStr]) {
-          newMarkers.push({ ...order, ...geocodeCache[addressStr] });
+          newCoords[order.id] = geocodeCache[addressStr];
           continue;
         }
 
@@ -254,9 +306,9 @@ export default function DeliveryMapPage() {
 
           if (result && result.length > 0) {
             const location = result[0].geometry.location;
-            const coords = { lat: location.lat(), lng: location.lng() };
-            geocodeCache[addressStr] = coords;
-            newMarkers.push({ ...order, ...coords });
+            const found = { lat: location.lat(), lng: location.lng() };
+            geocodeCache[addressStr] = found;
+            newCoords[order.id] = found;
           }
           
           await new Promise((r) => setTimeout(r, 300));
@@ -266,10 +318,10 @@ export default function DeliveryMapPage() {
       }
 
       if (isMounted) {
-        setMarkers(newMarkers);
+        setCoords(newCoords);
         // Do not auto-select everything on refresh to allow multi-routes easily
         if (routes.length === 0 && selectedOrderIds.size === 0) {
-          setSelectedOrderIds(new Set(newMarkers.map(m => m.id)));
+          setSelectedOrderIds(new Set(Object.keys(newCoords)));
         }
         setGeocoding(false);
       }
@@ -281,6 +333,31 @@ export default function DeliveryMapPage() {
       isMounted = false;
     };
   }, [activeOrders]); // purposefully excluded routes/selectedOrderIds to avoid refetch loops
+
+  // Pedido que deixou de ser parada (cancelado etc.) também sai do que o usuário estava montando:
+  // seleção, janela de informações do marcador e rotas ainda não salvas (o trajeto é recalculado sem a parada).
+  useEffect(() => {
+    if (removedOrderIds.size === 0) return;
+    setSelectedOrderIds((prev) => pruneIdSet(prev, removedOrderIds));
+    setSelectedMarker((prev) => (prev && removedOrderIds.has(prev.id) ? null : prev));
+
+    const pruned = pruneRoutes(routesRef.current, removedOrderIds);
+    if (!pruned.changed) return;
+    setRoutes(pruned.routes);
+    const numbers = pruned.removedStops.map((s) => (s.orderNumber ? `#${s.orderNumber}` : "pedido")).join(", ");
+    toast.info(`Pedido ${numbers} saiu do mapa (cancelado ou não está mais pendente) e foi tirado da rota em montagem.`);
+
+    pruned.changedRouteIds.forEach(async (routeId) => {
+      const route = pruned.routes.find((r) => r.id === routeId);
+      if (!route || !window.google?.maps) return;
+      try {
+        const directions = await fetchDirectionsForManualOrder(route.optimizedOrders, route.returnToStore ?? false);
+        setRoutes((prev) => prev.map((r) => (r.id === routeId ? { ...r, directions } : r)));
+      } catch {
+        toast.error(`Não foi possível recalcular o trajeto da rota ${routeId}. Use "Reotimizar" para refazer.`);
+      }
+    });
+  }, [removedOrderIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!settings || !window.google?.maps) return;
@@ -315,6 +392,47 @@ export default function DeliveryMapPage() {
 
   const routedOrderIds = useMemo(() => new Set(routes.flatMap(r => r.optimizedOrders.map(o => o.id))), [routes]);
   
+  // Pedidos CANCELADOS que já estavam numa rota: não são parada (sem marcador no mapa), mas continuam
+  // aparecendo na rota atribuída, marcados como "Cancelado", em vez de sumir.
+  const cancelledByTx = useMemo(() => {
+    const groups: Record<string, Order[]> = {};
+    (ordersData?.data ?? []).forEach((o) => {
+      const txId = (o as any).courierTransactionId as string | null | undefined;
+      if (o.status === "CANCELLED" && txId) {
+        if (!groups[txId]) groups[txId] = [];
+        groups[txId].push(o);
+      }
+    });
+    return groups;
+  }, [ordersData]);
+
+  // O mapa só enxerga PENDING/CONFIRMED dos últimos 200 pedidos. Para saber se uma rota tem pedido DISPATCHED/COMPLETED
+  // (motoboy já saiu) pedimos à API só as rotas que aparecem aqui (GET /couriers/routes?ids=...), com os pedidos de
+  // cada uma — sem o histórico inteiro do motoboy. Só lançamento de taxa (FEE) volta; PAYMENT nunca entra.
+  const routeTxIds = useMemo(() => {
+    const ids = new Set<string>(Object.keys(cancelledByTx));
+    markers.forEach((m) => {
+      const txId = (m as any).courierTransactionId as string | null | undefined;
+      if (txId) ids.add(txId);
+    });
+    return Array.from(ids).sort();
+  }, [markers, cancelledByTx]);
+
+  const { data: routeRows } = useQuery({
+    queryKey: ["courier-route", routeTxIds.join(",")],
+    queryFn: () => couriersService.getRoutes(routeTxIds),
+    enabled: routeTxIds.length > 0,
+    staleTime: 15_000,
+  });
+
+  const routeInfoByTx = useMemo(() => {
+    const map: Record<string, { orders: { status?: string }[]; courierName: string | null }> = {};
+    (routeRows ?? []).forEach((r) => {
+      map[r.id] = { orders: r.orders, courierName: r.courierName };
+    });
+    return map;
+  }, [routeRows]);
+
   // Assigned orders grouped by courierTransactionId
   const assignedRoutes = useMemo(() => {
     const groups: Record<string, typeof markers> = {};
@@ -324,12 +442,28 @@ export default function DeliveryMapPage() {
         groups[m.courierTransactionId].push(m);
       }
     });
-    return Object.entries(groups).map(([txId, orders]) => ({
-      txId,
-      orders,
-      courierName: (orders[0] as any).courier?.name || "Desconhecido"
-    }));
-  }, [markers]);
+    const txIds = Array.from(new Set([...Object.keys(groups), ...Object.keys(cancelledByTx)]));
+    return txIds.flatMap((txId) => {
+      const orders = groups[txId] ?? [];
+      const cancelled = cancelledByTx[txId] ?? [];
+      const info = routeInfoByTx[txId];
+      const analysis = analyzeRoute(info?.orders);
+      // Rota só com cancelados: só aparece se TODOS os pedidos dela forem conhecidos e estiverem cancelados.
+      // Se tem pedido DISPATCHED/COMPLETED, ou se não deu para saber, não mostra cartão órfão (a tela do motoboy cobre).
+      if (orders.length === 0 && !shouldShowCancelledOnlyRoute(analysis)) return [];
+      return [{
+        txId,
+        orders,
+        cancelled,
+        analysis,
+        courierName:
+          info?.courierName ||
+          (orders[0] as any)?.courier?.name ||
+          (cancelled[0] as any)?.courier?.name ||
+          "Desconhecido",
+      }];
+    });
+  }, [markers, cancelledByTx, routeInfoByTx]);
 
   const assignedOrderIds = useMemo(() => new Set(markers.filter(m => !!m.courierTransactionId).map(m => m.id)), [markers]);
 
@@ -773,7 +907,7 @@ export default function DeliveryMapPage() {
                         Atribuída: {ar.courierName}
                       </h4>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 text-blue-500 hover:text-blue-600 px-2 text-[10px] font-bold" onClick={() => {
+                        <Button variant="ghost" size="sm" disabled={ar.orders.length === 0} className="h-6 text-blue-500 hover:text-blue-600 px-2 text-[10px] font-bold" onClick={() => {
                           const courier = couriers?.find(c => c.name === ar.courierName);
                           if (!courier) {
                             toast.error("Motoboy não encontrado para reenviar mensagem");
@@ -818,11 +952,23 @@ export default function DeliveryMapPage() {
                         }}>
                           <Send className="w-3 h-3 mr-1" /> Reenviar
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-6 text-red-500 hover:text-red-600 px-2 text-[10px] font-bold" onClick={() => {
-                          if (confirm("Deseja excluir esta rota e o lançamento do motoboy?")) {
-                            deleteTransactionMutation.mutate(ar.txId);
-                          }
-                        }}>Excluir</Button>
+                        {ar.analysis.canDelete ? (
+                          <Button variant="ghost" size="sm" className="h-6 text-red-500 hover:text-red-600 px-2 text-[10px] font-bold" onClick={() => {
+                            if (confirm("Deseja excluir esta rota e o lançamento do motoboy?")) {
+                              deleteTransactionMutation.mutate(ar.txId);
+                            }
+                          }}>Excluir</Button>
+                        ) : ar.analysis.started ? (
+                          // Motoboy já saiu/entregou: apagar o lançamento tiraria a taxa de quem já trabalhou.
+                          <span className="px-2 text-[10px] font-semibold text-slate-400" title="Há pedido já enviado ou entregue nesta rota">
+                            Em andamento: ver em Motoboys
+                          </span>
+                        ) : ar.analysis.known ? (
+                          // Rota com pedido ainda válido: o "Excluir" do mapa só vale para rota 100% cancelada.
+                          <span className="px-2 text-[10px] font-semibold text-slate-400" title="Cancele os pedidos da rota para poder excluí-la">
+                            Cancele os pedidos para excluir
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -836,6 +982,15 @@ export default function DeliveryMapPage() {
                           <p className="text-[10px] uppercase font-bold mt-1 text-slate-400">
                             {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
                           </p>
+                        </div>
+                      ))}
+                      {ar.cancelled.map((order) => (
+                        <div key={order.id} data-testid="cancelled-stop" className="flex flex-col p-3 rounded-lg border border-rose-200 bg-rose-50 shadow-sm" style={{ borderLeftWidth: '4px', borderLeftColor: '#e11d48' }}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-extrabold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Cancelado</span>
+                            <span className="text-xs font-mono font-bold text-rose-400">#{order.orderNumber}</span>
+                          </div>
+                          <p className="text-sm font-bold text-rose-700 leading-tight line-through">{order.customerName}</p>
                         </div>
                       ))}
                     </div>

@@ -34,6 +34,15 @@ export interface Courier {
   transactions?: CourierTransaction[];
 }
 
+/** Rota (lançamento de taxa) com os pedidos dela: resposta enxuta para o mapa de entregas. */
+export interface CourierRoute {
+  id: string;
+  amount: number;
+  courierId: string | null;
+  courierName: string | null;
+  orders: { id: string; orderNumber: number; status: string }[];
+}
+
 export const couriersService = {
   getCouriers: async (): Promise<Courier[]> => {
     const response = await apiFetch('/couriers');
@@ -74,6 +83,22 @@ export const couriersService = {
 
   getCourier: async (id: string): Promise<Courier> => {
     const response = await apiFetch(`/couriers/${id}`);
+    return response.json();
+  },
+
+  /** Só as rotas pedidas (ids de lançamento), sem o histórico inteiro do motoboy. */
+  getRoutes: async (transactionIds: string[]): Promise<CourierRoute[]> => {
+    if (transactionIds.length === 0) return [];
+    const response = await apiFetch(`/couriers/routes?ids=${encodeURIComponent(transactionIds.join(","))}`);
+    return response.json();
+  },
+
+  /** Ajusta o valor de uma taxa de rota (só FEE, da loja do usuário). */
+  adjustFee: async (transactionId: string, amount: number) => {
+    const response = await apiFetch(`/couriers/transactions/${transactionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ amount }),
+    });
     return response.json();
   },
 

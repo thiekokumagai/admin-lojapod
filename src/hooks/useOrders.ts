@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { getOrders, getOrderById, cancelOrder, receiveOrder, revertReceiveOrder, updateOrderStatus, markOrderPrinted, reprintOrder, updateOrder } from "@/services/order.service";
 import { OrderStatus, PaymentStatus } from "@/types/order";
+import { showCourierImpact } from "@/lib/courier-impact-store";
 
 export function useOrders(
   search?: string, 
@@ -58,7 +59,9 @@ export function useCancelOrder() {
 
   return useMutation({
     mutationFn: (id: string) => cancelOrder(id),
-    onSuccess: (_, id) => {
+    onSuccess: (data, id) => {
+      // Pedido estava numa rota de motoboy: abre o modal para ajustar a taxa
+      showCourierImpact(data?.courierImpact);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["orders", id] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -138,6 +141,10 @@ export function useUpdateOrderStatus() {
         patchOrdersCache(old, id, payload)
       );
       return { snapshot };
+    },
+    onSuccess: (data) => {
+      // Cancelou ou reativou pedido que estava numa rota de motoboy: abre o modal para ajustar a taxa
+      showCourierImpact(data?.courierImpact);
     },
     onError: (_err, _vars, context) => {
       // Desfaz o visual se a API falhar

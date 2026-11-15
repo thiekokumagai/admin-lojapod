@@ -47,6 +47,15 @@ const orderAmount = (o: CourierOrder) =>
 
 const pendingTag = (o: CourierOrder) => (isOrderPaid(o) ? "" : " (não baixado)");
 
+// Pedido cancelado depois de entrar na rota: continua listado, mas não conta como entrega.
+const isCancelledOrder = (o: CourierOrder) => o.status === "CANCELLED";
+
+const CancelledBadge = () => (
+  <span className="ml-1.5 inline-flex items-center rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-rose-700">
+    Cancelado
+  </span>
+);
+
 type MethodSummary = {
   label: string;
   online: boolean;
@@ -92,7 +101,8 @@ export default function CourierDetailsPage() {
       toast.success("Lançamento excluído com sucesso!");
       fetchCourier();
     } catch (error: any) {
-      toast.error("Erro ao excluir lançamento");
+      // A API explica o motivo quando recusa (ex.: rota com pedido já enviado ou entregue)
+      toast.error(error?.message || "Erro ao excluir lançamento");
     }
   };
 
@@ -143,12 +153,17 @@ export default function CourierDetailsPage() {
 
   const totalFee = filteredTransactions.filter(t => t.type === "FEE").reduce((acc, t) => acc + Number(t.amount), 0);
   const totalReceived = filteredTransactions.filter(t => t.type === "PAYMENT").reduce((acc, t) => acc + Number(t.amount), 0);
-  const totalDeliveries = filteredTransactions.filter(t => t.type === "FEE").length;
+  // Rota conta como entrega se não tem pedidos vinculados (lançamento antigo) ou se ainda tem algum pedido não cancelado
+  const totalDeliveries = filteredTransactions.filter(
+    t => t.type === "FEE" && (!t.orders || t.orders.length === 0 || t.orders.some(o => !isCancelledOrder(o)))
+  ).length;
 
-  // Pedidos levados pelo motoboy no período (vinculados às rotas/taxas)
-  const deliveredOrders = filteredTransactions
+  // Pedidos levados pelo motoboy no período (vinculados às rotas/taxas), sem os cancelados
+  const routeOrders = filteredTransactions
     .filter(t => t.type === "FEE")
     .flatMap(t => t.orders || []);
+  const deliveredOrders = routeOrders.filter(o => !isCancelledOrder(o));
+  const cancelledCount = routeOrders.length - deliveredOrders.length;
 
   const methodSummaries: MethodSummary[] = Object.values(
     deliveredOrders.reduce<Record<string, MethodSummary>>((acc, o) => {
@@ -262,12 +277,19 @@ export default function CourierDetailsPage() {
             <Wallet className="h-4 w-4 text-slate-500" />
             Conferência de Recebimentos
             <span className="text-xs font-medium text-slate-400">({deliveredOrders.length} {deliveredOrders.length === 1 ? "pedido" : "pedidos"})</span>
+            {cancelledCount > 0 && (
+              <span className="text-xs font-bold text-rose-600">
+                {cancelledCount} {cancelledCount === 1 ? "cancelado fora da conta" : "cancelados fora da conta"}
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4">
           {deliveredOrders.length === 0 ? (
             <div className="text-center py-6 text-gray-500 text-sm">
-              Nenhum pedido vinculado a este motoboy no período.
+              {cancelledCount > 0
+                ? "Todos os pedidos vinculados a este motoboy no período foram cancelados."
+                : "Nenhum pedido vinculado a este motoboy no período."}
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -340,10 +362,18 @@ export default function CourierDetailsPage() {
                     {tx.orders && tx.orders.length > 0 && (
                       <ul className="mt-1.5 space-y-0.5">
                         {tx.orders.map(o => (
-                          <li key={o.id} className="text-[11px] font-medium text-slate-500">
-                            #{o.orderNumber} · {formatMethodName(o.paymentMethod)}
-                            {isPaidOnline(o) ? " (online)" : ""} · {formatCurrency(orderAmount(o))}{pendingTag(o)}
-                          </li>
+                          isCancelledOrder(o) ? (
+                            <li key={o.id} data-testid="cancelled-order" className="text-[11px] font-medium text-rose-600">
+                              #{o.orderNumber} · {formatMethodName(o.paymentMethod)} ·{" "}
+                              <span className="line-through">{formatCurrency(orderAmount(o))}</span>
+                              <CancelledBadge />
+                            </li>
+                          ) : (
+                            <li key={o.id} className="text-[11px] font-medium text-slate-500">
+                              #{o.orderNumber} · {formatMethodName(o.paymentMethod)}
+                              {isPaidOnline(o) ? " (online)" : ""} · {formatCurrency(orderAmount(o))}{pendingTag(o)}
+                            </li>
+                          )
                         ))}
                       </ul>
                     )}
@@ -405,11 +435,19 @@ export default function CourierDetailsPage() {
                       {tx.orders && tx.orders.length > 0 && (
                         <ul className="mt-1.5 space-y-0.5">
                           {tx.orders.map(o => (
-                            <li key={o.id} className="text-xs font-medium text-slate-500">
-                              #{o.orderNumber} · {o.customerName} · {formatMethodName(o.paymentMethod)}
-                              {isPaidOnline(o) ? " (online)" : ""} · <span className="text-slate-700">{formatCurrency(orderAmount(o))}</span>
-                              {!isOrderPaid(o) && <span className="text-amber-600"> (não baixado)</span>}
-                            </li>
+                            isCancelledOrder(o) ? (
+                              <li key={o.id} data-testid="cancelled-order" className="text-xs font-medium text-rose-600">
+                                #{o.orderNumber} · {o.customerName} · {formatMethodName(o.paymentMethod)} ·{" "}
+                                <span className="line-through">{formatCurrency(orderAmount(o))}</span>
+                                <CancelledBadge />
+                              </li>
+                            ) : (
+                              <li key={o.id} className="text-xs font-medium text-slate-500">
+                                #{o.orderNumber} · {o.customerName} · {formatMethodName(o.paymentMethod)}
+                                {isPaidOnline(o) ? " (online)" : ""} · <span className="text-slate-700">{formatCurrency(orderAmount(o))}</span>
+                                {!isOrderPaid(o) && <span className="text-amber-600"> (não baixado)</span>}
+                              </li>
+                            )
                           ))}
                         </ul>
                       )}
