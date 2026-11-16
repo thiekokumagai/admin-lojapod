@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { CANNOT_CANCEL_COMPLETED_ORDER_MESSAGE, isOrderCancelBlocked } from "@/lib/order-cancel";
 import { buildImageUrl } from "@/utils/image-url";
 import { 
   ArrowLeft, 
@@ -268,16 +269,40 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
     }
   }, [order, settings]);
 
+  const showCancelBlocked = () => {
+    toast({
+      variant: "destructive",
+      title: "Não é possível cancelar",
+      description: CANNOT_CANCEL_COMPLETED_ORDER_MESSAGE,
+    });
+  };
+
+  const handleRequestCancel = () => {
+    if (isOrderCancelBlocked(order?.status)) {
+      showCancelBlocked();
+      return;
+    }
+    setConfirmCancelOpen(true);
+  };
+
   const handleStatusChange = async (val: string) => {
     if (!order) return;
     const newStatus = val as OrderStatus;
+    if (newStatus === "CANCELLED" && isOrderCancelBlocked(order.status)) {
+      showCancelBlocked();
+      return;
+    }
     setLocalStatus(newStatus);
     try {
       await updateStatusMutation.mutateAsync({ id: order.id, payload: { status: newStatus } });
       toast({ title: "Status atualizado com sucesso!" });
     } catch (e) {
       setLocalStatus(order.status);
-      toast({ title: "Erro ao atualizar status", variant: "destructive" });
+      toast({
+        title: "Erro ao atualizar status",
+        description: e instanceof Error && e.message ? e.message : "Não foi possível alterar o status do pedido.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1414,7 +1439,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                         variant="destructive"
                         className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-rose-100"
                         disabled={cancelMutation.isPending}
-                        onClick={() => setConfirmCancelOpen(true)}
+                        onClick={handleRequestCancel}
                       >
                         {cancelMutation.isPending ? (
                           <>

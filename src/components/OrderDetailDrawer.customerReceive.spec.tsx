@@ -177,6 +177,23 @@ describe("OrderDetailDrawer aberto a partir dos detalhes do cliente (readOnly + 
     );
   });
 
+  it("pedido entregue: 'Cancelar Pedido' avisa que não pode e não chama a API", () => {
+    showOrder({ status: "COMPLETED" });
+    renderDrawer({ readOnly: true, allowReceive: true, allowCancel: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar Pedido" }));
+
+    expect(screen.queryByRole("button", { name: /Sim, cancelar pedido/i })).not.toBeInTheDocument();
+    expect(cancel).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variant: "destructive",
+        title: "Não é possível cancelar",
+        description: "Este pedido já foi entregue e não pode ser cancelado.",
+      }),
+    );
+  });
+
   it("exibe erro da API no toast ao falhar cancelamento de pedido", async () => {
     cancel.mockRejectedValueOnce({
       response: { data: { message: "Pedido não pode ser cancelado" } },
