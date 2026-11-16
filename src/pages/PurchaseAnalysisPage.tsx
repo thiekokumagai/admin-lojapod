@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCategories } from "@/hooks/useCategories";
 import { usePurchaseAnalysis } from "@/hooks/useInvestments";
 import { PurchaseAnalysisParams } from "@/services/investment.service";
@@ -9,9 +9,21 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Calculator, ArrowLeft } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Calculator, ArrowLeft, ArrowUpDown, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { NumericFormat } from "react-number-format";
+import { openWhatsAppShare } from "@/utils/whatsapp";
+import {
+  PURCHASE_SORT_OPTIONS,
+  buildPurchaseMessage,
+  formatBRL,
+  sortPurchaseItems,
+  type PurchaseItem,
+  type PurchaseSortConfig,
+} from "@/utils/purchaseSimulation";
+
+type Row = PurchaseItem & { _key: string };
 
 export default function PurchaseAnalysisPage() {
   const navigate = useNavigate();
@@ -34,11 +46,15 @@ export default function PurchaseAnalysisPage() {
 
   const { data, isLoading, isFetching } = usePurchaseAnalysis(finalParams, shouldFetch);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-  };
+  const formatCurrency = formatBRL;
 
-  const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>({ key: 'categoria', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<PurchaseSortConfig | null>({ key: 'categoria', direction: 'asc' });
+
+  // Seleção por posição na resposta da API (id_produto pode se repetir entre variações).
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setSelectedKeys(new Set());
+  }, [data]);
 
   const handleSimulate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,25 +75,35 @@ export default function PurchaseAnalysisPage() {
     setSortConfig({ key, direction });
   };
 
-  const getSortedItems = () => {
-    if (!data?.itens) return [];
-    
-    const sortableItems = [...data.itens];
-    if (sortConfig !== null) {
-      sortableItems.sort((a: any, b: any) => {
-        let aVal = a[sortConfig.key] ?? '';
-        let bVal = b[sortConfig.key] ?? '';
-        
-        // Handle nested or specific cases if needed
-        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-        
-        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-    return sortableItems;
+  const sortedItems = useMemo(() => {
+    const items: Row[] = ((data?.itens ?? []) as PurchaseItem[]).map((item, index) => ({ ...item, _key: String(index) }));
+    return sortPurchaseItems(items, sortConfig);
+  }, [data, sortConfig]);
+
+  const getSortedItems = () => sortedItems;
+
+  const allSelected = sortedItems.length > 0 && selectedKeys.size === sortedItems.length;
+  const selectedItems = sortedItems.filter((item) => selectedKeys.has(item._key));
+  const selectedTotal = selectedItems.reduce(
+    (sum, item) => sum + (Number(item.quantidade_sugerida) || 0) * (Number(item.valor_custo) || 0),
+    0,
+  );
+
+  const toggleItem = (key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedKeys(new Set(sortedItems.map((item) => item._key)));
+  const clearSelection = () => setSelectedKeys(new Set());
+
+  const handleSendWhatsApp = () => {
+    if (selectedItems.length === 0) return;
+    openWhatsAppShare(buildPurchaseMessage(selectedItems));
   };
 
   return (
@@ -205,11 +231,67 @@ export default function PurchaseAnalysisPage() {
                </div>
             ) : (data && data.itens && data.itens.length > 0) ? (
                <>
+                 <div className="flex flex-col gap-3 mb-4 lg:flex-row lg:items-center lg:justify-between">
+                   <div className="flex flex-wrap items-center gap-2">
+                     <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                     <Select
+                       value={sortConfig?.key ?? "categoria"}
+                       onValueChange={(key) => setSortConfig({ key, direction: sortConfig?.direction ?? "asc" })}
+                     >
+                       <SelectTrigger className="w-[180px]" aria-label="Ordenar por">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {PURCHASE_SORT_OPTIONS.map((opt) => (
+                           <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                     <Button
+                       type="button"
+                       variant="outline"
+                       onClick={() =>
+                         setSortConfig({
+                           key: sortConfig?.key ?? "categoria",
+                           direction: sortConfig?.direction === "asc" ? "desc" : "asc",
+                         })
+                       }
+                     >
+                       {sortConfig?.direction === "desc" ? "Z-A / Maior ↓" : "A-Z / Menor ↑"}
+                     </Button>
+                     <Button type="button" variant="outline" onClick={selectAll} disabled={allSelected}>
+                       Selecionar todos
+                     </Button>
+                     <Button type="button" variant="ghost" onClick={clearSelection} disabled={selectedKeys.size === 0}>
+                       Limpar
+                     </Button>
+                   </div>
+                   <div className="flex flex-wrap items-center gap-3">
+                     <span className="text-sm text-slate-600">
+                       {selectedItems.length} de {sortedItems.length} selecionados · <strong>{formatCurrency(selectedTotal)}</strong>
+                     </span>
+                     <Button
+                       type="button"
+                       className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                       onClick={handleSendWhatsApp}
+                       disabled={selectedItems.length === 0}
+                     >
+                       <MessageCircle className="mr-2 h-4 w-4" />
+                       Enviar no WhatsApp
+                     </Button>
+                   </div>
+                 </div>
                  <div className="grid md:hidden gap-3">
-                   {getSortedItems().map((item: any, idx: number) => (
-                     <div key={`mobile-${item.id_produto}-${idx}`} className="border rounded-xl p-4 flex flex-col gap-3 bg-white shadow-sm">
-                        <div className="flex justify-between items-start">
-                           <div className="flex flex-col">
+                   {getSortedItems().map((item) => (
+                     <div key={`mobile-${item._key}`} className="border rounded-xl p-4 flex flex-col gap-3 bg-white shadow-sm">
+                        <div className="flex justify-between items-start gap-3">
+                           <Checkbox
+                             className="mt-1"
+                             aria-label={`Selecionar ${item.descricao}`}
+                             checked={selectedKeys.has(item._key)}
+                             onCheckedChange={() => toggleItem(item._key)}
+                           />
+                           <div className="flex flex-col flex-1">
                               <span className="font-bold text-slate-800 text-sm">{item.descricao}</span>
                               {item.variacao && <span className="text-xs text-slate-500 font-medium">{item.variacao}</span>}
                               <span className="text-xs text-slate-500 mt-1">{item.categoria}</span>
@@ -251,6 +333,13 @@ export default function PurchaseAnalysisPage() {
                    <Table className="min-w-[800px]">
                      <TableHeader className="bg-slate-50">
                        <TableRow>
+                         <TableHead className="w-10">
+                           <Checkbox
+                             aria-label="Selecionar todos"
+                             checked={allSelected}
+                             onCheckedChange={(checked) => (checked ? selectAll() : clearSelection())}
+                           />
+                         </TableHead>
                          <TableHead className="cursor-pointer hover:bg-slate-100" onClick={() => handleSort('categoria')}>
                            Categoria {sortConfig?.key === 'categoria' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
                          </TableHead>
@@ -278,8 +367,15 @@ export default function PurchaseAnalysisPage() {
                        </TableRow>
                      </TableHeader>
                      <TableBody>
-                       {getSortedItems().map((item: any, idx: number) => (
-                         <TableRow key={`${item.id_produto}-${idx}`}>
+                       {getSortedItems().map((item) => (
+                         <TableRow key={item._key}>
+                           <TableCell>
+                             <Checkbox
+                               aria-label={`Selecionar ${item.descricao}`}
+                               checked={selectedKeys.has(item._key)}
+                               onCheckedChange={() => toggleItem(item._key)}
+                             />
+                           </TableCell>
                            <TableCell>
                              <div className="font-medium text-slate-700">{item.categoria}</div>
                            </TableCell>

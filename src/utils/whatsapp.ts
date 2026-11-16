@@ -59,3 +59,27 @@ export function openWhatsApp(
   }
 }
 
+
+/**
+ * Abre o WhatsApp com um texto pronto e SEM número: o usuário escolhe o contato.
+ * Só link (wa.me / whatsapp://); não envia nada sozinho.
+ */
+export function openWhatsAppShare(text: string): void {
+  if (!text) return;
+  const encoded = encodeURIComponent(text);
+  const urlApp = `whatsapp://send?text=${encoded}`;
+  const urlWeb = `https://wa.me/?text=${encoded}`;
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    window.location.href = urlApp;
+    setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        window.open(urlWeb, "_blank", "noopener,noreferrer");
+      }
+    }, 1500);
+  } else {
+    window.open(urlWeb, "_blank", "noopener,noreferrer");
+  }
+}
