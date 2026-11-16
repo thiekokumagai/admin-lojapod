@@ -1450,7 +1450,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                     Tem certeza que deseja cancelar o pedido {order?.orderNumber ? `#${order.orderNumber}` : ""}? Esta ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="gap-2 sm:gap-0 pt-2">
+                <AlertDialogFooter className="pt-2">
                   <AlertDialogCancel className="rounded-xl">Não, voltar</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleCancelOrder}
@@ -1477,7 +1477,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                     Tem certeza que deseja cancelar o recebimento do pedido {order?.orderNumber ? `#${order.orderNumber}` : ""}? O status de pagamento retornará para Pendente.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="gap-2 sm:gap-0 pt-2">
+                <AlertDialogFooter className="pt-2">
                   <AlertDialogCancel className="rounded-xl">Não, voltar</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleRevertReceiveOrder}
