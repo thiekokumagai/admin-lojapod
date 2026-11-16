@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import OrderDetailDrawer from "./OrderDetailDrawer";
 import React from "react";
 import { useOrderDetails } from "@/hooks/useOrders";
@@ -8,6 +9,12 @@ import { useSettings } from "@/hooks/useSettings";
 // Mock React Router
 vi.mock("react-router-dom", () => ({
   useNavigate: vi.fn(() => vi.fn()),
+}));
+
+vi.mock("@/services/uber.service", () => ({
+  dispatchSingleOrderUber: vi.fn(),
+  getUberDirectStatus: vi.fn().mockResolvedValue({ enabled: false, hasCredentials: false }),
+  refreshUberDeliveryStatus: vi.fn(),
 }));
 
 // Mock hooks
@@ -83,8 +90,19 @@ describe("OrderDetailDrawer", () => {
     vi.clearAllMocks();
   });
 
+  const renderWithClient = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={queryClient}>
+        {ui}
+      </QueryClientProvider>
+    );
+  };
+
   it("should not render when isOpen is false", () => {
-    const { container } = render(
+    const { container } = renderWithClient(
       <OrderDetailDrawer orderId={null} isOpen={false} onClose={() => {}} />
     );
     expect(container.firstChild).toBeNull();
@@ -94,7 +112,7 @@ describe("OrderDetailDrawer", () => {
     vi.mocked(useOrderDetails).mockReturnValue({ data: mockOrder as any, isLoading: false });
     vi.mocked(useSettings).mockReturnValue({ data: mockSettings as any });
 
-    render(
+    renderWithClient(
       <OrderDetailDrawer orderId="order-1" isOpen={true} onClose={() => {}} />
     );
 

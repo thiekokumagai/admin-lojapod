@@ -13,6 +13,7 @@ import { formatPhone } from "@/utils/formatters";
 
 import { openWhatsApp } from "@/utils/whatsapp";
 import { OrderPaymentBadge } from "@/components/orders/OrderPaymentBadge";
+import { hasPermission } from "@/lib/permissions";
 
 export default function CustomerDetailsPage() {
   const { id: customerId } = useParams<{ id: string }>();
@@ -435,7 +436,8 @@ export default function CustomerDetailsPage() {
           isOpen={!!selectedOrderId}
           onClose={() => setSelectedOrderId(null)}
           readOnly={true}
-          allowReceive
+          allowReceive={hasPermission("orders")}
+          allowCancel={hasPermission("orders")}
         />
 
         {/* Modal de Confirmação de Bloqueio / Desbloqueio */}

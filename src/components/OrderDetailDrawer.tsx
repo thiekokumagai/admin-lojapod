@@ -2,6 +2,16 @@ import { useOrderDetails, useCancelOrder, useReceiveOrder, useRevertReceiveOrder
 import { useSettings } from "@/hooks/useSettings";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +51,8 @@ interface OrderDetailDrawerProps {
   readOnly?: boolean;
   /** Com readOnly, ainda deixa RECEBER o pagamento (usado nos detalhes do cliente). */
   allowReceive?: boolean;
+  /** Com readOnly, ainda deixa CANCELAR o pedido ou cancelar recebimento (usado nos detalhes do cliente). */
+  allowCancel?: boolean;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
@@ -99,12 +111,14 @@ const translateUberStatus = (status?: string | null) => {
   return UBER_STATUS_LABELS[key] || status || "Procurando motoboy";
 };
 
-export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly = false, allowReceive = false }: OrderDetailDrawerProps) {
+export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly = false, allowReceive = false, allowCancel = false }: OrderDetailDrawerProps) {
   // Campos de recebimento (forma de pagamento, descontos, total recebido) só ficam travados em leitura SEM allowReceive
   const paymentLocked = readOnly && !allowReceive;
   const { toast } = useToast();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
   
   const { data: order, isLoading } = useOrderDetails(orderId ?? "");
   const { data: settings } = useSettings();
@@ -420,10 +434,16 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
       });
       onClose();
     } catch (err: any) {
+      const apiMessage = err?.response?.data?.message;
+      const description = Array.isArray(apiMessage)
+        ? apiMessage.join(", ")
+        : typeof apiMessage === "string"
+          ? apiMessage
+          : (err?.message || "Ocorreu um erro ao processar o recebimento.");
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Ocorreu um erro ao processar o recebimento.",
+        description,
       });
     }
   };
@@ -438,11 +458,19 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
       });
       onClose();
     } catch (err: any) {
+      const apiMessage = err?.response?.data?.message;
+      const description = Array.isArray(apiMessage)
+        ? apiMessage.join(", ")
+        : typeof apiMessage === "string"
+          ? apiMessage
+          : (err?.message || "Ocorreu um erro ao reverter o recebimento.");
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Ocorreu um erro ao reverter o recebimento.",
+        description,
       });
+    } finally {
+      setConfirmRevertOpen(false);
     }
   };
 
@@ -490,12 +518,21 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
         title: "Pedido cancelado",
         description: `O pedido #${order?.orderNumber} foi cancelado com sucesso.`,
       });
+      onClose();
     } catch (err: any) {
+      const apiMessage = err?.response?.data?.message;
+      const description = Array.isArray(apiMessage)
+        ? apiMessage.join(", ")
+        : typeof apiMessage === "string"
+          ? apiMessage
+          : (err?.message || "Ocorreu um erro ao processar o cancelamento.");
       toast({
         variant: "destructive",
         title: "Erro ao cancelar pedido",
-        description: err.message || "Ocorreu um erro ao processar o cancelamento.",
+        description,
       });
+    } finally {
+      setConfirmCancelOpen(false);
     }
   };
 
@@ -1334,78 +1371,63 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
 
             {/* Footer Buttons aligned side-by-side */}
             <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-slate-200/80 bg-slate-50 shrink-0">
-              {readOnly && allowReceive && order.status !== "CANCELLED" && order.paymentStatus !== "PAID" && (
-                <Button
-                  variant="default"
-                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-emerald-100"
-                  disabled={receiveMutation.isPending}
-                  onClick={handleReceiveOrder}
-                >
-                  {receiveMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      <span>Processando...</span>
-                    </>
-                  ) : (
-                    <span>Receber Pagamento</span>
-                  )}
-                </Button>
-              )}
-              {!readOnly && (
-                <>
-                  {order.status !== "CANCELLED" ? (
-                    order.paymentStatus === "PAID" ? (
+              {order.status !== "CANCELLED" && (
+                order.paymentStatus === "PAID" ? (
+                  (!readOnly || allowCancel) && (
+                    <Button 
+                      variant="destructive"
+                      className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-rose-100"
+                      disabled={revertReceiveMutation.isPending}
+                      onClick={() => setConfirmRevertOpen(true)}
+                    >
+                      {revertReceiveMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span>Processando...</span>
+                        </>
+                      ) : (
+                        <span>Cancelar Recebimento</span>
+                      )}
+                    </Button>
+                  )
+                ) : (
+                  <>
+                    {(!readOnly || allowReceive) && (
                       <Button 
-                        variant="destructive"
-                        className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-rose-100"
-                        disabled={revertReceiveMutation.isPending}
-                        onClick={handleRevertReceiveOrder}
+                        variant="default"
+                        className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-emerald-100"
+                        disabled={receiveMutation.isPending}
+                        onClick={handleReceiveOrder}
                       >
-                        {revertReceiveMutation.isPending ? (
+                        {receiveMutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             <span>Processando...</span>
                           </>
                         ) : (
-                          <span>Cancelar Recebimento</span>
+                          <span>Receber Pagamento</span>
                         )}
                       </Button>
-                    ) : (
-                      <>
-                        <Button 
-                          variant="default"
-                          className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-emerald-100"
-                          disabled={receiveMutation.isPending}
-                          onClick={handleReceiveOrder}
-                        >
-                          {receiveMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              <span>Processando...</span>
-                            </>
-                          ) : (
-                            <span>Receber Pagamento</span>
-                          )}
-                        </Button>
-                        <Button 
-                          variant="destructive"
-                          className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-rose-100"
-                          disabled={cancelMutation.isPending}
-                          onClick={handleCancelOrder}
-                        >
-                          {cancelMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              <span>Cancelando...</span>
-                            </>
-                          ) : (
-                            <span>Cancelar Pedido</span>
-                          )}
-                        </Button>
-                      </>
-                    )
-                  ) : null}
-                </>
+                    )}
+                    {(!readOnly || allowCancel) && (
+                      <Button 
+                        variant="destructive"
+                        className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-rose-100"
+                        disabled={cancelMutation.isPending}
+                        onClick={() => setConfirmCancelOpen(true)}
+                      >
+                        {cancelMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <span>Cancelando...</span>
+                          </>
+                        ) : (
+                          <span>Cancelar Pedido</span>
+                        )}
+                      </Button>
+                    )}
+                  </>
+                )
               )}
               <Button 
                 variant="outline" 
@@ -1416,6 +1438,60 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                 Voltar
               </Button>
             </div>
+
+            {/* Modal de confirmação: Cancelar Pedido */}
+            <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+              <AlertDialogContent className="rounded-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-lg font-bold text-slate-800">
+                    Cancelar pedido {order?.orderNumber ? `#${order.orderNumber}` : ""}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-600 text-sm pt-2 leading-relaxed">
+                    Tem certeza que deseja cancelar o pedido {order?.orderNumber ? `#${order.orderNumber}` : ""}? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="gap-2 sm:gap-0 pt-2">
+                  <AlertDialogCancel className="rounded-xl">Não, voltar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancelOrder}
+                    disabled={cancelMutation.isPending}
+                    className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white"
+                  >
+                    {cancelMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Sim, cancelar pedido
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Modal de confirmação: Cancelar Recebimento */}
+            <AlertDialog open={confirmRevertOpen} onOpenChange={setConfirmRevertOpen}>
+              <AlertDialogContent className="rounded-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-lg font-bold text-slate-800">
+                    Cancelar recebimento {order?.orderNumber ? `#${order.orderNumber}` : ""}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-600 text-sm pt-2 leading-relaxed">
+                    Tem certeza que deseja cancelar o recebimento do pedido {order?.orderNumber ? `#${order.orderNumber}` : ""}? O status de pagamento retornará para Pendente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="gap-2 sm:gap-0 pt-2">
+                  <AlertDialogCancel className="rounded-xl">Não, voltar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleRevertReceiveOrder}
+                    disabled={revertReceiveMutation.isPending}
+                    className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white"
+                  >
+                    {revertReceiveMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Sim, cancelar recebimento
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
 
           </div>

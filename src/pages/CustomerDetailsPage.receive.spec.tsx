@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import CustomerDetailsPage from "./CustomerDetailsPage";
 import { useCustomerDetails } from "@/hooks/useCustomers";
+import { hasPermission } from "@/lib/permissions";
+
+vi.mock("@/lib/permissions", () => ({
+  hasPermission: vi.fn(),
+}));
 
 // Nada de API: hooks e drawer são mocks. O foco é COMO a tela do cliente abre o pedido.
 vi.mock("react-router-dom", () => ({
@@ -35,6 +40,7 @@ const order = (id: string, orderNumber: number, paymentStatus: string, status = 
 describe("CustomerDetailsPage: abrir pedido não pago a partir dos detalhes do cliente", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(hasPermission).mockReturnValue(true);
     vi.mocked(useCustomerDetails).mockReturnValue({
       data: {
         id: "cust-1",
@@ -58,7 +64,7 @@ describe("CustomerDetailsPage: abrir pedido não pago a partir dos detalhes do c
     expect(screen.getByText("Pedido #102")).toBeInTheDocument();
   });
 
-  it("o drawer abre em leitura MAS com allowReceive: dá para receber (era readOnly puro)", () => {
+  it("o drawer abre em leitura MAS com allowReceive e allowCancel: dá para receber e cancelar", () => {
     render(<CustomerDetailsPage />);
     openOrdersTab();
 
@@ -66,7 +72,19 @@ describe("CustomerDetailsPage: abrir pedido não pago a partir dos detalhes do c
 
     expect(screen.getByTestId("drawer")).toHaveTextContent("pedido o-unpaid");
     const last = drawerProps.mock.calls.at(-1)![0];
-    expect(last).toMatchObject({ orderId: "o-unpaid", isOpen: true, readOnly: true, allowReceive: true });
+    expect(last).toMatchObject({ orderId: "o-unpaid", isOpen: true, readOnly: true, allowReceive: true, allowCancel: true });
+  });
+
+  it("sem permissão 'orders': allowReceive e allowCancel são false", () => {
+    vi.mocked(hasPermission).mockReturnValue(false);
+    render(<CustomerDetailsPage />);
+    openOrdersTab();
+
+    fireEvent.click(screen.getByText("Pedido #101"));
+
+    expect(screen.getByTestId("drawer")).toHaveTextContent("pedido o-unpaid");
+    const last = drawerProps.mock.calls.at(-1)![0];
+    expect(last).toMatchObject({ orderId: "o-unpaid", isOpen: true, readOnly: true, allowReceive: false, allowCancel: false });
   });
 
   it("fechar o drawer limpa o pedido selecionado", () => {
