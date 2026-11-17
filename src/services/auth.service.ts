@@ -63,7 +63,8 @@ export async function refreshTokens() {
   return data;
 }
 
-export async function updatePassword(payload: { currentPassword: string; newPassword: string }) {
+/** Troca a senha do próprio usuário logado. O servidor encerra as sessões abertas depois da troca. */
+export async function updatePassword(payload: { currentPassword: string; newPassword: string; confirmPassword: string }) {
   const { apiFetch } = await import("./api");
   const response = await apiFetch("/users/password", {
     method: "PATCH",

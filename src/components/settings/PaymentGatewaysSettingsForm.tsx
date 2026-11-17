@@ -3,12 +3,14 @@ import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { testInfinitePayConnection } from "@/services/payments.service";
 import { CreditCard, Save, Copy, ExternalLink, Zap, ShieldCheck } from "lucide-react";
+import { isStaff } from "@/lib/permissions";
 
 export function PaymentGatewaysSettingsForm() {
   const { data: settings, isLoading } = useSettings();
@@ -18,18 +20,25 @@ export function PaymentGatewaysSettingsForm() {
   const [infinitePayEnabled, setInfinitePayEnabled] = useState(false);
   const [infinitePayHandle, setInfinitePayHandle] = useState("");
   const [infinitePayApiKey, setInfinitePayApiKey] = useState("");
+  // O servidor não devolve a chave salva: só se existe (`apiKeySet`) e os 4 últimos caracteres
+  const [apiKeySet, setApiKeySet] = useState(false);
+  const [apiKeyLast4, setApiKeyLast4] = useState<string | null>(null);
+  const [removeSavedApiKey, setRemoveSavedApiKey] = useState(false);
   const [infinitePayAssuredInstallments, setInfinitePayAssuredInstallments] = useState(1);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     if (settings) {
-      const gateways = (settings as any).paymentGateways || {};
-      const ip = gateways.infinitepay || {};
+      const gateways = (settings as unknown as { paymentGateways?: Record<string, unknown> })?.paymentGateways || {};
+      const ip = (gateways.infinitepay || {}) as Record<string, unknown>;
 
       setInfinitePayEnabled(!!ip.enabled && !!ip.acceptCreditCard);
-      setInfinitePayHandle(ip.handle || "");
-      setInfinitePayApiKey(ip.apiKey || "");
+      setInfinitePayHandle((ip.handle as string) || "");
+      setInfinitePayApiKey((ip.apiKey as string) || "");
+      setApiKeySet(!!ip.apiKeySet);
+      setApiKeyLast4((ip.apiKeyLast4 as string) ?? null);
+      setRemoveSavedApiKey(false);
       setInfinitePayAssuredInstallments(
         ip.assuredInstallments !== undefined && ip.assuredInstallments !== null
           ? Number(ip.assuredInstallments)
@@ -64,8 +73,12 @@ export function PaymentGatewaysSettingsForm() {
       } else {
         toast({ variant: "destructive", title: "Falha na conexão", description: result.error || "Erro desconhecido" });
       }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Erro ao testar", description: err.message || "Tente novamente" });
+    } catch (err: unknown) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao testar",
+        description: err instanceof Error ? err.message : "Tente novamente",
+      });
     } finally {
       setIsTesting(false);
     }
@@ -82,7 +95,7 @@ export function PaymentGatewaysSettingsForm() {
     }
 
     try {
-      const currentGateways = (settings as any)?.paymentGateways || {};
+      const currentGateways = (settings as unknown as { paymentGateways?: Record<string, unknown> })?.paymentGateways || {};
 
       const updatedGateways = {
         ...currentGateways,
@@ -90,27 +103,32 @@ export function PaymentGatewaysSettingsForm() {
           enabled: infinitePayEnabled,
           acceptCreditCard: infinitePayEnabled,
           handle: infinitePayHandle.trim().replace(/^@/, ""),
-          apiKey: infinitePayApiKey.trim(),
+          // em branco = o servidor mantém a chave salva; null = apagar a chave salva
+          apiKey: removeSavedApiKey ? null : infinitePayApiKey.trim(),
           assuredInstallments: Number(infinitePayAssuredInstallments),
         },
       };
 
       await updateSettingsMutation.mutateAsync({
         paymentGateways: updatedGateways,
-      } as any);
+      } as never);
 
       toast({
         title: "Integração salva!",
         description: "As configurações do gateway InfinitePay foram atualizadas com sucesso.",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: err.message || "Falha ao salvar as configurações de pagamento online.",
+        description: err instanceof Error ? err.message : "Falha ao salvar as configurações de pagamento online.",
       });
     }
   };
+
+  if (isStaff()) {
+    return null;
+  }
 
   return (
     <Card className="border border-border/80 shadow-sm">
@@ -173,19 +191,38 @@ export function PaymentGatewaysSettingsForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">
-                  API Key (Chave Secreta) <span className="text-xs text-muted-foreground font-normal">(Opcional)</span>
+                <Label htmlFor="ip-api-key" className="text-xs font-semibold">
+                  API Key / Access Token (Chave Secreta){" "}
+                  <span className="text-xs text-muted-foreground font-normal">(Opcional)</span>
                 </Label>
-                <Input
-                  type="password"
+                <SecretInput
+                  id="ip-api-key"
+                  toggleName="API Key da InfinitePay"
                   value={infinitePayApiKey}
-                  onChange={(e) => setInfinitePayApiKey(e.target.value)}
+                  onChange={(e) => {
+                    setInfinitePayApiKey(e.target.value);
+                    if (removeSavedApiKey) setRemoveSavedApiKey(false);
+                  }}
                   placeholder="inchk_..."
                   className="h-9"
+                  autoComplete="off"
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  Chave de API gerada na aba de Checkout Integrado no aplicativo InfinitePay.
+                <p className="text-[11px] text-muted-foreground" data-testid="ip-api-key-hint">
+                  {removeSavedApiKey
+                    ? "A chave salva será removida ao salvar."
+                    : apiKeySet
+                      ? `Chave salva ••••${apiKeyLast4 ? ` (termina em ${apiKeyLast4})` : ""}. Deixe em branco para manter.`
+                      : "Chave de API gerada na aba de Checkout Integrado no aplicativo InfinitePay."}
                 </p>
+                {apiKeySet && (
+                  <button
+                    type="button"
+                    className="text-[11px] underline text-muted-foreground hover:text-foreground"
+                    onClick={() => setRemoveSavedApiKey((v) => !v)}
+                  >
+                    {removeSavedApiKey ? "Manter a chave salva" : "Remover a chave salva"}
+                  </button>
+                )}
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import { DeliverySettingsForm } from "@/components/settings/DeliverySettingsForm";
 import { PaymentSettingsForm } from "@/components/settings/PaymentSettingsForm";
 import { PaymentGatewaysSettingsForm } from "@/components/settings/PaymentGatewaysSettingsForm";
+import { MercadoPagoSettingsForm } from "@/components/settings/MercadoPagoSettingsForm";
 import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
 import { PaymentRulesSettingsForm } from "@/components/settings/PaymentRulesSettingsForm";
 import { BusinessHoursSettingsForm } from "@/components/settings/BusinessHoursSettingsForm";
@@ -8,8 +9,10 @@ import { UberDirectSettingsForm } from "@/components/settings/UberDirectSettings
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Store, QrCode, Percent, Truck, Clock, Globe, Car } from "lucide-react";
 import DomainPage from "@/pages/DomainPage";
+import { isStaff } from "@/lib/permissions";
 
 export default function SettingsPage() {
+  const isStaffUser = isStaff();
   return (
     <div className="space-y-6">
       <div>
@@ -52,7 +55,8 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="recebimentos" className="space-y-6 outline-none">
-          <PaymentGatewaysSettingsForm />
+          {!isStaffUser && <PaymentGatewaysSettingsForm />}
+          {!isStaffUser && <MercadoPagoSettingsForm />}
           <PaymentSettingsForm />
           <PaymentRulesSettingsForm />
         </TabsContent>
