@@ -123,13 +123,12 @@ export function StoreAddressesManager({
     }
   }, [settings]);
 
-  // Hook de autocomplete do Google
+  // Hook de autocomplete do Google.
+  // O local da loja (origem das entregas) pode ser em qualquer cidade do Brasil: não herda a restrição
+  // "só a cidade da loja" (settings.searchCity/restrictToCity), que vale para o endereço de ENTREGA do cliente.
   const { predictions, loading: isSearchingGoogle, handleSelect } = useAddressAutocomplete({
     value: searchQuery,
-    searchSuffix: settings?.searchSuffix,
-    searchCity: settings?.searchCity,
-    searchState: settings?.searchState,
-    restrictToCity: settings?.restrictToCity,
+    searchSuffix: ", Brasil",
     onSelect: async (p) => {
       setSearchQuery("");
       setFormStreet(p.mainText.split(",")[0].trim());
@@ -294,8 +293,9 @@ export function StoreAddressesManager({
     setFormStreet("");
     setFormNumber("");
     setFormNeighborhood("");
-    setFormCity(settings?.city || "");
-    setFormState(settings?.state || "");
+    // Cidade/UF vêm do endereço escolhido (busca, CEP ou GPS), não da cidade atual da loja
+    setFormCity("");
+    setFormState("");
     setFormComplement("");
     setFormSetAsActive(addresses.length === 0);
     setSearchQuery("");
