@@ -3,6 +3,7 @@ import { useOrderDetails } from "@/hooks/useOrders";
 import { useSettings } from "@/hooks/useSettings";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
 export default function OrderPrintPage() {
   const { id } = useParams();
@@ -173,15 +174,7 @@ export default function OrderPrintPage() {
 
       <div className="mb-4">
         <p>Pagamento: <span className="font-bold">{order.paymentType}</span></p>
-        <p>Forma de pagamento: <span className="font-bold">{
-          order.paymentMethod === 'pix' ? 'Pix' :
-          (order.paymentMethod === 'credit' || order.paymentMethod === 'credito') ? 'Cartão de Crédito' :
-          (order.paymentMethod === 'debit' || order.paymentMethod === 'debito') ? 'Cartão de Débito' :
-          (order.paymentMethod === 'cash' || order.paymentMethod === 'dinheiro') ? 'Dinheiro' :
-          (order.paymentMethod === 'meal_voucher' || order.paymentMethod === 'vale_refeicao') ? 'Vale refeição' :
-          (order.paymentMethod === 'food_voucher' || order.paymentMethod === 'vale_alimentacao') ? 'Vale alimentação' :
-          order.paymentMethod
-        }</span></p>
+        <p>Forma de pagamento: <span className="font-bold">{formatPaymentMethod(order.paymentMethod)}</span></p>
         {order.pixKey && (order.paymentMethod === "PIX" || order.paymentMethod === "pix") && (
           <p>Chave PIX: <span className="font-bold">{order.pixKey}</span></p>
         )}

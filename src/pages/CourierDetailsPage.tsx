@@ -24,18 +24,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
-const formatMethodName = (method?: string) => {
-  if (!method) return "Outros";
-  const m = method.toLowerCase();
-  if (m === "pix") return "Pix";
-  if (m === "credito" || m === "credit" || m === "cartão de crédito") return "Cartão de Crédito";
-  if (m === "debito" || m === "debit" || m === "cartão de débito") return "Cartão de Débito";
-  if (m === "dinheiro" || m === "cash") return "Dinheiro";
-  if (m === "meal_voucher" || m === "vale_refeicao" || m === "vale refeição" || m === "vale refeicao") return "Vale refeição";
-  if (m === "food_voucher" || m === "vale_alimentacao" || m === "vale alimentação" || m === "vale alimentacao") return "Vale alimentação";
-  return method;
-};
+const formatMethodName = (method?: string) => formatPaymentMethod(method, "Outros");
 
 const isPaidOnline = (o: CourierOrder) => (o.paymentType || "").toLowerCase() === "online";
 

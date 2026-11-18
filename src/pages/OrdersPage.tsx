@@ -32,6 +32,7 @@ import { io } from "socket.io-client";
 import { dispatchSingleOrderUber, dispatchUberBatchedRoutes } from "@/services/uber.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/ui/date-picker";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
   PENDING: { label: "Pendente", bg: "bg-amber-100/80 text-amber-700", text: "text-amber-700" },
@@ -44,37 +45,6 @@ const statusConfig: Record<OrderStatus, { label: string; bg: string; text: strin
 const paymentStatusConfig: Record<PaymentStatus, { label: string; bg: string; text: string }> = {
   PENDING: { label: "Pendente", bg: "bg-amber-100/80 text-amber-700", text: "text-amber-700" },
   PAID: { label: "Pago", bg: "bg-emerald-100/80 text-emerald-700", text: "text-emerald-700" },
-};
-
-const paymentLabels: Record<string, string> = {
-  PIX: "Pix",
-  pix: "Pix",
-  "Cartão de Crédito": "Cartão de Crédito",
-  "Cartão de Crédito Online": "Cartão de Crédito (Online)",
-  "Cartão Online": "Cartão de Crédito (Online)",
-  online_credit: "Cartão de Crédito (Online)",
-  credit: "Cartão de Crédito",
-  credito: "Cartão de Crédito",
-  Credit: "Cartão de Crédito",
-  CREDIT: "Cartão de Crédito",
-  "Cartão de Débito": "Cartão de Débito",
-  debit: "Cartão de Débito",
-  debito: "Cartão de Débito",
-  Debit: "Cartão de Débito",
-  DEBIT: "Cartão de Débito",
-  Dinheiro: "Dinheiro",
-  cash: "Dinheiro",
-  dinheiro: "Dinheiro",
-  Cash: "Dinheiro",
-  CASH: "Dinheiro",
-  "Vale refeição": "Vale refeição",
-  "Vale Refeição": "Vale refeição",
-  meal_voucher: "Vale refeição",
-  vale_refeicao: "Vale refeição",
-  "Vale alimentação": "Vale alimentação",
-  "Vale Alimentação": "Vale alimentação",
-  food_voucher: "Vale alimentação",
-  vale_alimentacao: "Vale alimentação",
 };
 
 export default function OrdersPage() {
@@ -756,7 +726,7 @@ export default function OrdersPage() {
                           </div>
                           {order.paymentMethod && (
                             <span className="text-[11px] text-slate-400 font-medium leading-tight">
-                              {paymentLabels[order.paymentMethod] || order.paymentMethod}
+                              {formatPaymentMethod(order.paymentMethod)}
                             </span>
                           )}
                         </div>
@@ -879,7 +849,7 @@ export default function OrdersPage() {
                               </button>
                             </div>
                           )}
-                          <span className="text-[11px] text-slate-400 font-medium">{paymentLabels[order.paymentMethod] || order.paymentMethod}</span>
+                          <span className="text-[11px] text-slate-400 font-medium">{formatPaymentMethod(order.paymentMethod)}</span>
                         </div>
                       </TableCell>
                       <TableCell>

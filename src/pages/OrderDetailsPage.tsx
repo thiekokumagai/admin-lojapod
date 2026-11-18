@@ -14,6 +14,7 @@ import { OrderStatus } from "@/types/order";
 import { formatPhone } from "@/utils/formatters";
 import { formatWhatsAppNumber } from "@/utils/whatsapp";
 import { buildImageUrl } from "@/utils/image-url";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
   PENDING: { label: "Pendente", bg: "bg-amber-100", text: "text-amber-700" },
@@ -21,34 +22,6 @@ const statusConfig: Record<OrderStatus, { label: string; bg: string; text: strin
   DISPATCHED: { label: "Despachado", bg: "bg-purple-100", text: "text-purple-700" },
   COMPLETED: { label: "Entregue", bg: "bg-emerald-100", text: "text-emerald-700" },
   CANCELLED: { label: "Cancelado", bg: "bg-rose-100", text: "text-rose-700" },
-};
-
-const paymentLabels: Record<string, string> = {
-  PIX: "Pix",
-  pix: "Pix",
-  "Cartão de Crédito": "Cartão de Crédito",
-  credit: "Cartão de Crédito",
-  credito: "Cartão de Crédito",
-  Credit: "Cartão de Crédito",
-  CREDIT: "Cartão de Crédito",
-  "Cartão de Débito": "Cartão de Débito",
-  debit: "Cartão de Débito",
-  debito: "Cartão de Débito",
-  Debit: "Cartão de Débito",
-  DEBIT: "Cartão de Débito",
-  Dinheiro: "Dinheiro",
-  cash: "Dinheiro",
-  dinheiro: "Dinheiro",
-  Cash: "Dinheiro",
-  CASH: "Dinheiro",
-  "Vale refeição": "Vale refeição",
-  "Vale Refeição": "Vale refeição",
-  meal_voucher: "Vale refeição",
-  vale_refeicao: "Vale refeição",
-  "Vale alimentação": "Vale alimentação",
-  "Vale Alimentação": "Vale alimentação",
-  food_voucher: "Vale alimentação",
-  vale_alimentacao: "Vale alimentação",
 };
 
 export default function OrderDetailsPage() {
@@ -499,7 +472,7 @@ export default function OrderDetailsPage() {
                 </div>
                 <div className="flex justify-between text-slate-500 items-center">
                   <span>Forma de pagamento</span>
-                  <span className="font-bold text-slate-800">{paymentLabels[order.paymentMethod] || order.paymentMethod || "-"}</span>
+                  <span className="font-bold text-slate-800">{formatPaymentMethod(order.paymentMethod, "-")}</span>
                 </div>
                 {order.pixKey && (
                   <div className="flex flex-col gap-1 text-slate-500 pt-2 border-t border-slate-100">

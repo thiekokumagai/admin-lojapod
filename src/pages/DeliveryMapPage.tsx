@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatWhatsAppNumber, openWhatsApp } from "@/utils/whatsapp";
 import { getStoreTimezone } from "@/utils/date-timezone";
 import { isOrderPaid } from "@/utils/orderPaid";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
 // Helpers para URLs universais do Google Maps e Waze para celular
 export function buildGoogleMapsRouteUrl(
@@ -97,34 +98,6 @@ export function sortOrdersByProximity(
   }
   return sorted;
 }
-
-const paymentLabels: Record<string, string> = {
-  PIX: "Pix",
-  pix: "Pix",
-  "Cartão de Crédito": "Cartão de Crédito",
-  credit: "Cartão de Crédito",
-  credito: "Cartão de Crédito",
-  Credit: "Cartão de Crédito",
-  CREDIT: "Cartão de Crédito",
-  "Cartão de Débito": "Cartão de Débito",
-  debit: "Cartão de Débito",
-  debito: "Cartão de Débito",
-  Debit: "Cartão de Débito",
-  DEBIT: "Cartão de Débito",
-  Dinheiro: "Dinheiro",
-  cash: "Dinheiro",
-  dinheiro: "Dinheiro",
-  Cash: "Dinheiro",
-  CASH: "Dinheiro",
-  "Vale refeição": "Vale refeição",
-  "Vale Refeição": "Vale refeição",
-  meal_voucher: "Vale refeição",
-  vale_refeicao: "Vale refeição",
-  "Vale alimentação": "Vale alimentação",
-  "Vale Alimentação": "Vale alimentação",
-  food_voucher: "Vale alimentação",
-  vale_alimentacao: "Vale alimentação",
-};
 
 const containerStyle = {
   width: "100%",
@@ -885,7 +858,7 @@ export default function DeliveryMapPage() {
                           </div>
                           <p className="text-sm font-bold text-slate-800 leading-tight">{marker.customerName}</p>
                           <p className="text-[10px] uppercase font-bold mt-0.5" style={{ color: isOrderPaid(marker) ? "#10b981" : "#f59e0b" }}>
-                            {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
+                            {marker.paymentStatus === 'PAID' ? 'PAGO' : formatPaymentMethod(marker.paymentMethod)}
                           </p>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-1 leading-snug">
                             {marker.street}, {marker.number} - {marker.neighborhood}
@@ -930,7 +903,7 @@ export default function DeliveryMapPage() {
                             wppText += `- Endereço: ${o.street}, ${o.number}${o.complement ? ` (${o.complement})` : ''} - ${o.neighborhood}, ${o.city}\n`;
                             
                             const isPaid = o.paymentStatus === 'PAID';
-                            const paymentLabel = paymentLabels[o.paymentMethod] || o.paymentMethod || "Não informado";
+                            const paymentLabel = formatPaymentMethod(o.paymentMethod);
                             wppText += `- Pagamento: ${isPaid ? 'PAGO' : paymentLabel}\n`;
                             if (!isPaid) {
                               wppText += `- Valor a cobrar: R$ ${Number(o.totalOrder).toFixed(2).replace('.', ',')}\n`;
@@ -980,7 +953,7 @@ export default function DeliveryMapPage() {
                           </div>
                           <p className="text-sm font-bold text-slate-600 leading-tight">{marker.customerName}</p>
                           <p className="text-[10px] uppercase font-bold mt-1 text-slate-400">
-                            {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
+                            {marker.paymentStatus === 'PAID' ? 'PAGO' : formatPaymentMethod(marker.paymentMethod)}
                           </p>
                         </div>
                       ))}
@@ -1025,7 +998,7 @@ export default function DeliveryMapPage() {
                         <div className="flex justify-between items-start">
                            <p className="text-sm font-bold text-slate-800 leading-tight">#{marker.orderNumber} - {marker.customerName}</p>
                            <span className="text-[10px] uppercase font-bold" style={{ color: isOrderPaid(marker) ? "#10b981" : "#f59e0b" }}>
-                             {marker.paymentStatus === 'PAID' ? 'PAGO' : (paymentLabels[marker.paymentMethod] || marker.paymentMethod)}
+                             {marker.paymentStatus === 'PAID' ? 'PAGO' : formatPaymentMethod(marker.paymentMethod)}
                            </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-snug">
@@ -1177,7 +1150,7 @@ export default function DeliveryMapPage() {
               <div className="p-2 max-w-[200px] text-slate-800">
                 <div className="font-bold text-sm mb-1">Pedido #{selectedMarker.orderNumber}</div>
                 <div className="text-xs mb-1 font-semibold">{selectedMarker.customerName}</div>
-                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Pagamento: {paymentLabels[selectedMarker.paymentMethod] || paymentLabels[selectedMarker.paymentMethod?.toLowerCase()] || selectedMarker.paymentMethod}</div>
+                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Pagamento: {formatPaymentMethod(selectedMarker.paymentMethod)}</div>
                 <div className="text-xs text-slate-500 mb-3 leading-snug">
                   {selectedMarker.street}, {selectedMarker.number}<br/>
                   {selectedMarker.neighborhood} - {selectedMarker.city}
@@ -1276,7 +1249,7 @@ export default function DeliveryMapPage() {
                   wppText += `- Endereço: ${o.street}, ${o.number}${o.complement ? ` (${o.complement})` : ''} - ${o.neighborhood}, ${o.city}\n`;
                   
                   const isPaid = o.paymentStatus === 'PAID';
-                  const paymentLabel = paymentLabels[o.paymentMethod] || o.paymentMethod || "Não informado";
+                  const paymentLabel = formatPaymentMethod(o.paymentMethod);
                   wppText += `- Pagamento: ${isPaid ? 'PAGO' : paymentLabel}\n`;
                   if (!isPaid) {
                     wppText += `- *Cobrar do cliente:* R$ ${Number(o.totalOrder).toFixed(2).replace('.', ',')}\n`;

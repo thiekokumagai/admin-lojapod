@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
+import { formatPaymentMethod, groupTotalsByPaymentMethod } from "@/utils/payment-method";
 
 export interface CashRegisterPDFData {
   cashRegister: {
@@ -62,17 +63,7 @@ const formatCurrency = (val: any) => {
   }).format(num);
 };
 
-const formatMethodName = (method?: string) => {
-  if (!method) return "-";
-  const m = method.toLowerCase();
-  if (m === "pix") return "Pix";
-  if (m === "credito" || m === "credit" || m === "cartão de crédito") return "Cartão de Crédito";
-  if (m === "debito" || m === "debit" || m === "cartão de débito") return "Cartão de Débito";
-  if (m === "dinheiro" || m === "cash") return "Dinheiro";
-  if (m === "meal_voucher" || m === "vale_refeicao" || m === "vale refeição" || m === "vale refeicao") return "Vale refeição";
-  if (m === "food_voucher" || m === "vale_alimentacao" || m === "vale alimentação" || m === "vale alimentacao") return "Vale alimentação";
-  return method;
-};
+const formatMethodName = (method?: string) => formatPaymentMethod(method, "-");
 
 const formatCategoryName = (cat?: string) => {
   if (!cat) return "Geral";
@@ -227,9 +218,9 @@ export function generateCashRegisterPDF(data: CashRegisterPDFData): void {
     doc.text("2. Vendas por Forma de Pagamento", margin, currentY);
     currentY += 4;
 
-    const methodBody = Object.entries(summary.totalsByMethod).map(([method, total]) => [
-      formatMethodName(method),
-      formatCurrency(parseNumber(total)),
+    const methodBody = groupTotalsByPaymentMethod(summary.totalsByMethod).map(({ label, total }) => [
+      label,
+      formatCurrency(total),
     ]);
 
     autoTable(doc, {

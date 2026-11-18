@@ -43,6 +43,7 @@ import { customersService } from "@/services/customers.service";
 import { getProductById } from "@/services/product.service";
 import { formatPhone } from "@/utils/formatters";
 import { formatWhatsAppNumber } from "@/utils/whatsapp";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
 interface OrderDetailDrawerProps {
   orderId: string | null;
@@ -62,36 +63,6 @@ const statusConfig: Record<OrderStatus, { label: string; bg: string; text: strin
   DISPATCHED: { label: "Despachado", bg: "bg-purple-100", text: "text-purple-700" },
   COMPLETED: { label: "Entregue", bg: "bg-emerald-100", text: "text-emerald-700" },
   CANCELLED: { label: "Cancelado", bg: "bg-rose-100", text: "text-rose-700" },
-};
-
-const paymentLabels: Record<string, string> = {
-  pix: "Pix",
-  PIX: "Pix",
-  credit: "Cartão de Crédito",
-  credito: "Cartão de Crédito",
-  Credit: "Cartão de Crédito",
-  CREDIT: "Cartão de Crédito",
-  "Cartão de Crédito": "Cartão de Crédito (Presencial)",
-  "Cartão de Crédito Online": "Cartão de Crédito (Online - InfinitePay)",
-  "Cartão Online": "Cartão de Crédito (Online)",
-  debit: "Cartão de Débito",
-  debito: "Cartão de Débito",
-  Debit: "Cartão de Débito",
-  DEBIT: "Cartão de Débito",
-  "Cartão de Débito": "Cartão de Débito",
-  cash: "Dinheiro",
-  dinheiro: "Dinheiro",
-  Cash: "Dinheiro",
-  CASH: "Dinheiro",
-  Dinheiro: "Dinheiro",
-  "Vale refeição": "Vale refeição",
-  "Vale Refeição": "Vale refeição",
-  meal_voucher: "Vale refeição",
-  vale_refeicao: "Vale refeição",
-  "Vale alimentação": "Vale alimentação",
-  "Vale Alimentação": "Vale alimentação",
-  food_voucher: "Vale alimentação",
-  vale_alimentacao: "Vale alimentação",
 };
 
 const UBER_STATUS_LABELS: Record<string, string> = {
@@ -1198,7 +1169,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                 <div className="flex justify-between text-slate-500 items-center">
                   <span>Forma de pagamento</span>
                   {isPaid || paymentLocked ? (
-                    <span className="font-bold text-slate-800">{paymentLabels[paymentMethod] || "-"}</span>
+                    <span className="font-bold text-slate-800">{formatPaymentMethod(paymentMethod, "-")}</span>
                   ) : (
                     <Select 
                       value={paymentMethod} 

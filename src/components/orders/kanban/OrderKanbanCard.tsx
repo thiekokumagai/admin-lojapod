@@ -26,6 +26,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { formatOrderTime } from "@/utils/date-timezone";
+import { formatPaymentMethod } from "@/utils/payment-method";
 
 interface OrderKanbanCardProps {
   order: Order;
@@ -35,37 +36,6 @@ interface OrderKanbanCardProps {
   onUpdatePaymentStatus?: (orderId: string, newPaymentStatus: import("@/types/order").PaymentStatus) => void;
   isUpdating?: boolean;
 }
-
-const paymentLabels: Record<string, string> = {
-  PIX: "Pix",
-  pix: "Pix",
-  "Cartão de Crédito": "Cartão de Crédito",
-  "Cartão de Crédito Online": "Cartão de Crédito (Online)",
-  "Cartão Online": "Cartão de Crédito (Online)",
-  online_credit: "Cartão de Crédito (Online)",
-  credit: "Cartão de Crédito",
-  credito: "Cartão de Crédito",
-  Credit: "Cartão de Crédito",
-  CREDIT: "Cartão de Crédito",
-  "Cartão de Débito": "Cartão de Débito",
-  debit: "Cartão de Débito",
-  debito: "Cartão de Débito",
-  Debit: "Cartão de Débito",
-  DEBIT: "Cartão de Débito",
-  Dinheiro: "Dinheiro",
-  cash: "Dinheiro",
-  dinheiro: "Dinheiro",
-  Cash: "Dinheiro",
-  CASH: "Dinheiro",
-  "Vale refeição": "Vale refeição",
-  "Vale Refeição": "Vale refeição",
-  meal_voucher: "Vale refeição",
-  vale_refeicao: "Vale refeição",
-  "Vale alimentação": "Vale alimentação",
-  "Vale Alimentação": "Vale alimentação",
-  food_voucher: "Vale alimentação",
-  vale_alimentacao: "Vale alimentação",
-};
 
 export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
   order,
@@ -369,7 +339,7 @@ export const OrderKanbanCard: React.FC<OrderKanbanCardProps> = ({
             </Badge>
           )}
           <span className="text-[11px] text-slate-500 font-medium truncate max-w-[110px]">
-            {paymentLabels[order.paymentMethod] || order.paymentMethod || "Não informado"}
+            {formatPaymentMethod(order.paymentMethod)}
           </span>
         </div>
 

@@ -37,6 +37,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { cashRegisterService } from "@/services/cash-register.service";
 import { fixedCostService } from "@/services/fixed-cost.service";
+import { formatPaymentMethod, groupTotalsByPaymentMethod } from "@/utils/payment-method";
 
 const CategoryBadge = ({ category, description, className = "" }: { category: string, description?: string, className?: string }) => {
   const cat = category?.toUpperCase();
@@ -65,19 +66,6 @@ const CategoryBadge = ({ category, description, className = "" }: { category: st
   }
   return null;
 };
-
-const formatPaymentMethod = (method?: string) => {
-  if (!method) return "-";
-  const m = method.toLowerCase();
-  if (m === "pix") return "Pix";
-  if (m === "credito" || m === "credit" || m === "cartão de crédito") return "Cartão de Crédito";
-  if (m === "debito" || m === "debit" || m === "cartão de débito") return "Cartão de Débito";
-  if (m === "dinheiro" || m === "cash") return "Dinheiro";
-  if (m === "meal_voucher" || m === "vale_refeicao" || m === "vale refeição" || m === "vale refeicao") return "Vale refeição";
-  if (m === "food_voucher" || m === "vale_alimentacao" || m === "vale alimentação" || m === "vale alimentacao") return "Vale alimentação";
-  return method;
-};
-
 
 export default function CashRegisterDetailsPage({ currentId }: { currentId?: string }) {
   const { id: paramId } = useParams();
@@ -738,7 +726,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                        <div className="flex flex-col">
                           <span className="text-[10px] text-slate-400 font-bold uppercase">Método</span>
                           <span className="text-xs text-slate-600 font-bold">
-                              {formatPaymentMethod(order.paymentMethod)}
+                              {formatPaymentMethod(order.paymentMethod, "-")}
                               {(order.paymentMethod === "Cartão de Crédito" || order.paymentMethod === "credito" || order.paymentMethod === "credit") && order.installments && (
                                <span className="text-slate-400 font-normal text-[11px] ml-1">({order.installments}x)</span>
                              )}
@@ -781,7 +769,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                           : "-"}
                       </TableCell>
                       <TableCell className="font-bold text-slate-600 text-xs">
-                        {formatPaymentMethod(order.paymentMethod)}
+                        {formatPaymentMethod(order.paymentMethod, "-")}
                         {(order.paymentMethod === "Cartão de Crédito" || order.paymentMethod === "credito" || order.paymentMethod === "credit") && order.installments && (
                           <span className="text-slate-400 font-normal text-[11px] ml-1">({order.installments}x)</span>
                         )}
@@ -819,11 +807,11 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="space-y-3.5">
-                    {Object.entries(totalsByMethodToday).map(([method, total]) => (
-                      <div key={method} className="flex justify-between items-center border-b border-blue-100/50 pb-2.5 last:border-0 last:pb-0">
-                        <span className="text-sm font-semibold text-blue-800">{formatPaymentMethod(method)}</span>
+                    {groupTotalsByPaymentMethod(totalsByMethodToday).map(({ label, total }) => (
+                      <div key={label} className="flex justify-between items-center border-b border-blue-100/50 pb-2.5 last:border-0 last:pb-0">
+                        <span className="text-sm font-semibold text-blue-800">{label}</span>
                         <span className="font-extrabold text-blue-900">
-                          {currencyFormatter.format(total as number)}
+                          {currencyFormatter.format(total)}
                         </span>
                       </div>
                     ))}
@@ -843,11 +831,11 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="space-y-3.5">
-                    {Object.entries(summary.totalsByMethod).map(([method, total]) => (
-                      <div key={method} className="flex justify-between items-center border-b border-slate-100 pb-2.5 last:border-0 last:pb-0">
-                        <span className="text-sm font-semibold text-slate-600">{formatPaymentMethod(method)}</span>
+                    {groupTotalsByPaymentMethod(summary.totalsByMethod).map(({ label, total }) => (
+                      <div key={label} className="flex justify-between items-center border-b border-slate-100 pb-2.5 last:border-0 last:pb-0">
+                        <span className="text-sm font-semibold text-slate-600">{label}</span>
                         <span className="font-extrabold text-slate-800">
-                          {currencyFormatter.format(total as number)}
+                          {currencyFormatter.format(total)}
                         </span>
                       </div>
                     ))}

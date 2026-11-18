@@ -121,4 +121,46 @@ describe("OrderDetailDrawer", () => {
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.getByText("Product A")).toBeInTheDocument();
   });
+
+  describe("forma de pagamento em português (pedido já pago, campo só de leitura)", () => {
+    const formaDePagamento = () => {
+      const label = screen.getByText("Forma de pagamento");
+      return label.parentElement as HTMLElement;
+    };
+
+    it.each([
+      ["credit", "Cartão de Crédito"],
+      ["Credit", "Cartão de Crédito"],
+      ["debit", "Cartão de Débito"],
+      ["cash", "Dinheiro"],
+      ["Cash", "Dinheiro"],
+      ["pix", "Pix"],
+      ["meal_voucher", "Vale refeição"],
+      ["food_voucher", "Vale alimentação"],
+    ])("%s aparece como %s", (method, label) => {
+      vi.mocked(useOrderDetails).mockReturnValue({
+        data: { ...mockOrder, paymentMethod: method, paymentStatus: "PAID", totalReceived: 60 } as never,
+        isLoading: false,
+      });
+      vi.mocked(useSettings).mockReturnValue({ data: mockSettings as never });
+
+      renderWithClient(<OrderDetailDrawer orderId="order-1" isOpen={true} onClose={() => {}} />);
+
+      expect(formaDePagamento().textContent).toContain(label);
+      expect(formaDePagamento().textContent).not.toMatch(/credit|debit|cash|voucher|_/i);
+    });
+
+    it("valor desconhecido: texto legível, não o código cru", () => {
+      vi.mocked(useOrderDetails).mockReturnValue({
+        data: { ...mockOrder, paymentMethod: "gift_card", paymentStatus: "PAID", totalReceived: 60 } as never,
+        isLoading: false,
+      });
+      vi.mocked(useSettings).mockReturnValue({ data: mockSettings as never });
+
+      renderWithClient(<OrderDetailDrawer orderId="order-1" isOpen={true} onClose={() => {}} />);
+
+      expect(formaDePagamento().textContent).toContain("Gift card");
+      expect(formaDePagamento().textContent).not.toContain("gift_card");
+    });
+  });
 });
