@@ -506,7 +506,7 @@ export default function OrderBumpsPage() {
                         deleteMutation.mutate(bump.id);
                       }
                     }}
-                    className="h-8 w-8 rounded-xl text-slate-400 hover:text-destructive"
+                    className="h-8 w-8 rounded-xl text-slate-400 hover:text-destructive hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -638,7 +638,7 @@ export default function OrderBumpsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenEdit(bump)}
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-slate-100"
                           title="Editar"
                         >
                           <Pencil className="h-4 w-4" />
@@ -651,7 +651,7 @@ export default function OrderBumpsPage() {
                               deleteMutation.mutate(bump.id);
                             }
                           }}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-red-50"
                           title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -792,7 +792,7 @@ export default function OrderBumpsPage() {
                         setFormTriggerProductId("");
                         setTriggerSearch("");
                       }}
-                      className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
+                      className="text-xs font-semibold border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
                     >
                       Trocar
                     </Button>
@@ -909,7 +909,7 @@ export default function OrderBumpsPage() {
                       setFormSuggestedProductId("");
                       setSuggestedSearch("");
                     }}
-                    className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
+                    className="text-xs font-semibold border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
                   >
                     Trocar
                   </Button>
@@ -1012,7 +1012,7 @@ export default function OrderBumpsPage() {
                     "h-10 text-xs font-semibold rounded-xl transition-all",
                     formPricingType === "ORIGINAL"
                       ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                      : "bg-white hover:bg-slate-100 hover:text-slate-900 text-slate-700 border-slate-200"
                   )}
                 >
                   Preço Normal
@@ -1025,7 +1025,7 @@ export default function OrderBumpsPage() {
                     "h-10 text-xs font-semibold rounded-xl transition-all",
                     formPricingType === "CUSTOM"
                       ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                      : "bg-white hover:bg-slate-100 hover:text-slate-900 text-slate-700 border-slate-200"
                   )}
                 >
                   Preço Fixo (R$)
@@ -1038,7 +1038,7 @@ export default function OrderBumpsPage() {
                     "h-10 text-xs font-semibold rounded-xl transition-all",
                     formPricingType === "PERCENT"
                       ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                      : "bg-white hover:bg-slate-100 hover:text-slate-900 text-slate-700 border-slate-200"
                   )}
                 >
                   Desconto (%)
@@ -1126,7 +1126,7 @@ export default function OrderBumpsPage() {
               type="button"
               variant="outline"
               onClick={() => setIsModalOpen(false)}
-              className="w-full sm:w-auto h-11 sm:h-10 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100"
+              className="w-full sm:w-auto h-11 sm:h-10 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
             >
               Cancelar
             </Button>
