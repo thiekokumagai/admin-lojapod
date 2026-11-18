@@ -1,4 +1,10 @@
-import { clearSession, refreshTokens, restoreAuthSession } from "@/services/auth.service";
+import { AUTH_STORAGE_KEY } from "@/lib/auth";
+import {
+  SessionExpiredError,
+  clearSession,
+  refreshTokens,
+  restoreAuthSession,
+} from "@/services/auth.service";
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<string> | null = null;
@@ -27,9 +33,16 @@ export function getApiBaseUrl(): string {
 
 restoreAuthSession();
 
-async function refreshAccessToken() {
+// Outra aba renovou ou encerrou a sessão: acompanha para não usar um access token velho.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === AUTH_STORAGE_KEY || event.key === null) restoreAuthSession();
+  });
+}
+
+async function refreshAccessToken(staleAccessToken: string | null) {
   if (!refreshPromise) {
-    refreshPromise = refreshTokens()
+    refreshPromise = refreshTokens(staleAccessToken)
       .then((session) => session.accessToken)
       .finally(() => {
         refreshPromise = null;
@@ -64,16 +77,22 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     });
   };
 
+  const sentToken = accessToken;
   let response = await makeRequest();
 
   if (response.status === 401) {
+    let nextAccessToken: string;
     try {
-      const nextAccessToken = await refreshAccessToken();
-      response = await makeRequest(nextAccessToken);
-    } catch {
-      clearSession();
-      throw new Error("Sua sessão expirou. Faça login novamente.");
+      nextAccessToken = await refreshAccessToken(sentToken);
+    } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        clearSession();
+        throw new Error("Sua sessão expirou. Faça login novamente.");
+      }
+      // Rede fora / servidor instável: mantém a sessão, o usuário só tenta de novo.
+      throw error;
     }
+    response = await makeRequest(nextAccessToken);
   }
 
   if (!response.ok) {

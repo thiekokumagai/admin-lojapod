@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { clearSession } from "@/services/auth.service";
+import { logout } from "@/services/auth.service";
 
 export default function NoAccessPage() {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    clearSession();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

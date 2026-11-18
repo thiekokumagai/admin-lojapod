@@ -5,7 +5,7 @@ import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { LogOut, Menu, Printer, Bell, Store, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { clearSession } from "@/services/auth.service";
+import { logout } from "@/services/auth.service";
 import { isSuperAdmin } from "@/lib/auth";
 import { apiFetch, getApiBaseUrl } from "@/services/api";
 import { useSettings } from "@/hooks/useSettings";
@@ -121,9 +121,9 @@ export function AdminLayout() {
     };
   }, [queryClient, navigate, superAdmin, settings]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     queryClient.clear();
-    clearSession();
+    await logout(); // revoga este aparelho no servidor e limpa o storage (sem travar se a rede falhar)
     navigate("/login", { replace: true });
   };
 

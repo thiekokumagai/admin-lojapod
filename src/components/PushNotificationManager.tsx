@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/services/api';
+import { getAuthSession } from '@/lib/auth';
+import {
+  PushUnavailableError,
+  clearPushPromptSnooze,
+  getActiveServiceWorker,
+  isPushPromptSnoozed,
+  snoozePushPrompt,
+} from '@/lib/push-notifications';
 import { toast } from 'sonner';
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -17,7 +25,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-// activate: precisa tocar em "Ativar" (inclui bloqueado) | install: iPhone fora da tela inicial
+// activate: precisa tocar em "Ativar" | install: iPhone fora da tela inicial
 type PushIssue = 'activate' | 'install' | null;
 
 const isIOS = () =>
@@ -29,26 +37,20 @@ const isStandalone = () =>
   (navigator as any).standalone === true ||
   window.matchMedia('(display-mode: standalone)').matches;
 
-async function sendSubscription(sub: PushSubscription) {
-  await apiFetch('/users/web-push-subscription', {
-    method: 'POST',
-    body: JSON.stringify({ subscription: sub.toJSON() }),
-  });
-}
-
 export function PushNotificationManager() {
-  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [issue, setIssue] = useState<PushIssue>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const userId = getAuthSession()?.user?.id;
+  // Endpoint já enviado ao backend nesta página: evita um POST a cada vez que a aba ganha foco.
+  const sentEndpoint = useRef<string | null>(null);
+  const checking = useRef(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((r) => {
-        if (r) setSwRegistration(r);
-      }).catch((error) => {
-        console.error('SW registration error', error);
-      });
-    }
+  const sendSubscription = useCallback(async (sub: PushSubscription) => {
+    if (sentEndpoint.current === sub.endpoint) return;
+    await apiFetch('/users/web-push-subscription', {
+      method: 'POST',
+      body: JSON.stringify({ subscription: sub.toJSON() }),
+    });
+    sentEndpoint.current = sub.endpoint;
   }, []);
 
   const subscribe = useCallback(async (registration: ServiceWorkerRegistration) => {
@@ -68,45 +70,62 @@ export function PushNotificationManager() {
     });
     await sendSubscription(subscription);
     return true;
-  }, []);
+  }, [sendSubscription]);
 
-  // Verifica o estado real e define o que precisa ser mostrado ao usuário.
-  const checkStatus = useCallback(async (registration: ServiceWorkerRegistration | null) => {
-    // iPhone fora da tela inicial: o Safari nem expõe a API de notificações.
-    if (isIOS() && !isStandalone()) {
-      setIssue('install');
-      return;
-    }
-    if (!('Notification' in window) || !registration?.pushManager) return;
-
-    if (Notification.permission !== 'granted') {
-      // 'default' ou 'denied': mostra o mesmo aviso para ativar.
-      setIssue('activate');
-      return;
-    }
-
+  // Verifica o estado real. O aviso só aparece se ainda falta ativar E o usuário não
+  // recusou/fechou antes (a escolha fica salva).
+  const checkStatus = useCallback(async () => {
+    if (checking.current) return;
+    checking.current = true;
     try {
-      const sub = await registration.pushManager.getSubscription();
-      if (sub) {
-        await sendSubscription(sub); // garante que o backend tem a inscrição atual
+      const snoozed = isPushPromptSnoozed(userId);
+
+      // iPhone fora da tela inicial: o Safari nem expõe a API de notificações.
+      if (isIOS() && !isStandalone()) {
+        setIssue(snoozed ? null : 'install');
+        return;
+      }
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+      const permission = Notification.permission;
+      if (permission === 'denied') {
+        // O usuário bloqueou: não adianta insistir, o navegador não deixa pedir de novo.
         setIssue(null);
         return;
       }
-      // Permissão ok, mas a inscrição sumiu (comum no iOS): tenta refazer em silêncio.
-      try {
-        const ok = await subscribe(registration);
-        setIssue(ok ? null : 'activate');
-      } catch {
-        // iOS pode exigir um toque do usuário para se inscrever.
-        setIssue('activate');
+      if (permission !== 'granted') {
+        setIssue(snoozed ? null : 'activate');
+        return;
       }
-    } catch (e) {
-      console.error('Falha ao checar registro de push:', e);
+
+      try {
+        // Sempre pede o registro ativo na hora: o guardado de antes pode estar velho.
+        const registration = await getActiveServiceWorker();
+        const sub = await registration.pushManager.getSubscription();
+        if (sub) {
+          await sendSubscription(sub); // garante que o backend tem a inscrição atual
+          setIssue(null);
+          return;
+        }
+        // Permissão ok, mas a inscrição sumiu (comum no iOS): tenta refazer em silêncio.
+        const ok = await subscribe(registration);
+        setIssue(ok || snoozed ? null : 'activate');
+      } catch (e) {
+        console.warn('Falha ao checar registro de push:', e);
+        // iOS pode exigir um toque do usuário; fora isso, não incomoda.
+        setIssue(e instanceof PushUnavailableError || snoozed ? null : 'activate');
+      }
+    } finally {
+      checking.current = false;
     }
-  }, [subscribe]);
+  }, [userId, sendSubscription, subscribe]);
+
+  const handleDismiss = () => {
+    snoozePushPrompt(userId);
+    setIssue(null);
+  };
 
   const handleActivate = async () => {
-    if (!swRegistration) return;
     try {
       if (!('Notification' in window)) {
         toast.error('Este navegador não suporta notificações push.');
@@ -117,35 +136,38 @@ export function PushNotificationManager() {
         permission = await Notification.requestPermission();
       }
       if (permission === 'granted') {
-        if (await subscribe(swRegistration)) {
+        // Registro ativo consultado agora: evita "no active Service Worker".
+        const registration = await getActiveServiceWorker();
+        if (await subscribe(registration)) {
+          clearPushPromptSnooze(userId);
           setIssue(null);
           toast.success('Notificações ativadas com sucesso!');
         }
       } else if (permission === 'denied') {
-        toast.error('Notificações bloqueadas. Abra Ajustes → Notificações, escolha este app e permita as notificações.');
+        setIssue(null);
+        toast.error('Notificações bloqueadas. Abra as configurações do navegador (ou Ajustes → Notificações no celular), escolha este app e permita as notificações.');
       } else {
-        toast.error(`Permissão para notificações negada (status: ${permission}).`);
+        // Fechou a caixa do navegador sem escolher: respeita e não pergunta de novo por um tempo.
+        handleDismiss();
       }
     } catch (error: any) {
       console.error('Error subscribing to push notifications:', error);
-      toast.error(`Erro ao ativar notificações: ${error?.message || error}`);
+      toast.error(
+        error instanceof PushUnavailableError
+          ? error.message
+          : `Não foi possível ativar as notificações: ${error?.message || error}`,
+      );
     }
   };
 
-  // Checa ao abrir e toda vez que o app volta ao primeiro plano,
-  // então o aviso reaparece enquanto não estiver tudo ativo.
+  // Checa ao abrir e quando o app volta ao primeiro plano (reativa sozinho se o usuário
+  // liberou nas configurações do navegador). Recusa/fechar não gera novo aviso.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (isIOS() && !isStandalone()) {
-      setIssue('install');
-      return;
-    }
-    if (!swRegistration) return;
-
-    checkStatus(swRegistration);
+    void checkStatus();
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible') checkStatus(swRegistration);
+      if (document.visibilityState === 'visible') void checkStatus();
     };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
@@ -153,19 +175,9 @@ export function PushNotificationManager() {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
     };
-  }, [swRegistration, checkStatus]);
+  }, [checkStatus]);
 
-  // "Agora não" some só até a próxima vez que o app for aberto/retomado.
-  useEffect(() => {
-    if (!issue) return;
-    const reset = () => {
-      if (document.visibilityState === 'visible') setDismissed(false);
-    };
-    document.addEventListener('visibilitychange', reset);
-    return () => document.removeEventListener('visibilitychange', reset);
-  }, [issue]);
-
-  if (!issue || dismissed) return null;
+  if (!issue) return null;
 
   const content = {
     activate: {
@@ -191,7 +203,7 @@ export function PushNotificationManager() {
         <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row">
           <button
             type="button"
-            onClick={() => setDismissed(true)}
+            onClick={handleDismiss}
             className="flex-1 rounded-xl bg-primary-foreground/10 py-3 text-sm font-semibold transition hover:bg-primary-foreground/20"
           >
             {issue === 'activate' ? 'Depois' : 'Entendi'}

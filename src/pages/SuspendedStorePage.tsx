@@ -212,8 +212,8 @@ export default function SuspendedStorePage() {
             <Button
               variant="ghost"
               className="text-slate-500 hover:text-slate-700 text-xs w-full font-medium"
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 window.location.href = "/login";
               }}
             >
