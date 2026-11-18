@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -54,8 +55,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { buildImageUrl } from "@/utils/image-url";
+import {
+  ORDER_BUMP_LOCATION_OPTIONS,
+  normalizeOrderBumpLocation,
+  orderBumpLocationLabel,
+  type OrderBumpDisplayLocation,
+} from "@/utils/order-bump-location";
 
-const getEffectiveProductPrice = (product?: { price?: any; promotionalPrice?: any } | null): number => {
+const getEffectiveProductPrice = (product?: { price?: string | number | null; promotionalPrice?: string | number | null } | null): number => {
   if (!product) return 0;
   const promo = product.promotionalPrice ? Number(product.promotionalPrice) : 0;
   const normal = product.price ? Number(product.price) : 0;
@@ -82,6 +89,7 @@ export default function OrderBumpsPage() {
   const [formDiscountPercent, setFormDiscountPercent] = useState("");
   const [formPriority, setFormPriority] = useState("0");
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formDisplayLocation, setFormDisplayLocation] = useState<OrderBumpDisplayLocation>("CART");
 
   // Estados de busca para seleção de produtos estilo combo
   const [suggestedSearch, setSuggestedSearch] = useState("");
@@ -118,7 +126,7 @@ export default function OrderBumpsPage() {
       toast.success("Regra de sugestão criada com sucesso!");
       setIsModalOpen(false);
     },
-    onError: (err: any) => {
+    onError: (err: { message?: string }) => {
       toast.error(err.message || "Erro ao criar regra");
     },
   });
@@ -131,7 +139,7 @@ export default function OrderBumpsPage() {
       toast.success("Regra atualizada com sucesso!");
       setIsModalOpen(false);
     },
-    onError: (err: any) => {
+    onError: (err: { message?: string }) => {
       toast.error(err.message || "Erro ao atualizar regra");
     },
   });
@@ -142,7 +150,7 @@ export default function OrderBumpsPage() {
       queryClient.invalidateQueries({ queryKey: ["order-bumps"] });
       toast.success("Status alterado com sucesso!");
     },
-    onError: (err: any) => {
+    onError: (err: { message?: string }) => {
       toast.error(err.message || "Erro ao alterar status");
     },
   });
@@ -153,7 +161,7 @@ export default function OrderBumpsPage() {
       queryClient.invalidateQueries({ queryKey: ["order-bumps"] });
       toast.success("Regra excluída com sucesso!");
     },
-    onError: (err: any) => {
+    onError: (err: { message?: string }) => {
       toast.error(err.message || "Erro ao excluir regra");
     },
   });
@@ -173,6 +181,7 @@ export default function OrderBumpsPage() {
     setFormDiscountPercent("");
     setFormPriority("0");
     setFormIsActive(true);
+    setFormDisplayLocation("CART");
     setIsModalOpen(true);
   };
 
@@ -207,6 +216,7 @@ export default function OrderBumpsPage() {
 
     setFormPriority(String(item.priority || 0));
     setFormIsActive(item.isActive);
+    setFormDisplayLocation(normalizeOrderBumpLocation(item.displayLocation));
     setIsModalOpen(true);
   };
 
@@ -240,6 +250,7 @@ export default function OrderBumpsPage() {
       suggestedProductId: formSuggestedProductId,
       priority: Number(formPriority) || 0,
       isActive: formIsActive,
+      displayLocation: formDisplayLocation,
       customPrice: numericCustomPrice,
       discountPercent:
         formPricingType === "PERCENT" && formDiscountPercent
@@ -285,7 +296,7 @@ export default function OrderBumpsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Peça também (Order Bump)</h1>
           <p className="text-sm text-muted-foreground">
-            Configure sugestões automáticas na sacola de compras para aumentar o ticket médio da sua loja.
+            Configure sugestões automáticas no carrinho e na tela do produto para aumentar o ticket médio da sua loja.
           </p>
         </div>
         <Button onClick={handleOpenCreate} className="gap-2 shrink-0 rounded-xl">
@@ -358,7 +369,7 @@ export default function OrderBumpsPage() {
         </div>
 
         <div className="w-full sm:w-48">
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "ALL" | "ACTIVE" | "INACTIVE")}>
             <SelectTrigger className="h-11 border-slate-200 rounded-xl font-semibold text-slate-700">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -412,7 +423,10 @@ export default function OrderBumpsPage() {
                         {bump.suggestedProduct?.title || "Produto não identificado"}
                       </span>
                       <span className="text-xs text-muted-foreground block mt-0.5">
-                        Título na sacola: <strong>{bump.title}</strong>
+                        Título da seção: <strong>{bump.title}</strong>
+                      </span>
+                      <span className="text-xs text-muted-foreground block mt-0.5">
+                        Onde aparece: <strong>{orderBumpLocationLabel(bump.displayLocation)}</strong>
                       </span>
                     </div>
                   </div>
@@ -442,7 +456,7 @@ export default function OrderBumpsPage() {
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Preço na Sacola</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Preço da oferta</span>
                     {bump.customPrice ? (
                       <div className="font-bold text-emerald-600">
                         R$ {Number(bump.customPrice).toFixed(2).replace(".", ",")}
@@ -508,7 +522,8 @@ export default function OrderBumpsPage() {
                 <TableRow>
                   <TableHead>Produto Sugerido</TableHead>
                   <TableHead>Gatilho de Disparo</TableHead>
-                  <TableHead>Preço na Sacola</TableHead>
+                  <TableHead>Onde aparece</TableHead>
+                  <TableHead>Preço da oferta</TableHead>
                   <TableHead className="text-center">Visualizações</TableHead>
                   <TableHead className="text-center">Vendas</TableHead>
                   <TableHead className="text-center">Conversão</TableHead>
@@ -566,6 +581,12 @@ export default function OrderBumpsPage() {
                             Produto: {bump.triggerProduct?.title || "Produto"}
                           </Badge>
                         )}
+                      </TableCell>
+
+                      <TableCell>
+                        <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
+                          {orderBumpLocationLabel(bump.displayLocation)}
+                        </Badge>
                       </TableCell>
 
                       <TableCell>
@@ -648,20 +669,20 @@ export default function OrderBumpsPage() {
 
       {/* Modal de Criação / Edição */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              {editingItem ? "Editar Sugestão" : "Nova Sugestão de Carrinho"}
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] p-4 sm:p-6 overflow-y-auto rounded-2xl overscroll-contain">
+          <DialogHeader className="text-left space-y-1">
+            <DialogTitle className="text-base sm:text-lg font-bold">
+              {editingItem ? "Editar Sugestão" : "Nova Sugestão"}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Defina quando e qual produto deve ser sugerido para o cliente na sacola de compras.
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              Defina quando e qual produto deve ser sugerido para o cliente, e onde: no carrinho, na tela do produto ou nos dois.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-sm">
-            {/* Título exibido na sacola */}
+            {/* Título exibido na seção (carrinho e tela do produto) */}
             <div>
-              <Label className="text-xs font-semibold">Título da Seção na Sacola</Label>
+              <Label className="text-xs font-semibold">Título da seção (carrinho e tela do produto)</Label>
               <Input
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
@@ -670,12 +691,35 @@ export default function OrderBumpsPage() {
               />
             </div>
 
+            {/* Onde mostrar: carrinho, tela do produto ou os dois */}
+            <div>
+              <Label className="text-xs font-semibold">Onde mostrar?</Label>
+              <Select
+                value={formDisplayLocation}
+                onValueChange={(val) => setFormDisplayLocation(val as OrderBumpDisplayLocation)}
+              >
+                <SelectTrigger className="mt-1 h-10 rounded-xl" data-testid="order-bump-location">
+                  <SelectValue placeholder="Selecione onde a oferta aparece" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {ORDER_BUMP_LOCATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="font-medium">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {ORDER_BUMP_LOCATION_OPTIONS.find((opt) => opt.value === formDisplayLocation)?.hint}
+              </p>
+            </div>
+
             {/* Quando Disparar (Gatilho) */}
             <div>
               <Label className="text-xs font-semibold">Quando sugerir?</Label>
               <Select
                 value={formTriggerType}
-                onValueChange={(val) => setFormTriggerType(val as any)}
+                onValueChange={(val) => setFormTriggerType(val as "ALL" | "CATEGORY" | "PRODUCT")}
               >
                 <SelectTrigger className="mt-1 h-10 rounded-xl">
                   <SelectValue placeholder="Selecione a condição" />
@@ -729,7 +773,7 @@ export default function OrderBumpsPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">
+                        <p className="text-[11px] sm:text-xs text-indigo-600 font-semibold uppercase tracking-wider">
                           Gatilho Selecionado
                         </p>
                         <p className="text-sm font-bold text-slate-900 truncate">
@@ -748,7 +792,7 @@ export default function OrderBumpsPage() {
                         setFormTriggerProductId("");
                         setTriggerSearch("");
                       }}
-                      className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8"
+                      className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
                     >
                       Trocar
                     </Button>
@@ -846,7 +890,7 @@ export default function OrderBumpsPage() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider">
+                      <p className="text-[11px] sm:text-xs text-indigo-600 font-semibold uppercase tracking-wider">
                         Produto Sugerido
                       </p>
                       <p className="text-sm font-bold text-slate-900 truncate">
@@ -865,7 +909,7 @@ export default function OrderBumpsPage() {
                       setFormSuggestedProductId("");
                       setSuggestedSearch("");
                     }}
-                    className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8"
+                    className="text-xs font-semibold border-indigo-200 hover:bg-white text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
                   >
                     Trocar
                   </Button>
@@ -945,17 +989,31 @@ export default function OrderBumpsPage() {
             </div>
 
             {/* Condição de Preço */}
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-              <Label className="text-xs font-bold text-slate-800 uppercase tracking-wide block">
-                Preço no Carrinho
-              </Label>
+            <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+              <div>
+                <Label className="text-xs font-bold text-slate-800 uppercase tracking-wide block">
+                  Preço da Oferta
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {formDisplayLocation === "PRODUCT"
+                    ? "Defina o valor especial exibido na tela do produto."
+                    : formDisplayLocation === "CART"
+                    ? "Defina o valor especial exibido no carrinho."
+                    : "Defina o valor especial exibido no carrinho e na tela do produto."}
+                </p>
+              </div>
               
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2.5 sm:gap-3">
                 <Button
                   type="button"
                   variant={formPricingType === "ORIGINAL" ? "default" : "outline"}
                   onClick={() => setFormPricingType("ORIGINAL")}
-                  className="h-9 text-xs rounded-xl"
+                  className={cn(
+                    "h-10 text-xs font-semibold rounded-xl transition-all",
+                    formPricingType === "ORIGINAL"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                  )}
                 >
                   Preço Normal
                 </Button>
@@ -963,7 +1021,12 @@ export default function OrderBumpsPage() {
                   type="button"
                   variant={formPricingType === "CUSTOM" ? "default" : "outline"}
                   onClick={() => setFormPricingType("CUSTOM")}
-                  className="h-9 text-xs rounded-xl"
+                  className={cn(
+                    "h-10 text-xs font-semibold rounded-xl transition-all",
+                    formPricingType === "CUSTOM"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                  )}
                 >
                   Preço Fixo (R$)
                 </Button>
@@ -971,7 +1034,12 @@ export default function OrderBumpsPage() {
                   type="button"
                   variant={formPricingType === "PERCENT" ? "default" : "outline"}
                   onClick={() => setFormPricingType("PERCENT")}
-                  className="h-9 text-xs rounded-xl"
+                  className={cn(
+                    "h-10 text-xs font-semibold rounded-xl transition-all",
+                    formPricingType === "PERCENT"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                  )}
                 >
                   Desconto (%)
                 </Button>
@@ -979,7 +1047,7 @@ export default function OrderBumpsPage() {
 
               {formPricingType === "CUSTOM" && (
                 <div>
-                  <Label className="text-xs font-semibold mb-1 block">Preço Promocional Exclusivo na Sacola (R$)</Label>
+                  <Label className="text-xs font-semibold mb-1 block">Preço Promocional Exclusivo da Oferta (R$)</Label>
                   <div className="relative w-full">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
                       R$
@@ -1017,7 +1085,7 @@ export default function OrderBumpsPage() {
 
               {formPricingType === "PERCENT" && (
                 <div>
-                  <Label className="text-xs font-semibold mb-1 block">Percentual de Desconto na Sacola (%)</Label>
+                  <Label className="text-xs font-semibold mb-1 block">Percentual de Desconto da Oferta (%)</Label>
                   <Input
                     type="number"
                     min="1"
@@ -1033,19 +1101,19 @@ export default function OrderBumpsPage() {
 
             {/* Status da Regra */}
             <div className="pt-1">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <div>
+              <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 gap-3">
+                <div className="min-w-0 pr-2">
                   <Label className="text-xs font-semibold block">Status da Sugestão</Label>
-                  <span className="text-[11px] text-muted-foreground">
-                    Ative ou pause a exibição desta sugestão na sacola a qualquer momento.
+                  <span className="text-[11px] text-muted-foreground block mt-0.5">
+                    Ative ou pause a exibição desta sugestão a qualquer momento.
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Switch
                     checked={formIsActive}
                     onCheckedChange={setFormIsActive}
                   />
-                  <span className="text-xs font-semibold">
+                  <span className="text-xs font-semibold text-slate-700 min-w-[42px] text-right">
                     {formIsActive ? "Ativa" : "Inativa"}
                   </span>
                 </div>
@@ -1053,12 +1121,12 @@ export default function OrderBumpsPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+          <DialogFooter className="gap-2.5 sm:gap-3 mt-4 pt-3 flex flex-col-reverse sm:flex-row sm:justify-end w-full border-t border-slate-100">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsModalOpen(false)}
-              className="rounded-xl"
+              className="w-full sm:w-auto h-11 sm:h-10 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 text-slate-700 hover:bg-slate-100"
             >
               Cancelar
             </Button>
@@ -1066,10 +1134,10 @@ export default function OrderBumpsPage() {
               type="button"
               onClick={handleSave}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="rounded-xl font-bold"
+              className="w-full sm:w-auto h-11 sm:h-10 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
             >
               {(createMutation.isPending || updateMutation.isPending) && (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
               )}
               {editingItem ? "Salvar Alterações" : "Criar Sugestão"}
             </Button>

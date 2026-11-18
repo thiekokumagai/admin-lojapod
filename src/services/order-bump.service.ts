@@ -1,4 +1,5 @@
 import { apiFetch } from "@/services/api";
+import type { OrderBumpDisplayLocation } from "@/utils/order-bump-location";
 
 export interface OrderBumpItem {
   id: string;
@@ -12,6 +13,8 @@ export interface OrderBumpItem {
   suggestedProductId: string;
   customPrice?: number | null;
   discountPercent?: number | null;
+  /** Onde a oferta aparece para o cliente. Ofertas antigas vêm como "CART". */
+  displayLocation?: OrderBumpDisplayLocation;
   viewsCount?: number;
   conversionsCount?: number;
   totalRevenue?: number;
@@ -51,6 +54,7 @@ export interface CreateOrderBumpPayload {
   suggestedProductId: string;
   customPrice?: number | null;
   discountPercent?: number | null;
+  displayLocation?: OrderBumpDisplayLocation;
 }
 
 export interface UpdateOrderBumpPayload extends Partial<CreateOrderBumpPayload> {}
