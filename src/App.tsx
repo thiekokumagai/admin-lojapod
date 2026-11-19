@@ -36,6 +36,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 }
 
 const DashboardPage = lazyWithRetry(() => import("@/pages/DashboardPage"));
+const ReportsPage = lazyWithRetry(() => import("@/pages/ReportsPage"));
 const SuperAdminDashboardPage = lazyWithRetry(() => import("@/pages/SuperAdminDashboardPage"));
 const OrdersPage = lazyWithRetry(() => import("@/pages/OrdersPage"));
 const CreateOrderPage = lazyWithRetry(() => import("@/pages/CreateOrderPage"));
@@ -131,6 +132,7 @@ const App = () => (
                   <Route path="/pedidos/:id/imprimir" element={<OrderPrintPage />} />
                   <Route element={<AdminLayout />}>
                     <Route path="/" element={<DashboardPage />} />
+                    <Route path="/relatorios" element={<ReportsPage />} />
                     <Route path="/pedidos" element={<OrdersPage />} />
                     <Route path="/pedidos/novo" element={<CreateOrderPage />} />
                     <Route path="/pedidos/:id/editar" element={<EditOrderPage />} />

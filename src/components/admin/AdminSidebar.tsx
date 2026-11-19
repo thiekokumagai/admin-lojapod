@@ -19,6 +19,7 @@ import {
 import {
   superAdminNavItems,
   dashboardNavItem,
+  reportsNavItem,
   marketingLinkItem,
   navSections,
 } from "@/data/admin-nav";
@@ -55,7 +56,7 @@ export function AdminSidebar() {
   const { data: settings } = useSettings();
   const collapsed = state === "collapsed";
   const superAdmin = isSuperAdmin();
-  const topItems = [dashboardNavItem, marketingLinkItem].filter((item) => canAccessPath(item.url));
+  const topItems = [dashboardNavItem, reportsNavItem, marketingLinkItem].filter((item) => canAccessPath(item.url));
   const visibleSections = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => canAccessPath(item.url)) }))
     .filter((section) => section.items.length > 0);

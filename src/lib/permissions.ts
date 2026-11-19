@@ -9,6 +9,7 @@ import { getAuthSession, getUserRole } from "@/lib/auth";
  */
 export const SCREEN_PERMISSIONS = [
   { key: "dashboard", label: "Dashboard", group: "Geral", paths: ["/"] },
+  { key: "reports", label: "Relatórios", group: "Geral", paths: ["/relatorios"] },
   { key: "links", label: "Página de Links", group: "Geral", paths: ["/marketing/links"] },
 
   { key: "products", label: "Produtos", group: "Catálogo", paths: ["/produtos"] },

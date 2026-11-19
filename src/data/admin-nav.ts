@@ -22,6 +22,7 @@ import {
   ListPlus,
   UserCog,
   ShoppingCart,
+  BarChart3,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -56,6 +57,12 @@ export const dashboardNavItem = {
   title: "Dashboard",
   url: "/",
   icon: LayoutDashboard,
+};
+
+export const reportsNavItem = {
+  title: "Relatórios",
+  url: "/relatorios",
+  icon: BarChart3,
 };
 
 export const marketingLinkItem = {
