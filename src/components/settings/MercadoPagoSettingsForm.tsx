@@ -11,7 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { getAuthSession } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions";
-import { QrCode, Save, Copy, ShieldCheck } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { QrCode, Save, Copy, ShieldCheck, BookOpen, ChevronDown, ExternalLink } from "lucide-react";
 
 /**
  * O servidor nunca devolve access token nem webhook secret: só avisa (`...Set`) que já estão salvos.
@@ -32,6 +33,20 @@ interface MercadoPagoSaved {
   webhookSecretSet?: boolean;
   webhookSecretLast4?: string | null;
 }
+
+const MP_PANEL_URL = "https://www.mercadopago.com.br/developers/panel/app";
+
+/** Passo a passo de onde pegar cada credencial no painel do Mercado Pago. */
+const CREDENTIAL_STEPS = [
+  "Entre no painel de desenvolvedores do Mercado Pago com a conta que vai receber os pagamentos.",
+  'Em "Suas integrações", clique em "Criar aplicação". Dê um nome (ex.: nome da loja), escolha "Pagamentos online" e a opção de API/Checkout para sua loja virtual, e conclua.',
+  'Abra a aplicação criada e vá em "Credenciais de produção". Se pedir, preencha os dados do negócio para ativá-las. As credenciais de teste (TEST-...) não recebem pagamento de verdade.',
+  'Copie a "Public Key" e cole no campo Public Key aqui.',
+  'Copie o "Access Token" e cole no campo Access Token aqui. Ele é secreto: não envie para ninguém.',
+  'Ainda na aplicação, abra "Webhooks" > "Configurar notificações", em modo produção. Cole a URL do webhook mostrada mais abaixo e marque o evento "Pagamentos".',
+  'Salve. O Mercado Pago mostra a "Assinatura secreta": copie e cole no campo Chave secreta do webhook aqui.',
+  'Clique em "Salvar Mercado Pago" nesta tela e faça um pedido de teste de baixo valor para conferir.',
+];
 
 const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -171,6 +186,35 @@ export function MercadoPagoSettingsForm() {
       </CardHeader>
 
       <CardContent className="space-y-6 pt-0">
+        <Collapsible className="rounded-xl border bg-muted/20" data-testid="mp-tutorial">
+          <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 p-4 text-left">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+              Como pegar as credenciais do Mercado Pago
+            </span>
+            <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-4 pb-4 space-y-3">
+            <ol className="list-decimal pl-5 space-y-1.5 text-xs text-muted-foreground">
+              {CREDENTIAL_STEPS.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <a
+              href={MP_PANEL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline"
+            >
+              Abrir painel do Mercado Pago
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+            <p className="text-[11px] text-muted-foreground">
+              Os nomes dos menus podem mudar um pouco no painel do Mercado Pago, mas o caminho é este.
+            </p>
+          </CollapsibleContent>
+        </Collapsible>
+
         <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
           <div className="space-y-0.5">
             <Label htmlFor="mp-enabled" className="text-sm font-semibold">

@@ -9,8 +9,18 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { testInfinitePayConnection } from "@/services/payments.service";
-import { CreditCard, Save, Copy, ExternalLink, Zap, ShieldCheck } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CreditCard, Save, Copy, ExternalLink, Zap, ShieldCheck, BookOpen, ChevronDown } from "lucide-react";
 import { isStaff } from "@/lib/permissions";
+
+/** Passo a passo de onde pegar cada credencial no aplicativo da InfinitePay. */
+const INFINITEPAY_STEPS = [
+  "Abra o aplicativo da InfinitePay (ou entre no painel web) com a conta que vai receber os pagamentos.",
+  'Veja a sua InfiniteTag (o "@" da sua conta), no perfil ou na área de recebimento por link. Digite aqui no campo InfiniteTag, sem o @.',
+  'Procure a área de "Checkout Integrado" (ou "Integrações / API") e gere a chave de API. Copie e cole no campo API Key aqui. Ela é secreta: não envie para ninguém.',
+  "Nessa mesma área, cadastre a URL do webhook mostrada mais abaixo nesta tela, para o pedido ser confirmado sozinho quando o pagamento for aprovado.",
+  'Clique em "Testar conexão" e depois em "Salvar". Faça um pedido de teste de baixo valor para conferir.',
+];
 
 export function PaymentGatewaysSettingsForm() {
   const { data: settings, isLoading } = useSettings();
@@ -154,6 +164,26 @@ export function PaymentGatewaysSettingsForm() {
       </CardHeader>
 
       <CardContent className="space-y-6 pt-0">
+        <Collapsible className="rounded-xl border bg-muted/20" data-testid="ip-tutorial">
+          <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 p-4 text-left">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+              Como pegar as credenciais da InfinitePay
+            </span>
+            <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-4 pb-4 space-y-3">
+            <ol className="list-decimal pl-5 space-y-1.5 text-xs text-muted-foreground">
+              {INFINITEPAY_STEPS.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <p className="text-[11px] text-muted-foreground">
+              Os nomes dos menus podem mudar um pouco no aplicativo da InfinitePay, mas o caminho é este.
+            </p>
+          </CollapsibleContent>
+        </Collapsible>
+
         {/* Toggle Ativação */}
         <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
           <div className="space-y-0.5">

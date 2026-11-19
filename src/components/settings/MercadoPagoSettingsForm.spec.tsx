@@ -128,3 +128,16 @@ describe("MercadoPagoSettingsForm", () => {
     expect(screen.getByText(/\/payments\/webhook\/mercadopago\?storeId=store-1/)).toBeInTheDocument();
   });
 });
+
+describe("MercadoPagoSettingsForm - tutorial das credenciais", () => {
+  it("mostra o passo a passo ao abrir, com link para o painel do Mercado Pago", () => {
+    currentSettings = savedFromServer;
+    render(<MercadoPagoSettingsForm />);
+    fireEvent.click(screen.getByText("Como pegar as credenciais do Mercado Pago"));
+    expect(screen.getByText(/Credenciais de produção/)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /Abrir painel do Mercado Pago/ });
+    expect(link).toHaveAttribute("href", "https://www.mercadopago.com.br/developers/panel/app");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+});
+

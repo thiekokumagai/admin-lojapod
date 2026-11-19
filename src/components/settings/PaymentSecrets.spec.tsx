@@ -117,6 +117,12 @@ describe("InfinitePay: olho e chave salva", () => {
     expect(key.type).toBe("password");
   });
 
+  it("mostra o passo a passo das credenciais ao abrir", () => {
+    render(<PaymentGatewaysSettingsForm />);
+    fireEvent.click(screen.getByText("Como pegar as credenciais da InfinitePay"));
+    expect(screen.getByText(/Checkout Integrado/, { selector: "li" })).toBeInTheDocument();
+  });
+
   it('indica "chave salva, termina em cdef"', () => {
     render(<PaymentGatewaysSettingsForm />);
     const hint = screen.getByTestId("ip-api-key-hint");
