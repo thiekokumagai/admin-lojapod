@@ -79,8 +79,8 @@ export default function OrderPrintPage() {
         }
       `}</style>
       <div className="text-center mb-6">
-        <h1 className="font-bold text-base">{settings?.storeName || "Loja Pod"}</h1>
-        <p className="text-xs">{(settings?.storeName || "lojapod").toLowerCase().replace(/ /g, "")}.store</p>
+        <h1 className="font-bold text-base">{settings?.storeName || "Podi Pedir"}</h1>
+        <p className="text-xs">{(settings?.storeName || "podipedir").toLowerCase().replace(/ /g, "")}.store</p>
       </div>
 
       <div className="mb-4 space-y-3">

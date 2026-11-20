@@ -9,7 +9,7 @@ export function DynamicFavicon() {
 
   useEffect(() => {
     if (superAdmin) {
-      document.title = "Super Admin | Loja Pod";
+      document.title = "Super Admin | Podi Pedir";
       const link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
       if (link) {
         link.href = "/favicon.ico";
@@ -42,7 +42,7 @@ export function DynamicFavicon() {
       
       const storeName = (settings.storeName && settings.storeName !== "undefined")
         ? settings.storeName
-        : "Loja Pod";
+        : "Podi Pedir";
       document.title = `${storeName}`;
     }
   }, [settings, superAdmin]);

@@ -35,8 +35,8 @@ export function PaymentSettingsForm() {
 
       setPixEnabled(!!settings.pixEnabled);
       setPixKeyType(settings.pixKeyType || "EMAIL");
-      setPixKey(cleanVal(settings.pixKey, ["lojapod@email.com"]));
-      setPixHolder(cleanVal(settings.pixHolder, ["Loja Pod E-commerce LTDA"]));
+      setPixKey(cleanVal(settings.pixKey, ["lojapod@email.com", "podipedir@email.com"]));
+      setPixHolder(cleanVal(settings.pixHolder, ["Loja Pod E-commerce LTDA", "Podi Pedir E-commerce LTDA"]));
       setPixOnTerminal(settings.paymentGateways?.pixOnTerminal === true);
 
       setPayOnDeliveryCash(!!settings.payOnDeliveryCash);

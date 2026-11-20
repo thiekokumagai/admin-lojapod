@@ -97,11 +97,11 @@ export function AdminSidebar() {
           ) : (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 text-white font-bold text-sm">
-                LP
+                PP
               </div>
               {!collapsed && (
                 <span className="text-sidebar-foreground font-bold text-base tracking-tight">
-                  {superAdmin ? "Super Admin" : "Loja Pod"}
+                  {superAdmin ? "Super Admin" : "Podi Pedir"}
                 </span>
               )}
             </div>

@@ -92,7 +92,7 @@ function DnsInstructions({ domain }: { domain: string }) {
         <p className="text-slate-600 font-sans">
           Se quiser que <strong>{hasDomain ? cleanDomain : "sualoja.com.br"}</strong> funcione sem o www,
           use um registro <strong>CNAME</strong> no nome <code>@</code> (se seu provedor suportar CNAME flatten/ALIAS)
-          ou peça ao suporte da LojaPod o IP para criar um registro A.
+          ou peça ao suporte do Podi Pedir o IP para criar um registro A.
         </p>
         <div className="grid grid-cols-3 gap-2 mt-1">
           <div className="bg-white rounded border p-2 space-y-0.5">
@@ -179,7 +179,7 @@ export function GeneralSettingsForm() {
         return defaults.some(d => d.toLowerCase() === trimmed.toLowerCase()) ? "" : val;
       };
 
-      setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod"]));
+      setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod", "Podi Pedir"]));
       setTemplateId((settings as any).templateId || "classic");
       setDefaultProductSort((settings as any).defaultProductSort || "newest");
       setPrimaryColor((settings as any).primaryColor || "#dc2626");
@@ -859,7 +859,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               <Input
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Ex: Loja Pod"
+                placeholder="Ex: Podi Pedir"
               />
             </div>
             <div>

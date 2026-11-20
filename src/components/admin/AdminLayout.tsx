@@ -33,7 +33,7 @@ export function AdminLayout() {
 
   useEffect(() => {
     if (superAdmin) {
-      document.title = "Super Admin | Loja Pod";
+      document.title = "Super Admin | Podi Pedir";
       return;
     }
 

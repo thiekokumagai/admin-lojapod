@@ -48,7 +48,7 @@ export default function SuperAdminDashboardPage() {
             <ShieldCheck className="h-4 w-4 text-indigo-400" />
             Painel Geral do Super Admin
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Visão Geral da Plataforma Loja Pod</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Visão Geral da Plataforma Podi Pedir</h1>
           <p className="text-indigo-200 text-sm mt-1 max-w-xl">
             Acompanhe o faturamento recorrente (MRR), quantidade de lojas ativas, catálogo global e atividade de vendas.
           </p>

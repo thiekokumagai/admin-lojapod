@@ -20,7 +20,7 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 // Se o handler terminar sem chamar showNotification, o Safari revoga a
 // inscrição silenciosamente após alguns pushes.
 self.addEventListener('push', (event) => {
-  let data = { title: 'Loja Pod', body: 'Você tem uma nova notificação' };
+  let data = { title: 'Podi Pedir', body: 'Você tem uma nova notificação' };
   if (event.data) {
     try {
       data = event.data.json();
@@ -39,7 +39,7 @@ self.addEventListener('push', (event) => {
     data: data.data || {},
     vibrate: [100, 50, 100],
   };
-  event.waitUntil(self.registration.showNotification(data.title || 'Loja Pod', options));
+  event.waitUntil(self.registration.showNotification(data.title || 'Podi Pedir', options));
 });
 
 // Listen to Notification click event
