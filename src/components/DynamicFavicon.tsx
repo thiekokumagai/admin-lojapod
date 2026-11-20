@@ -40,9 +40,8 @@ export function DynamicFavicon() {
       }
       appleLink.href = href;
       
-      const storeName = (settings.storeName && settings.storeName !== "undefined")
-        ? settings.storeName
-        : "Podi Pedir";
+      const rawName = settings.storeName && settings.storeName !== "undefined" ? settings.storeName.trim() : "";
+      const storeName = !rawName || /^loja\s*pod$/i.test(rawName) ? "Podi Pedir" : rawName;
       document.title = `${storeName}`;
     }
   }, [settings, superAdmin]);

@@ -1,11 +1,11 @@
 export function getPlatformBaseDomain(): "podipedir.com.br" | "lojapod.com" {
   if (typeof window !== "undefined" && window.location?.hostname) {
     const hostname = window.location.hostname.toLowerCase();
-    if (hostname === "podipedir.com.br" || hostname.endsWith(".podipedir.com.br")) {
-      return "podipedir.com.br";
+    if (hostname === "lojapod.com" || hostname.endsWith(".lojapod.com")) {
+      return "lojapod.com";
     }
   }
-  return "lojapod.com";
+  return "podipedir.com.br";
 }
 
 export function getStoreDomainSuffix(): string {
@@ -35,7 +35,7 @@ export function getStoreUrl(subdomain?: string, customDomain?: string | null): s
     return `https://${customDomain}`;
   }
   if (!subdomain) return "#";
-  if (typeof window === "undefined") return `https://${subdomain}.lojapod.com`;
+  if (typeof window === "undefined") return `https://${subdomain}.podipedir.com.br`;
 
   const hostname = window.location.hostname.toLowerCase();
   const port = window.location.port ? `:${window.location.port}` : "";

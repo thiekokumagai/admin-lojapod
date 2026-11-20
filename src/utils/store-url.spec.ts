@@ -8,7 +8,7 @@ import {
 } from "./store-url";
 import { getApiBaseUrl } from "@/services/api";
 
-describe("admin-lojapod: resolução de múltiplos domínios-base (lojapod.com e podipedir.com.br)", () => {
+describe("admin-lojapod: domínio padrão podipedir.com.br e suporte a lojapod.com", () => {
   const originalLocation = window.location;
 
   function mockLocation(hostname: string) {
@@ -31,7 +31,7 @@ describe("admin-lojapod: resolução de múltiplos domínios-base (lojapod.com e
     vi.unstubAllEnvs();
   });
 
-  it("gera links de lojas e sufixos em podipedir.com.br quando o painel roda em admin.podipedir.com.br", () => {
+  it("usa podipedir.com.br por padrão (inclusive em admin.podipedir.com.br)", () => {
     mockLocation("admin.podipedir.com.br");
     expect(getPlatformBaseDomain()).toBe("podipedir.com.br");
     expect(getStoreDomainSuffix()).toBe(".podipedir.com.br");

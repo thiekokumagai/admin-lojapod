@@ -89,7 +89,9 @@ export function AdminSidebar() {
               {!collapsed && (
                 <div className="flex flex-col min-w-0">
                   <span className="text-sidebar-foreground font-bold text-base tracking-tight truncate">
-                    {settings.storeName || "Admin"}
+                    {!settings.storeName || /^loja\s*pod$/i.test(settings.storeName.trim())
+                      ? "Podi Pedir"
+                      : settings.storeName}
                   </span>
                 </div>
               )}
