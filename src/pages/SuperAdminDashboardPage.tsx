@@ -4,7 +4,7 @@ import { storesService, Store } from "../services/stores.service";
 import { billingService, BillingOverview, BillingSubscription } from "../services/billing.service";
 import { Store as StoreIcon, Package, ShoppingBag, Users, Plus, ArrowRight, ShieldCheck, Globe, Loader2, ExternalLink, DollarSign, WalletCards, TrendingUp } from "lucide-react";
 
-import { getStoreUrl } from "../utils/store-url";
+import { formatStoreHost, getStoreUrl } from "../utils/store-url";
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -179,7 +179,7 @@ export default function SuperAdminDashboardPage() {
                         title="Abrir vitrine da loja em nova aba"
                       >
                         <Globe className="h-3 w-3" />
-                        {store.customDomain || `${store.subdomain}.lojapod.com`}
+                        {formatStoreHost(store.subdomain, store.customDomain)}
                         <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-75" />
                       </a>
                     </td>

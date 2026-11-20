@@ -22,9 +22,21 @@ export const getAccessToken = () => accessToken;
 export function getApiBaseUrl(): string {
   let base = import.meta.env.VITE_ADMIN_API || "http://localhost:3000/api";
   if (typeof window !== "undefined" && window.location?.hostname) {
-    const host = window.location.hostname;
-    // Se o frontend está sendo acessado por IP da rede local (ex: celular 192.168.x.x) e a URL configurada aponta para localhost
-    if (host !== "localhost" && host !== "127.0.0.1" && base.includes("localhost")) {
+    const host = window.location.hostname.toLowerCase();
+    // Se o painel está em *.podipedir.com.br (ex: admin.podipedir.com.br), mantém a API no mesmo domínio-base
+    // para que o cookie HttpOnly de refresh token seja first-party
+    if (
+      (host === "podipedir.com.br" || host.endsWith(".podipedir.com.br")) &&
+      base.includes("api.lojapod.com")
+    ) {
+      base = base.replace("api.lojapod.com", "api.podipedir.com.br");
+    } else if (
+      (host === "lojapod.com" || host.endsWith(".lojapod.com")) &&
+      base.includes("api.podipedir.com.br")
+    ) {
+      base = base.replace("api.podipedir.com.br", "api.lojapod.com");
+    } else if (host !== "localhost" && host !== "127.0.0.1" && base.includes("localhost")) {
+      // Se o frontend está sendo acessado por IP da rede local (ex: celular 192.168.x.x) e a URL configurada aponta para localhost
       base = base.replace("localhost", host);
     }
   }

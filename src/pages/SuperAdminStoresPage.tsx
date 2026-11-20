@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { storesService, Store } from '../services/stores.service';
 import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil, Trash2, Power, AlertTriangle } from 'lucide-react';
 
-import { getStoreUrl } from '../utils/store-url';
+import { formatStoreHost, getStoreDomainSuffix, getStoreUrl } from '../utils/store-url';
 
 export default function SuperAdminStoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -205,7 +205,7 @@ export default function SuperAdminStoresPage() {
                     title="Abrir vitrine da loja em nova aba"
                   >
                     <Globe className="h-3.5 w-3.5" />
-                    <span>{store.customDomain || `${store.subdomain}.lojapod.com`}</span>
+                    <span>{formatStoreHost(store.subdomain, store.customDomain)}</span>
                     <ExternalLink className="h-3 w-3 ml-0.5 opacity-75" />
                   </a>
                 </div>
@@ -301,7 +301,7 @@ export default function SuperAdminStoresPage() {
                     onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                     className="w-full px-3 py-2 text-sm outline-none"
                   />
-                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">.lojapod.com</span>
+                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">{getStoreDomainSuffix()}</span>
                 </div>
               </div>
 
@@ -382,7 +382,7 @@ export default function SuperAdminStoresPage() {
                     onChange={(e) => setEditForm({ ...editForm, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
                     className="w-full px-3 py-2 text-sm outline-none"
                   />
-                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">.lojapod.com</span>
+                  <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l">{getStoreDomainSuffix()}</span>
                 </div>
               </div>
 
@@ -453,7 +453,7 @@ export default function SuperAdminStoresPage() {
             {/* Alerta e Lista de Impactos */}
             <div className="space-y-3">
               <p className="text-slate-700 text-sm leading-relaxed">
-                Você está prestes a excluir a loja <strong className="text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-bold">{deletingStore.title}</strong> (<code>{deletingStore.subdomain}.lojapod.com</code>).
+                Você está prestes a excluir a loja <strong className="text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-bold">{deletingStore.title}</strong> (<code>{formatStoreHost(deletingStore.subdomain)}</code>).
               </p>
 
               <div className="p-3.5 bg-rose-50/80 border border-rose-200 rounded-xl space-y-2 text-xs text-rose-900">

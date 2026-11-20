@@ -12,6 +12,7 @@ import { testInfinitePayConnection } from "@/services/payments.service";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CreditCard, Save, Copy, ExternalLink, Zap, ShieldCheck, BookOpen, ChevronDown } from "lucide-react";
 import { isStaff } from "@/lib/permissions";
+import { getWebhookApiBaseUrl } from "@/utils/store-url";
 
 /** Passo a passo de onde pegar cada credencial no aplicativo da InfinitePay. */
 const INFINITEPAY_STEPS = [
@@ -58,7 +59,7 @@ export function PaymentGatewaysSettingsForm() {
   }, [settings]);
 
   // Webhook URL para a loja copiar
-  const webhookUrl = `${import.meta.env.VITE_ADMIN_API || "https://api.lojapod.com"}/payments/webhook/infinitepay`;
+  const webhookUrl = `${getWebhookApiBaseUrl()}/payments/webhook/infinitepay`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(webhookUrl);

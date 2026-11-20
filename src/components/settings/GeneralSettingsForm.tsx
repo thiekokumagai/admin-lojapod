@@ -3,6 +3,7 @@ import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { apiFetch } from "@/services/api";
 import { uploadFavicon, uploadSettingsMedia } from "@/services/settings.service";
 import { buildImageUrl } from "@/utils/image-url";
+import { getStoreDomainSuffix } from "@/utils/store-url";
 import { formatPhone } from "@/utils/formatters";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -839,7 +840,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
                   placeholder="loja1"
                   className="border-0 shadow-none focus-visible:ring-0"
                 />
-                <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l shrink-0">.lojapod.com</span>
+                <span className="bg-slate-100 px-3 py-2 text-xs font-mono text-slate-500 border-l shrink-0">{getStoreDomainSuffix()}</span>
               </div>
             </div>
             <div>

@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { getAuthSession } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions";
+import { getWebhookApiBaseUrl } from "@/utils/store-url";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { QrCode, Save, Copy, ShieldCheck, BookOpen, ChevronDown, ExternalLink } from "lucide-react";
 
@@ -98,7 +99,7 @@ export function MercadoPagoSettingsForm() {
   }, [settings]);
 
   const storeId = getAuthSession()?.user?.storeId;
-  const webhookUrl = `${import.meta.env.VITE_ADMIN_API || "https://api.lojapod.com"}/payments/webhook/mercadopago${
+  const webhookUrl = `${getWebhookApiBaseUrl()}/payments/webhook/mercadopago${
     storeId ? `?storeId=${storeId}` : ""
   }`;
 
