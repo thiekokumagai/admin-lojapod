@@ -22,7 +22,7 @@ const BUSINESS_TYPE_META: Record<
     badgeClass: 'bg-slate-100 text-slate-700',
   },
   FOOD: {
-    label: 'Marmitaria',
+    label: 'Restaurante',
     badgeClass: 'bg-amber-100 text-amber-800',
   },
   ACAI: {
@@ -121,17 +121,25 @@ export default function SuperAdminStoresPage() {
     setSubmitting(true);
 
     try {
-      await storesService.updateStore(editingStore.id, {
-        ...editForm,
+      const payload = {
+        title: editForm.title,
+        subdomain: editForm.subdomain,
+        adminEmail: editForm.adminEmail,
+        businessType: editForm.businessType,
+        ...(editForm.password.trim() ? { password: editForm.password.trim() } : {}),
         ...(forceDisableCustomizations
           ? { forceDisableCustomizations: true }
           : {}),
-      });
+      };
+      const updated = await storesService.updateStore(editingStore.id, payload);
+      setStores((prev) =>
+        prev.map((s) => (s.id === editingStore.id ? { ...s, ...updated } : s)),
+      );
       setPodConfirmCount(null);
       setSuccess(`Loja "${editForm.title}" atualizada com sucesso!`);
       setShowEditModal(false);
       setEditingStore(null);
-      loadStores();
+      await loadStores();
     } catch (err: any) {
       if (
         err?.status === 409 &&
@@ -329,6 +337,7 @@ export default function SuperAdminStoresPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
             <h2 className="text-xl font-bold text-slate-900 border-b pb-3">Cadastrar Nova Loja</h2>
+            {error && <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs">{error}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -387,7 +396,7 @@ export default function SuperAdminStoresPage() {
                   className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="POD">Vape Shop</option>
-                  <option value="FOOD">Marmitaria</option>
+                  <option value="FOOD">Restaurante</option>
                   <option value="ACAI">Açaiteria</option>
                 </select>
               </div>
@@ -432,6 +441,7 @@ export default function SuperAdminStoresPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
             <h2 className="text-xl font-bold text-slate-900 border-b pb-3">Editar Loja: {editingStore.title}</h2>
+            {error && <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs">{error}</div>}
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
@@ -493,7 +503,7 @@ export default function SuperAdminStoresPage() {
                   className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="POD">Vape Shop</option>
-                  <option value="FOOD">Marmitaria</option>
+                  <option value="FOOD">Restaurante</option>
                   <option value="ACAI">Açaiteria</option>
                 </select>
               </div>

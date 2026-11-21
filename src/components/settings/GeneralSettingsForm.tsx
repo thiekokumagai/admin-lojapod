@@ -630,13 +630,13 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="POD">Vape Shop</SelectItem>
-                <SelectItem value="FOOD">Marmitaria</SelectItem>
+                <SelectItem value="FOOD">Restaurante</SelectItem>
                 <SelectItem value="ACAI">Açaiteria</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            Define se a loja exibe recursos de montagem por etapas (Marmitaria e Açaiteria) ou opera no modo padrão Vape Shop.
+            Define se a loja exibe recursos de montagem por etapas (Restaurante e Açaiteria) ou opera no modo padrão Vape Shop.
           </p>
         </div>
 

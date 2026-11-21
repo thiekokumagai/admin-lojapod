@@ -22,9 +22,9 @@ describe("SuperAdminStoresPage — Segmento da loja (businessType)", () => {
     mockGetStores.mockResolvedValue([
       {
         id: "store-1",
-        title: "Marmitaria Centro",
-        subdomain: "marmitaria",
-        adminEmail: "dono@marmitaria.com",
+        title: "Restaurante Centro",
+        subdomain: "restaurante",
+        adminEmail: "dono@restaurante.com",
         businessType: "FOOD",
         isActive: true,
         createdAt: "2026-11-20T00:00:00.000Z",
@@ -47,7 +47,7 @@ describe("SuperAdminStoresPage — Segmento da loja (businessType)", () => {
 
     render(<SuperAdminStoresPage />);
 
-    expect(await screen.findByText("Marmitaria")).toBeInTheDocument();
+    expect(await screen.findByText("Restaurante")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle("Editar Loja"));
 

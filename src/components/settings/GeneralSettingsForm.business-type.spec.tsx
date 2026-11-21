@@ -41,7 +41,7 @@ describe("GeneralSettingsForm — Segmento da loja (businessType)", () => {
     vi.clearAllMocks();
     mockSettingsData.mockReturnValue({
       id: "s1",
-      storeName: "Marmitaria Teste",
+      storeName: "Restaurante Teste",
       businessType: "FOOD",
       bannerUrls: [],
       phone: "67999999999",
