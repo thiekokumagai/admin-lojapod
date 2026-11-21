@@ -1,6 +1,35 @@
 import { useEffect, useState } from 'react';
 import { storesService, Store } from '../services/stores.service';
+import type { BusinessType } from '@/types/settings';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Store as StoreIcon, Plus, Building, Mail, Globe, Package, ShoppingBag, Loader2, ExternalLink, Pencil, Trash2, Power, AlertTriangle } from 'lucide-react';
+
+const BUSINESS_TYPE_META: Record<
+  BusinessType,
+  { label: string; badgeClass: string }
+> = {
+  POD: {
+    label: 'Vape Shop',
+    badgeClass: 'bg-slate-100 text-slate-700',
+  },
+  FOOD: {
+    label: 'Marmitaria',
+    badgeClass: 'bg-amber-100 text-amber-800',
+  },
+  ACAI: {
+    label: 'Açaiteria',
+    badgeClass: 'bg-purple-100 text-purple-800',
+  },
+};
 
 import { formatStoreHost, getStoreDomainSuffix, getStoreUrl } from '../utils/store-url';
 
@@ -15,12 +44,14 @@ export default function SuperAdminStoresPage() {
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [podConfirmCount, setPodConfirmCount] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     subdomain: '',
     title: '',
     adminEmail: '',
     password: '',
+    businessType: 'POD' as BusinessType,
   });
 
   const [editForm, setEditForm] = useState({
@@ -28,6 +59,7 @@ export default function SuperAdminStoresPage() {
     title: '',
     adminEmail: '',
     password: '',
+    businessType: 'POD' as BusinessType,
   });
 
   const loadStores = async () => {
@@ -64,7 +96,7 @@ export default function SuperAdminStoresPage() {
     try {
       await storesService.createStore(form);
       setSuccess(`Loja "${form.title}" criada com sucesso!`);
-      setForm({ subdomain: '', title: '', adminEmail: '', password: '' });
+      setForm({ subdomain: '', title: '', adminEmail: '', password: '', businessType: 'POD' });
       setShowModal(false);
       loadStores();
     } catch (err: any) {
@@ -74,8 +106,7 @@ export default function SuperAdminStoresPage() {
     }
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitEditStore = async (forceDisableCustomizations = false) => {
     if (!editingStore) return;
 
     setError('');
@@ -90,16 +121,34 @@ export default function SuperAdminStoresPage() {
     setSubmitting(true);
 
     try {
-      await storesService.updateStore(editingStore.id, editForm);
+      await storesService.updateStore(editingStore.id, {
+        ...editForm,
+        ...(forceDisableCustomizations
+          ? { forceDisableCustomizations: true }
+          : {}),
+      });
+      setPodConfirmCount(null);
       setSuccess(`Loja "${editForm.title}" atualizada com sucesso!`);
       setShowEditModal(false);
       setEditingStore(null);
       loadStores();
     } catch (err: any) {
+      if (
+        err?.status === 409 &&
+        err?.data?.code === 'CUSTOMIZABLE_PRODUCTS_EXIST'
+      ) {
+        setPodConfirmCount(Number(err.data.customizableProductsCount) || 1);
+        return;
+      }
       setError(err.message || 'Erro ao atualizar loja');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitEditStore(false);
   };
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
@@ -191,10 +240,13 @@ export default function SuperAdminStoresPage() {
             <div key={store.id} className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition space-y-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-bold text-lg text-slate-900">{store.title}</h2>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${store.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                       {store.isActive ? 'Ativa' : 'Inativa'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${BUSINESS_TYPE_META[store.businessType ?? 'POD'].badgeClass}`}>
+                      {BUSINESS_TYPE_META[store.businessType ?? 'POD'].label}
                     </span>
                   </div>
                   <a
@@ -227,6 +279,7 @@ export default function SuperAdminStoresPage() {
                         subdomain: store.subdomain,
                         adminEmail: store.adminEmail,
                         password: '',
+                        businessType: store.businessType ?? 'POD',
                       });
                       setShowEditModal(true);
                     }}
@@ -318,6 +371,28 @@ export default function SuperAdminStoresPage() {
               </div>
 
               <div>
+                <label
+                  htmlFor="create-store-business-type"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
+                  Segmento da loja
+                </label>
+                <select
+                  id="create-store-business-type"
+                  aria-label="Segmento da loja"
+                  value={form.businessType}
+                  onChange={(e) =>
+                    setForm({ ...form, businessType: e.target.value as BusinessType })
+                  }
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="POD">Vape Shop</option>
+                  <option value="FOOD">Marmitaria</option>
+                  <option value="ACAI">Açaiteria</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Senha Inicial do Admin</label>
                 <input
                   type="password"
@@ -396,6 +471,31 @@ export default function SuperAdminStoresPage() {
                   onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-store-business-type"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
+                  Segmento da loja
+                </label>
+                <select
+                  id="edit-store-business-type"
+                  aria-label="Segmento da loja"
+                  value={editForm.businessType}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      businessType: e.target.value as BusinessType,
+                    })
+                  }
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="POD">Vape Shop</option>
+                  <option value="FOOD">Marmitaria</option>
+                  <option value="ACAI">Açaiteria</option>
+                </select>
               </div>
 
               <div>
@@ -516,6 +616,30 @@ export default function SuperAdminStoresPage() {
           </div>
         </div>
       )}
+
+      <AlertDialog
+        open={podConfirmCount !== null}
+        onOpenChange={(open) => {
+          if (!open) setPodConfirmCount(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Produtos personalizáveis ativos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Existem {podConfirmCount} produto(s) personalizável(is). Deseja
+              desmarcar &apos;Personalizável&apos; em todos eles e trocar para
+              Vape? Grupos e pedidos antigos não serão apagados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void submitEditStore(true)}>
+              Desmarcar e trocar para Vape
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { apiFetch } from './api';
+import type { BusinessType } from '@/types/settings';
 
 export interface Store {
   id: string;
@@ -6,6 +7,7 @@ export interface Store {
   customDomain?: string | null;
   title: string;
   adminEmail: string;
+  businessType?: BusinessType;
   isActive: boolean;
   createdAt: string;
   _count?: {
@@ -20,7 +22,12 @@ export interface CreateStorePayload {
   title: string;
   adminEmail: string;
   password?: string;
+  businessType?: BusinessType;
 }
+
+export type UpdateStorePayload = Partial<CreateStorePayload> & {
+  forceDisableCustomizations?: boolean;
+};
 
 export const storesService = {
   getStores: async (): Promise<Store[]> => {
@@ -36,7 +43,7 @@ export const storesService = {
     return res.json();
   },
 
-  updateStore: async (id: string, payload: Partial<CreateStorePayload>): Promise<Store> => {
+  updateStore: async (id: string, payload: UpdateStorePayload): Promise<Store> => {
     const res = await apiFetch(`/stores/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),

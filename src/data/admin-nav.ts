@@ -76,6 +76,7 @@ export const navSections = [
     label: "Catálogo",
     items: [
       { title: "Produtos", url: "/produtos", icon: Package },
+      { title: "Montagem / Etapas", url: "/composicoes", icon: Layers },
       { title: "Combos", url: "/combos", icon: Boxes },
       { title: "Peça também", url: "/sugestoes", icon: ListPlus },
       { title: "Avise-me quando chegar", url: "/avise-me", icon: BellRing },

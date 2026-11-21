@@ -30,9 +30,12 @@ export interface SavedStoreAddress {
   isActive?: boolean;
 }
 
+export type BusinessType = "POD" | "FOOD" | "ACAI";
+
 export interface StoreSettings {
   id: string;
   storeName: string;
+  businessType?: BusinessType;
   logoUrl: string | null;
   whiteLogoUrl: string | null;
   faviconUrl: string | null;

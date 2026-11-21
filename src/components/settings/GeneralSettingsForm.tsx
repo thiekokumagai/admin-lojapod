@@ -18,8 +18,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/use-toast";
-import type { SearchFilterGroup, SearchFilterItem } from "@/types/settings";
+import { isSuperAdmin } from "@/lib/auth";
+import type {
+  BusinessType,
+  SearchFilterGroup,
+  SearchFilterItem,
+} from "@/types/settings";
 import { Upload, Save, Trash2, Globe, Phone, Image as ImageIcon, Printer, Copy, Check, Key, ShieldCheck, RefreshCw, AlertCircle, Link2, ArrowUpDown } from "lucide-react";
 
 const STORE_CNAME = import.meta.env.VITE_STORE_CNAME || "cliente-lojapod-production.up.railway.app";
@@ -127,8 +142,11 @@ function DnsInstructions({ domain }: { domain: string }) {
 }
 
 export function GeneralSettingsForm() {
-  const { data: settings, isLoading } = useSettings();
+  const superAdmin = isSuperAdmin();
+  const { data: settings, isLoading } = useSettings({ forceEnable: true });
   const updateSettingsMutation = useUpdateSettings();
+  const [businessType, setBusinessType] = useState<BusinessType>("POD");
+  const [podConfirmCount, setPodConfirmCount] = useState<number | null>(null);
 
   const [storeName, setStoreName] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -180,6 +198,7 @@ export function GeneralSettingsForm() {
       };
 
       setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod", "Podi Pedir"]));
+      setBusinessType(settings.businessType || "POD");
       setTemplateId((settings as any).templateId || "classic");
       setDefaultProductSort((settings as any).defaultProductSort || "newest");
       setPrimaryColor((settings as any).primaryColor || "#dc2626");
@@ -470,7 +489,7 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (forceDisableCustomizations = false) => {
     if (!storeName.trim()) {
       toast({
         variant: "destructive",
@@ -507,6 +526,10 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
 
       await updateSettingsMutation.mutateAsync({
         storeName,
+        ...(superAdmin ? { businessType } : {}),
+        ...(superAdmin && forceDisableCustomizations
+          ? { forceDisableCustomizations: true }
+          : {}),
         templateId,
         defaultProductSort,
         primaryColor,
@@ -538,11 +561,19 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
           .filter((g) => g.name && g.items.length > 0),
       });
 
+      setPodConfirmCount(null);
       toast({
         title: "Configurações atualizadas!",
         description: "As informações da loja, e-mail do admin e subdomínio foram salvos com sucesso.",
       });
     } catch (err: any) {
+      if (
+        err?.status === 409 &&
+        err?.data?.code === "CUSTOMIZABLE_PRODUCTS_EXIST"
+      ) {
+        setPodConfirmCount(Number(err.data.customizableProductsCount) || 1);
+        return;
+      }
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
@@ -567,10 +598,46 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
       <CardContent className="p-5 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-base">Identidade Visual da Loja</h2>
-          <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending}>
+          <Button size="sm" onClick={() => void handleSave(false)} disabled={updateSettingsMutation.isPending}>
             <Save className="h-4 w-4 mr-1" />
             {updateSettingsMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
+        </div>
+
+        {/* Segmento da loja (somente Super Admin edita) */}
+        <div className="p-4 bg-slate-50 border rounded-xl space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+              Segmento da loja
+            </h3>
+            {!superAdmin && (
+              <span className="text-[11px] text-muted-foreground">
+                Editável apenas pelo Super Admin
+              </span>
+            )}
+          </div>
+          <div className="max-w-xs">
+            <Select
+              value={businessType}
+              onValueChange={(value) => setBusinessType(value as BusinessType)}
+              disabled={!superAdmin}
+            >
+              <SelectTrigger
+                aria-label="Segmento da loja"
+                className="w-full bg-white"
+              >
+                <SelectValue placeholder="Selecione o segmento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="POD">Vape Shop</SelectItem>
+                <SelectItem value="FOOD">Marmitaria</SelectItem>
+                <SelectItem value="ACAI">Açaiteria</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Define se a loja exibe recursos de montagem por etapas (Marmitaria e Açaiteria) ou opera no modo padrão Vape Shop.
+          </p>
         </div>
 
         {/* Seleção de Template de Layout */}
@@ -1161,13 +1228,37 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
         </div>
 
           <div className="flex justify-end pt-4 border-t">
-            <Button size="sm" onClick={handleSave} disabled={updateSettingsMutation.isPending}>
+            <Button size="sm" onClick={() => void handleSave(false)} disabled={updateSettingsMutation.isPending}>
               <Save className="h-4 w-4 mr-1" />
               {updateSettingsMutation.isPending ? "Salvando..." : "Salvar Configurações"}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={podConfirmCount !== null}
+        onOpenChange={(open) => {
+          if (!open) setPodConfirmCount(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Produtos personalizáveis ativos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Existem {podConfirmCount} produto(s) personalizável(is). Deseja
+              desmarcar &apos;Personalizável&apos; em todos eles e trocar para
+              Vape? Grupos e pedidos antigos não serão apagados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleSave(true)}>
+              Desmarcar e trocar para Vape
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

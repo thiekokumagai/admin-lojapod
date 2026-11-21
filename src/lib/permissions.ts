@@ -13,6 +13,7 @@ export const SCREEN_PERMISSIONS = [
   { key: "links", label: "Página de Links", group: "Geral", paths: ["/marketing/links"] },
 
   { key: "products", label: "Produtos", group: "Catálogo", paths: ["/produtos"] },
+  { key: "compositions", label: "Montagem de Produtos", group: "Catálogo", paths: ["/composicoes"] },
   { key: "combos", label: "Combos", group: "Catálogo", paths: ["/combos"] },
   { key: "order_bumps", label: "Peça também", group: "Catálogo", paths: ["/sugestoes"] },
   { key: "stock_notifications", label: "Avise-me quando chegar", group: "Catálogo", paths: ["/avise-me"] },

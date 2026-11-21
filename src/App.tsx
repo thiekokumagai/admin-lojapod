@@ -79,6 +79,7 @@ const AbandonedCartsPage = lazyWithRetry(() => import("@/pages/AbandonedCartsPag
 const LoyaltyPage = lazyWithRetry(() => import("@/pages/LoyaltyPage"));
 const OrderBumpsPage = lazyWithRetry(() => import("@/pages/OrderBumpsPage"));
 const UsersPage = lazyWithRetry(() => import("@/pages/UsersPage"));
+const CompositionsPage = lazyWithRetry(() => import("@/pages/CompositionsPage"));
 const NoAccessPage = lazyWithRetry(() => import("@/pages/NoAccessPage"));
 
 function RouteFallback() {
@@ -146,6 +147,7 @@ const App = () => (
                     <Route path="/clientes/:id" element={<CustomerDetailsPage />} />
                     <Route path="/produtos" element={<ProductsPage />} />
                     <Route path="/produtos/:id" element={<ProductDetailsPage />} />
+                    <Route path="/composicoes" element={<CompositionsPage />} />
                     <Route path="/combos" element={<CombosPage />} />
                     <Route path="/combos/:id" element={<ComboDetailsPage />} />
                     <Route path="/sugestoes" element={<OrderBumpsPage />} />

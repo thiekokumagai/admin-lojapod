@@ -119,7 +119,10 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       }
     }
 
-    throw new Error(message);
+    const apiError = new Error(message) as Error & { status?: number; data?: unknown };
+    apiError.status = response.status;
+    apiError.data = errorData;
+    throw apiError;
   }
 
   return response;

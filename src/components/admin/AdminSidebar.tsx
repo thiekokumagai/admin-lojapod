@@ -56,9 +56,18 @@ export function AdminSidebar() {
   const { data: settings } = useSettings();
   const collapsed = state === "collapsed";
   const superAdmin = isSuperAdmin();
+  const supportsCompositions =
+    settings?.businessType === "FOOD" || settings?.businessType === "ACAI";
   const topItems = [dashboardNavItem, reportsNavItem, marketingLinkItem].filter((item) => canAccessPath(item.url));
   const visibleSections = navSections
-    .map((section) => ({ ...section, items: section.items.filter((item) => canAccessPath(item.url)) }))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) =>
+          canAccessPath(item.url) &&
+          (item.url !== "/composicoes" || supportsCompositions),
+      ),
+    }))
     .filter((section) => section.items.length > 0);
 
   const handleLinkClick = () => {

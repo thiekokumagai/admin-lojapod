@@ -928,6 +928,31 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                               ))}
                             </div>
                           )}
+
+                          {/* Se for produto customizado, detalha as etapas e escolhas */}
+                          {((item as any).isCustomized || (item as any).customizationSnapshot?.stages) && (item as any).customizationSnapshot?.stages && (
+                            <div className="mt-2 pl-2.5 border-l-2 border-emerald-300 space-y-1">
+                              <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">
+                                Personalização / Montagem:
+                              </span>
+                              {(item as any).customizationSnapshot.stages.map((stage: any, sIdx: number) => (
+                                <div key={sIdx} className="text-xs text-slate-700">
+                                  <span className="font-semibold text-slate-800">{stage.groupName}:</span>{" "}
+                                  {(stage.options || []).map((opt: any, oIdx: number) => (
+                                    <span key={oIdx} className="inline-block mr-2 text-slate-600">
+                                      {opt.quantity > 1 ? `${opt.quantity}x ` : ""}{opt.name}
+                                      {Number(opt.totalPrice) > 0 && (
+                                        <span className="text-emerald-600 font-medium ml-0.5">
+                                          (+{formatCurrency(Number(opt.totalPrice))})
+                                        </span>
+                                      )}
+                                      {oIdx < stage.options.length - 1 ? "," : ""}
+                                    </span>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0 self-start pt-0.5">
                           <div className="hidden sm:block w-8 border-b border-dashed border-slate-200" />

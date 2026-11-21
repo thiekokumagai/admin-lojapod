@@ -54,6 +54,7 @@ export type ProductResponse = {
   primarySku: string | null;
   status: "active" | "inactive";
   isFeatured?: boolean;
+  isCustomizable?: boolean;
   minStock?: number;
   dailyRunRate?: number;
   coverageDays?: number | null;
@@ -90,6 +91,7 @@ export type CreateProductPayload = {
   costPrice?: number;
   isVisible?: boolean;
   isFeatured?: boolean;
+  isCustomizable?: boolean;
 };
 
 export type CreateProductItemPayload = {

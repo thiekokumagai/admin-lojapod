@@ -44,7 +44,11 @@ export async function getSettings(): Promise<StoreSettings> {
   return { ...data, searchSuffix, searchCity, searchState, restrictToCity };
 }
 
-export async function updateSettings(data: Partial<StoreSettings>): Promise<StoreSettings> {
+export type UpdateSettingsPayload = Partial<StoreSettings> & {
+  forceDisableCustomizations?: boolean;
+};
+
+export async function updateSettings(data: UpdateSettingsPayload): Promise<StoreSettings> {
   const response = await apiFetch("/settings", {
     method: "PUT",
     body: JSON.stringify(data),

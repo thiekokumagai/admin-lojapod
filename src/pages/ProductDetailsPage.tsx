@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ProductImage, ProductItem, ProductResponse, UpdateProductItemPayload } from "@/types/product";
@@ -40,6 +41,7 @@ import type { QuickEditMode } from "@/components/products/ProductStockEditor";
 const ProductVariationSelector = lazy(() => import("@/components/products/ProductVariationSelector").then(m => ({ default: m.ProductVariationSelector })));
 const ProductImageManager = lazy(() => import("@/components/products/ProductImageManager").then(m => ({ default: m.ProductImageManager })));
 const ProductStockEditor = lazy(() => import("@/components/products/ProductStockEditor").then(m => ({ default: m.ProductStockEditor })));
+const ProductCompositionManager = lazy(() => import("@/components/products/ProductCompositionManager").then(m => ({ default: m.ProductCompositionManager })));
 
 const productSchema = z.object({
   title: z.string().min(1, "Informe o nome do produto."),
@@ -152,6 +154,11 @@ export default function ProductDetailsPage() {
   const [hasVariations, setHasVariations] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
+  const { data: storeSettings } = useSettings();
+  const supportsCompositions =
+    storeSettings?.businessType === "FOOD" ||
+    storeSettings?.businessType === "ACAI";
+  const [isCustomizable, setIsCustomizable] = useState(false);
   const [savingStep, setSavingStep] = useState<string | null>(null);
 
   const productForm = useForm<ProductDetailsFormValues>({
@@ -288,6 +295,7 @@ export default function ProductDetailsPage() {
       setSelectedOptionsByVariation(getSelectedOptionsMap(product));
       setIsVisible(product.status === "active");
       setIsFeatured(Boolean(product.isFeatured));
+      setIsCustomizable(Boolean(product.isCustomizable));
       navigate(`/produtos/${product.id}`, { replace: true });
       toast({ title: "Produto criado" });
     },
@@ -307,6 +315,7 @@ export default function ProductDetailsPage() {
       setSelectedOptionsByVariation(getSelectedOptionsMap(productQuery.data));
       setIsVisible(productQuery.data.status === "active");
       setIsFeatured(Boolean(productQuery.data.isFeatured));
+      setIsCustomizable(Boolean(productQuery.data.isCustomizable));
       setHasVariations((product.variationIds?.length ?? 0) > 0);
       productForm.reset({
         title: product.title,
@@ -684,6 +693,7 @@ export default function ProductDetailsPage() {
       ...rawValues,
       isVisible,
       isFeatured,
+      isCustomizable,
       descriptionFormated: rawValues.description?.replace(/<[^>]*>/g, "").trim() ?? "",
     };
 
@@ -845,6 +855,18 @@ export default function ProductDetailsPage() {
                 Destaque
               </Label>
             </div>
+            {supportsCompositions && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="product-customizable"
+                  checked={isCustomizable}
+                  onCheckedChange={setIsCustomizable}
+                />
+                <Label htmlFor="product-customizable" className="cursor-pointer font-semibold flex items-center gap-1">
+                  Personalizável
+                </Label>
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               <Switch
                 id="product-active"
@@ -888,6 +910,11 @@ export default function ProductDetailsPage() {
                 <TabsTrigger value="estoque" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent pb-3 pt-2 px-1 text-base font-semibold data-[state=active]:bg-transparent">
                   Estoque
                 </TabsTrigger>
+                {supportsCompositions && isCustomizable && (
+                  <TabsTrigger value="montagem" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent pb-3 pt-2 px-1 text-base font-semibold data-[state=active]:bg-transparent">
+                    Montagem
+                  </TabsTrigger>
+                )}
               </>
             )}
           </TabsList>
@@ -1047,6 +1074,13 @@ export default function ProductDetailsPage() {
             )}
           </div>
         </TabsContent>
+        {productId && supportsCompositions && isCustomizable && (
+          <TabsContent value="montagem" className="space-y-8 outline-none">
+            <Suspense fallback={<PageLoader message="Carregando etapas de montagem..." />}>
+              <ProductCompositionManager productId={productId} />
+            </Suspense>
+          </TabsContent>
+        )}
         </Tabs>
 
         {/* Bottom Save Button */}
