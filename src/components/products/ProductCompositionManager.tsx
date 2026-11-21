@@ -65,6 +65,8 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
       compositionService.attachProductCompositions(productId, { groups: items }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-compositions", productId] });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Etapas de montagem salvas com sucesso!" });
     },
     onError: (err: any) => {
