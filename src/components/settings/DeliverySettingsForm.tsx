@@ -41,6 +41,10 @@ export function DeliverySettingsForm() {
   const [freeShippingEnabled, setFreeShippingEnabled] = useState(false);
   const [freeShippingMinValue, setFreeShippingMinValue] = useState<string>("");
 
+  // Pedido Mínimo da Loja (estilo iFood)
+  const [minOrderEnabled, setMinOrderEnabled] = useState(false);
+  const [minOrderValue, setMinOrderValue] = useState<string>("");
+
   // Retirada na Loja
   const [storePickupEnabled, setStorePickupEnabled] = useState(false);
 
@@ -68,6 +72,13 @@ export function DeliverySettingsForm() {
       setFreeShippingMinValue(
         settings.freeShippingMinValue !== undefined && settings.freeShippingMinValue !== null
           ? String(settings.freeShippingMinValue)
+          : ""
+      );
+
+      setMinOrderEnabled(!!settings.minOrderEnabled);
+      setMinOrderValue(
+        settings.minOrderValue !== undefined && settings.minOrderValue !== null
+          ? String(settings.minOrderValue)
           : ""
       );
 
@@ -215,6 +226,8 @@ export function DeliverySettingsForm() {
         deliveryFixedFee: deliveryType === "FIXED_FEE" && deliveryFixedFee ? Number(deliveryFixedFee) : null,
         freeShippingEnabled,
         freeShippingMinValue: freeShippingEnabled && freeShippingMinValue ? Number(freeShippingMinValue) : null,
+        minOrderEnabled,
+        minOrderValue: minOrderEnabled && minOrderValue ? Number(minOrderValue) : null,
         storePickupEnabled,
         deliveryOriginCep: originCep.trim() || null,
         deliveryOriginNumber: originNumber.trim() || null,
@@ -395,7 +408,7 @@ export function DeliverySettingsForm() {
 
           {freeShippingEnabled && (
             <div className="pt-3 border-t max-w-xs space-y-1.5 animate-in fade-in">
-              <Label className="text-xs font-semibold">Valor Mínimo do Pedido (R$)</Label>
+              <Label className="text-xs font-semibold">Valor Mínimo para Frete Grátis (R$)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">R$</span>
                 <Input
@@ -410,6 +423,46 @@ export function DeliverySettingsForm() {
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Compras com valor igual ou superior a este ganham frete grátis.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* 2.1. Pedido Mínimo da Loja (estilo iFood) */}
+        <div className="p-4 rounded-xl border bg-muted/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Pedido Mínimo da Loja
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Exige um valor mínimo em produtos na sacola para o cliente finalizar o pedido (estilo iFood).
+              </p>
+            </div>
+            <Switch
+              checked={minOrderEnabled}
+              onCheckedChange={setMinOrderEnabled}
+            />
+          </div>
+
+          {minOrderEnabled && (
+            <div className="pt-3 border-t max-w-xs space-y-1.5 animate-in fade-in">
+              <Label className="text-xs font-semibold">Valor do Pedido Mínimo (R$)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  value={formatCurrencyInput(minOrderValue)}
+                  onChange={(e) => handleCurrencyInputChange(e.target.value, setMinOrderValue)}
+                  placeholder="20,00"
+                  className="pl-9 font-semibold h-9"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                O cliente só consegue avançar na sacola quando o subtotal dos produtos atingir este valor.
               </p>
             </div>
           )}

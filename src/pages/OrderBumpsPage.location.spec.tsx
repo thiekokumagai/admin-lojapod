@@ -3,10 +3,11 @@ import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Nada de rede: serviço de ofertas, produtos, categorias e avisos são mocks.
-const { list, create, update } = vi.hoisted(() => ({
+const { list, create, update, reorder } = vi.hoisted(() => ({
   list: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
+  reorder: vi.fn(),
 }));
 
 vi.mock("@/services/order-bump.service", () => ({
@@ -14,6 +15,7 @@ vi.mock("@/services/order-bump.service", () => ({
     list: () => list(),
     create: (payload: unknown) => create(payload),
     update: (id: string, payload: unknown) => update(id, payload),
+    reorder: (ids: string[]) => reorder(ids),
     toggleActive: vi.fn(),
     delete: vi.fn(),
   },
@@ -61,6 +63,7 @@ describe("OrderBumpsPage: onde mostrar a oferta (carrinho / tela do produto / os
     list.mockReset();
     create.mockReset();
     update.mockReset().mockResolvedValue({});
+    reorder.mockReset().mockResolvedValue([]);
   });
   afterEach(() => cleanup());
 
@@ -147,5 +150,17 @@ describe("OrderBumpsPage: onde mostrar a oferta (carrinho / tela do produto / os
     expect(submitBtn).toBeInTheDocument();
     expect(cancelBtn.className).toContain("w-full sm:w-auto");
     expect(submitBtn.className).toContain("w-full sm:w-auto");
+  });
+
+  it("permite reordenar as sugestões com os botões de mover para baixo/cima e chama orderBumpService.reorder", async () => {
+    list.mockResolvedValue([bump("b1", "BOTH", "Item 1"), bump("b2", "BOTH", "Item 2")]);
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText("#1").length).toBeGreaterThan(0));
+
+    const moveDownButtons = screen.getAllByTitle("Mover para baixo");
+    fireEvent.click(moveDownButtons[0]);
+
+    await waitFor(() => expect(reorder).toHaveBeenCalledWith(["b2", "b1"]));
   });
 });

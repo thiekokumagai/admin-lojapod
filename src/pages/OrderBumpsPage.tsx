@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   orderBumpService,
@@ -52,6 +52,9 @@ import {
   ShoppingCart,
   DollarSign,
   TrendingUp,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { buildImageUrl } from "@/utils/image-url";
@@ -96,10 +99,20 @@ export default function OrderBumpsPage() {
   const [triggerSearch, setTriggerSearch] = useState("");
 
   // Queries
-  const { data: orderBumps = [], isLoading } = useQuery({
+  const { data: orderBumps, isLoading } = useQuery({
     queryKey: ["order-bumps"],
     queryFn: () => orderBumpService.list(),
   });
+
+  const [localBumps, setLocalBumps] = useState<OrderBumpItem[]>([]);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (orderBumps) {
+      setLocalBumps(orderBumps);
+    }
+  }, [orderBumps]);
 
   const { data: productsData, isLoading: isLoadingProducts } = useProducts({ limit: 1000 });
   const products = productsData?.products || [];
@@ -165,6 +178,70 @@ export default function OrderBumpsPage() {
       toast.error(err.message || "Erro ao excluir regra");
     },
   });
+
+  const reorderMutation = useMutation({
+    mutationFn: (ids: string[]) => orderBumpService.reorder(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order-bumps"] });
+      toast.success("Ordem das sugestões atualizada!");
+    },
+    onError: (err: { message?: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["order-bumps"] });
+      toast.error(err.message || "Erro ao reordenar sugestões");
+    },
+  });
+
+  const scheduleSaveOrder = (items: OrderBumpItem[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      reorderMutation.mutate(items.map((i) => i.id));
+    }, 250);
+  };
+
+  const handleReorder = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    setLocalBumps((prev) => {
+      const items = [...prev];
+      const fromIndex = items.findIndex((i) => i.id === fromId);
+      const toIndex = items.findIndex((i) => i.id === toId);
+      if (fromIndex === -1 || toIndex === -1) return prev;
+
+      const [moved] = items.splice(fromIndex, 1);
+      items.splice(toIndex, 0, moved);
+
+      const total = items.length;
+      const updated = items.map((item, idx) => ({
+        ...item,
+        priority: total - idx,
+      }));
+      scheduleSaveOrder(updated);
+      return updated;
+    });
+  };
+
+  const handleMove = (id: string, direction: "up" | "down") => {
+    setLocalBumps((prev) => {
+      const items = [...prev];
+      const idx = items.findIndex((i) => i.id === id);
+      if (idx === -1) return prev;
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= items.length) return prev;
+
+      const temp = items[targetIdx];
+      items[targetIdx] = items[idx];
+      items[idx] = temp;
+
+      const total = items.length;
+      const updated = items.map((item, i) => ({
+        ...item,
+        priority: total - i,
+      }));
+      scheduleSaveOrder(updated);
+      return updated;
+    });
+  };
 
   // Abertura do modal
   const handleOpenCreate = () => {
@@ -248,7 +325,7 @@ export default function OrderBumpsPage() {
       triggerProductId: formTriggerType === "PRODUCT" ? formTriggerProductId : null,
       triggerCategoryId: formTriggerType === "CATEGORY" ? formTriggerCategoryId : null,
       suggestedProductId: formSuggestedProductId,
-      priority: Number(formPriority) || 0,
+      ...(editingItem ? { priority: Number(formPriority) || 0 } : {}),
       isActive: formIsActive,
       displayLocation: formDisplayLocation,
       customPrice: numericCustomPrice,
@@ -266,7 +343,7 @@ export default function OrderBumpsPage() {
   };
 
   // Filtragem
-  const filteredBumps = orderBumps.filter((item) => {
+  const filteredBumps = localBumps.filter((item) => {
     const matchesStatus =
       statusFilter === "ALL" ||
       (statusFilter === "ACTIVE" && item.isActive) ||
@@ -283,10 +360,10 @@ export default function OrderBumpsPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const totalActive = orderBumps.filter((b) => b.isActive).length;
-  const totalViews = orderBumps.reduce((sum, b) => sum + (b.viewsCount || 0), 0);
-  const totalConversions = orderBumps.reduce((sum, b) => sum + (b.conversionsCount || 0), 0);
-  const totalRevenue = orderBumps.reduce((sum, b) => sum + Number(b.totalRevenue || 0), 0);
+  const totalActive = localBumps.filter((b) => b.isActive).length;
+  const totalViews = localBumps.reduce((sum, b) => sum + (b.viewsCount || 0), 0);
+  const totalConversions = localBumps.reduce((sum, b) => sum + (b.conversionsCount || 0), 0);
+  const totalRevenue = localBumps.reduce((sum, b) => sum + Number(b.totalRevenue || 0), 0);
   const conversionRate = totalViews > 0 ? ((totalConversions / totalViews) * 100).toFixed(1) : "0.0";
 
   return (
@@ -400,11 +477,60 @@ export default function OrderBumpsPage() {
         <>
           {/* Mobile Grid */}
           <div className="grid md:hidden gap-3">
-            {filteredBumps.map((bump) => (
+            {filteredBumps.map((bump) => {
+              const globalIdx = localBumps.findIndex((b) => b.id === bump.id);
+              const isFirst = globalIdx <= 0;
+              const isLast = globalIdx === -1 || globalIdx >= localBumps.length - 1;
+
+              return (
               <div
                 key={bump.id}
-                className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-xs flex flex-col gap-3"
+                draggable
+                onDragStart={() => setDraggingId(bump.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (draggingId) handleReorder(draggingId, bump.id);
+                  setDraggingId(null);
+                }}
+                onDragEnd={() => setDraggingId(null)}
+                className={cn(
+                  "bg-white rounded-2xl border border-slate-200/60 p-4 shadow-xs flex flex-col gap-3",
+                  draggingId === bump.id && "opacity-50"
+                )}
               >
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                      #{globalIdx + 1}
+                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground">Ordem de exibição</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 rounded-lg hover:bg-slate-100 hover:text-slate-900"
+                      onClick={() => handleMove(bump.id, "up")}
+                      disabled={isFirst}
+                      title="Mover para cima"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 rounded-lg hover:bg-slate-100 hover:text-slate-900"
+                      onClick={() => handleMove(bump.id, "down")}
+                      disabled={isLast}
+                      title="Mover para baixo"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     {bump.suggestedProduct?.images?.[0]?.url ? (
@@ -512,7 +638,8 @@ export default function OrderBumpsPage() {
                   </Button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop Table View */}
@@ -520,6 +647,7 @@ export default function OrderBumpsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-24">Ordem</TableHead>
                   <TableHead>Produto Sugerido</TableHead>
                   <TableHead>Gatilho de Disparo</TableHead>
                   <TableHead>Onde aparece</TableHead>
@@ -538,9 +666,55 @@ export default function OrderBumpsPage() {
                   const convs = bump.conversionsCount || 0;
                   const rate = views > 0 ? ((convs / views) * 100).toFixed(1) : "0.0";
                   const rev = Number(bump.totalRevenue || 0);
+                  const globalIdx = localBumps.findIndex((b) => b.id === bump.id);
+                  const isFirst = globalIdx <= 0;
+                  const isLast = globalIdx === -1 || globalIdx >= localBumps.length - 1;
 
                   return (
-                    <TableRow key={bump.id} className="hover:bg-muted/50">
+                    <TableRow
+                      key={bump.id}
+                      draggable
+                      onDragStart={() => setDraggingId(bump.id)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (draggingId) handleReorder(draggingId, bump.id);
+                        setDraggingId(null);
+                      }}
+                      onDragEnd={() => setDraggingId(null)}
+                      className={cn("hover:bg-muted/50", draggingId === bump.id && "opacity-50")}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0" />
+                          <span className="text-xs font-bold text-muted-foreground min-w-[22px]">
+                            #{globalIdx + 1}
+                          </span>
+                          <div className="flex flex-col">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 hover:bg-slate-100 hover:text-slate-900"
+                              disabled={isFirst}
+                              onClick={() => handleMove(bump.id, "up")}
+                              title="Mover para cima"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 hover:bg-slate-100 hover:text-slate-900"
+                              disabled={isLast}
+                              onClick={() => handleMove(bump.id, "down")}
+                              title="Mover para baixo"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {bump.suggestedProduct?.images?.[0]?.url ? (

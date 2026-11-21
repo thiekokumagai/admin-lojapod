@@ -112,4 +112,16 @@ export const orderBumpService = {
       throw new Error(errorData.message || "Erro ao excluir regra");
     }
   },
+
+  async reorder(ids: string[]): Promise<OrderBumpItem[]> {
+    const res = await apiFetch("/order-bumps/reorder", {
+      method: "PATCH",
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Erro ao reordenar sugestões");
+    }
+    return res.json();
+  },
 };

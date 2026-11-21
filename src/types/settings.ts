@@ -91,6 +91,8 @@ export interface StoreSettings {
   // Frete e Retirada
   freeShippingEnabled?: boolean;
   freeShippingMinValue?: number | null;
+  minOrderEnabled?: boolean;
+  minOrderValue?: number | null;
   storePickupEnabled?: boolean;
   deliveryType?: string; // "NO_FEE", "FIXED_FEE", "TO_COMBINE", "DISTANCE"
   deliveryFixedFee?: number | null;

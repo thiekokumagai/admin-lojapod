@@ -32,7 +32,7 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
     queryFn: () => compositionService.listGroups(),
   });
 
-  const { data: productCompositions = [], isLoading: loadingProductCompositions } = useQuery({
+  const { data: productCompositions, isLoading: loadingProductCompositions } = useQuery({
     queryKey: ["product-compositions", productId],
     queryFn: () => compositionService.getProductCompositions(productId),
     enabled: !!productId,
@@ -42,8 +42,14 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
 
   useEffect(() => {
     if (productCompositions) {
+      const seen = new Set<string>();
+      const uniqueCompositions = productCompositions.filter((pc) => {
+        if (!pc.groupId || seen.has(pc.groupId)) return false;
+        seen.add(pc.groupId);
+        return true;
+      });
       setAttached(
-        productCompositions.map((pc, idx) => ({
+        uniqueCompositions.map((pc, idx) => ({
           groupId: pc.groupId,
           sortOrder: pc.sortOrder ?? idx,
           customMinQuantity: pc.customMinQuantity,
@@ -69,10 +75,11 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
   const isGroupAttached = (groupId: string) => attached.some((a) => a.groupId === groupId);
 
   const toggleGroup = (group: CompositionGroup) => {
-    if (isGroupAttached(group.id)) {
-      setAttached((prev) => prev.filter((a) => a.groupId !== group.id));
-    } else {
-      setAttached((prev) => [
+    setAttached((prev) => {
+      if (prev.some((a) => a.groupId === group.id)) {
+        return prev.filter((a) => a.groupId !== group.id);
+      }
+      return [
         ...prev,
         {
           groupId: group.id,
@@ -81,8 +88,8 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
           customMaxQuantity: null,
           customFreeQuantity: null,
         },
-      ]);
-    }
+      ];
+    });
   };
 
   const updateItem = (groupId: string, field: keyof LocalAttachedGroup, value: any) => {
@@ -109,18 +116,34 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
   };
 
   const handleSave = () => {
-    const payload: AttachProductCompositionItem[] = attached.map((item, idx) => ({
+    const seen = new Set<string>();
+    const uniqueAttached = attached.filter((item) => {
+      if (!item.groupId || seen.has(item.groupId)) return false;
+      seen.add(item.groupId);
+      return true;
+    });
+
+    const payload: AttachProductCompositionItem[] = uniqueAttached.map((item, idx) => ({
       groupId: item.groupId,
       sortOrder: idx,
-      customMinQuantity: item.customMinQuantity !== undefined && item.customMinQuantity !== null && item.customMinQuantity !== ("" as any)
-        ? Number(item.customMinQuantity)
-        : null,
-      customMaxQuantity: item.customMaxQuantity !== undefined && item.customMaxQuantity !== null && item.customMaxQuantity !== ("" as any)
-        ? Number(item.customMaxQuantity)
-        : null,
-      customFreeQuantity: item.customFreeQuantity !== undefined && item.customFreeQuantity !== null && item.customFreeQuantity !== ("" as any)
-        ? Number(item.customFreeQuantity)
-        : null,
+      customMinQuantity:
+        item.customMinQuantity !== undefined &&
+        item.customMinQuantity !== null &&
+        item.customMinQuantity !== ("" as any)
+          ? Math.max(0, Number(item.customMinQuantity))
+          : null,
+      customMaxQuantity:
+        item.customMaxQuantity !== undefined &&
+        item.customMaxQuantity !== null &&
+        item.customMaxQuantity !== ("" as any)
+          ? Math.max(1, Number(item.customMaxQuantity))
+          : null,
+      customFreeQuantity:
+        item.customFreeQuantity !== undefined &&
+        item.customFreeQuantity !== null &&
+        item.customFreeQuantity !== ("" as any)
+          ? Math.max(0, Number(item.customFreeQuantity))
+          : null,
     }));
 
     saveMutation.mutate(payload);
@@ -182,6 +205,7 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
                         </div>
                         <Switch
                           checked={attachedToProduct}
+                          onClick={(e) => e.stopPropagation()}
                           onCheckedChange={() => toggleGroup(group)}
                         />
                       </div>
@@ -252,17 +276,20 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
                             <div className="flex items-center gap-1.5">
                               <Label className="text-xs whitespace-nowrap">Mínimo:</Label>
                               <Input
-                                type="number"
-                                min={0}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="tel"
                                 placeholder={String(group.minQuantity)}
                                 value={item.customMinQuantity ?? ""}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const digits = e.target.value.replace(/\D/g, "");
                                   updateItem(
                                     item.groupId,
                                     "customMinQuantity",
-                                    e.target.value === "" ? null : Number(e.target.value),
-                                  )
-                                }
+                                    digits === "" ? null : parseInt(digits, 10),
+                                  );
+                                }}
                                 className="h-8 w-20 text-center rounded-xl"
                               />
                             </div>
@@ -270,17 +297,25 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
                             <div className="flex items-center gap-1.5">
                               <Label className="text-xs whitespace-nowrap">Máximo:</Label>
                               <Input
-                                type="number"
-                                min={1}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="tel"
                                 placeholder={String(group.maxQuantity)}
                                 value={item.customMaxQuantity ?? ""}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const digits = e.target.value.replace(/\D/g, "");
+                                  if (digits === "") {
+                                    updateItem(item.groupId, "customMaxQuantity", null);
+                                    return;
+                                  }
+                                  const parsed = parseInt(digits, 10);
                                   updateItem(
                                     item.groupId,
                                     "customMaxQuantity",
-                                    e.target.value === "" ? null : Number(e.target.value),
-                                  )
-                                }
+                                    parsed > 0 ? parsed : null,
+                                  );
+                                }}
                                 className="h-8 w-20 text-center rounded-xl"
                               />
                             </div>
@@ -288,17 +323,20 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
                             <div className="flex items-center gap-1.5">
                               <Label className="text-xs whitespace-nowrap">Qtd Grátis:</Label>
                               <Input
-                                type="number"
-                                min={0}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="tel"
                                 placeholder={String(group.freeQuantity)}
                                 value={item.customFreeQuantity ?? ""}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const digits = e.target.value.replace(/\D/g, "");
                                   updateItem(
                                     item.groupId,
                                     "customFreeQuantity",
-                                    e.target.value === "" ? null : Number(e.target.value),
-                                  )
-                                }
+                                    digits === "" ? null : parseInt(digits, 10),
+                                  );
+                                }}
                                 className="h-8 w-20 text-center rounded-xl"
                               />
                             </div>

@@ -52,6 +52,9 @@ export default function CompositionsPage() {
     sortOrder: 0,
     isActive: true,
   });
+  const [groupMinInput, setGroupMinInput] = useState("0");
+  const [groupMaxInput, setGroupMaxInput] = useState("1");
+  const [groupFreeInput, setGroupFreeInput] = useState("0");
 
   // Modal de Opção
   const [isOptionDialogOpen, setIsOptionDialogOpen] = useState(false);
@@ -65,6 +68,8 @@ export default function CompositionsPage() {
     sortOrder: 0,
     isActive: true,
   });
+  const [optionPriceInput, setOptionPriceInput] = useState("");
+  const [optionMaxInput, setOptionMaxInput] = useState("1");
 
   const { data: groups = [], isLoading } = useQuery({
     queryKey: ["composition-groups"],
@@ -74,10 +79,19 @@ export default function CompositionsPage() {
   // Mutations Grupo
   const saveGroupMutation = useMutation({
     mutationFn: async () => {
+      const minQty = groupMinInput.trim() === "" ? 0 : Math.max(0, parseInt(groupMinInput, 10) || 0);
+      const maxQty = groupMaxInput.trim() === "" ? 1 : Math.max(1, parseInt(groupMaxInput, 10) || 1);
+      const freeQty = groupFreeInput.trim() === "" ? 0 : Math.max(0, parseInt(groupFreeInput, 10) || 0);
+      const payload: CreateCompositionGroupPayload = {
+        ...groupForm,
+        minQuantity: minQty,
+        maxQuantity: maxQty,
+        freeQuantity: freeQty,
+      };
       if (editingGroup) {
-        return compositionService.updateGroup(editingGroup.id, groupForm);
+        return compositionService.updateGroup(editingGroup.id, payload);
       }
-      return compositionService.createGroup(groupForm);
+      return compositionService.createGroup(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["composition-groups"] });
@@ -104,11 +118,17 @@ export default function CompositionsPage() {
   // Mutations Opção
   const saveOptionMutation = useMutation({
     mutationFn: async () => {
+      const maxPerItem = optionMaxInput.trim() === "" ? 1 : Math.max(1, parseInt(optionMaxInput, 10) || 1);
+      const payload: CreateCompositionOptionPayload = {
+        ...optionForm,
+        price: Number(optionForm.price) || 0,
+        maxQuantityPerItem: maxPerItem,
+      };
       if (editingOption) {
-        return compositionService.updateOption(editingOption.id, optionForm);
+        return compositionService.updateOption(editingOption.id, payload);
       }
       if (!targetGroupId) throw new Error("Grupo não selecionado");
-      return compositionService.createOption(targetGroupId, optionForm);
+      return compositionService.createOption(targetGroupId, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["composition-groups"] });
@@ -143,6 +163,9 @@ export default function CompositionsPage() {
       sortOrder: groups.length,
       isActive: true,
     });
+    setGroupMinInput("0");
+    setGroupMaxInput("1");
+    setGroupFreeInput("0");
     setIsGroupDialogOpen(true);
   };
 
@@ -157,6 +180,9 @@ export default function CompositionsPage() {
       sortOrder: group.sortOrder,
       isActive: group.isActive,
     });
+    setGroupMinInput(String(group.minQuantity ?? 0));
+    setGroupMaxInput(String(group.maxQuantity ?? 1));
+    setGroupFreeInput(String(group.freeQuantity ?? 0));
     setIsGroupDialogOpen(true);
   };
 
@@ -171,20 +197,32 @@ export default function CompositionsPage() {
       sortOrder: optionsCount,
       isActive: true,
     });
+    setOptionPriceInput("");
+    setOptionMaxInput("1");
     setIsOptionDialogOpen(true);
   };
 
   const openEditOption = (option: CompositionOption) => {
+    const numericPrice = Number(option.price) || 0;
     setEditingOption(option);
     setTargetGroupId(option.groupId);
     setOptionForm({
       name: option.name,
       description: option.description || "",
-      price: Number(option.price) || 0,
+      price: numericPrice,
       maxQuantityPerItem: option.maxQuantityPerItem,
       sortOrder: option.sortOrder,
       isActive: option.isActive,
     });
+    setOptionPriceInput(
+      numericPrice > 0
+        ? new Intl.NumberFormat("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(numericPrice)
+        : "",
+    );
+    setOptionMaxInput(String(option.maxQuantityPerItem ?? 1));
     setIsOptionDialogOpen(true);
   };
 
@@ -417,10 +455,23 @@ export default function CompositionsPage() {
                 <Label htmlFor="group-min">Qtd Mínima</Label>
                 <Input
                   id="group-min"
-                  type="number"
-                  min={0}
-                  value={groupForm.minQuantity}
-                  onChange={(e) => setGroupForm({ ...groupForm, minQuantity: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
+                  placeholder="0"
+                  value={groupMinInput}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (!digits) {
+                      setGroupMinInput("");
+                      setGroupForm({ ...groupForm, minQuantity: 0 });
+                    } else {
+                      const parsed = parseInt(digits, 10);
+                      setGroupMinInput(String(parsed));
+                      setGroupForm({ ...groupForm, minQuantity: parsed });
+                    }
+                  }}
                   className="h-11 rounded-2xl"
                 />
               </div>
@@ -429,10 +480,24 @@ export default function CompositionsPage() {
                 <Label htmlFor="group-max">Qtd Máxima</Label>
                 <Input
                   id="group-max"
-                  type="number"
-                  min={1}
-                  value={groupForm.maxQuantity}
-                  onChange={(e) => setGroupForm({ ...groupForm, maxQuantity: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
+                  placeholder="1"
+                  value={groupMaxInput}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (!digits) {
+                      setGroupMaxInput("");
+                      setGroupForm({ ...groupForm, maxQuantity: 1 });
+                    } else {
+                      const parsed = parseInt(digits, 10);
+                      const validMax = parsed > 0 ? parsed : 1;
+                      setGroupMaxInput(parsed > 0 ? String(parsed) : "");
+                      setGroupForm({ ...groupForm, maxQuantity: validMax });
+                    }
+                  }}
                   className="h-11 rounded-2xl"
                 />
               </div>
@@ -441,10 +506,23 @@ export default function CompositionsPage() {
                 <Label htmlFor="group-free">Qtd Grátis</Label>
                 <Input
                   id="group-free"
-                  type="number"
-                  min={0}
-                  value={groupForm.freeQuantity}
-                  onChange={(e) => setGroupForm({ ...groupForm, freeQuantity: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
+                  placeholder="0"
+                  value={groupFreeInput}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (!digits) {
+                      setGroupFreeInput("");
+                      setGroupForm({ ...groupForm, freeQuantity: 0 });
+                    } else {
+                      const parsed = parseInt(digits, 10);
+                      setGroupFreeInput(String(parsed));
+                      setGroupForm({ ...groupForm, freeQuantity: parsed });
+                    }
+                  }}
                   className="h-11 rounded-2xl"
                 />
               </div>
@@ -514,25 +592,60 @@ export default function CompositionsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="option-price">Preço Adicional (R$)</Label>
-                <Input
-                  id="option-price"
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={optionForm.price}
-                  onChange={(e) => setOptionForm({ ...optionForm, price: Number(e.target.value) })}
-                  className="h-11 rounded-2xl"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    R$
+                  </span>
+                  <Input
+                    id="option-price"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="0,00"
+                    value={optionPriceInput}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      if (!digits) {
+                        setOptionPriceInput("");
+                        setOptionForm({ ...optionForm, price: 0 });
+                      } else {
+                        const numeric = Number(digits) / 100;
+                        setOptionPriceInput(
+                          new Intl.NumberFormat("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(numeric),
+                        );
+                        setOptionForm({ ...optionForm, price: numeric });
+                      }
+                    }}
+                    className="h-11 rounded-2xl pl-9"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="option-max">Máx por Pedido</Label>
                 <Input
                   id="option-max"
-                  type="number"
-                  min={1}
-                  value={optionForm.maxQuantityPerItem}
-                  onChange={(e) => setOptionForm({ ...optionForm, maxQuantityPerItem: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
+                  placeholder="1"
+                  value={optionMaxInput}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (!digits) {
+                      setOptionMaxInput("");
+                      setOptionForm({ ...optionForm, maxQuantityPerItem: 1 });
+                    } else {
+                      const parsed = parseInt(digits, 10);
+                      const validMax = parsed > 0 ? parsed : 1;
+                      setOptionMaxInput(parsed > 0 ? String(parsed) : "");
+                      setOptionForm({ ...optionForm, maxQuantityPerItem: validMax });
+                    }
+                  }}
                   className="h-11 rounded-2xl"
                 />
               </div>
