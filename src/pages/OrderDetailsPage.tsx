@@ -365,6 +365,11 @@ export default function OrderDetailsPage() {
                           ({item.variation})
                         </span>
                       )}
+                      {item.observation && (
+                        <div className="mt-1.5 rounded-lg border border-amber-200 bg-amber-50/90 px-2.5 py-1 text-xs text-amber-900 break-words">
+                          <span className="font-bold text-amber-800">Obs:</span> {item.observation}
+                        </div>
+                      )}
                     </div>
                     <span className="text-sm font-bold text-slate-700 shrink-0 whitespace-nowrap">
                       R$ {(item.price * item.quantity).toFixed(2)}

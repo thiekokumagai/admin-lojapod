@@ -46,6 +46,7 @@ type ProductApiResponse = {
   isVisible?: boolean;
   isFeatured?: boolean;
   isCustomizable?: boolean;
+  servesCount?: number | null;
   // Stock intelligence fields (computed by cron)
   minStock?: number;
   dailyRunRate?: number;
@@ -108,6 +109,7 @@ function normalizeProduct(item: ProductApiResponse): ProductResponse {
     status,
     isFeatured: item.isFeatured,
     isCustomizable: item.isCustomizable,
+    servesCount: item.servesCount ?? null,
     minStock: item.minStock,
     dailyRunRate: item.dailyRunRate,
     coverageDays: item.coverageDays,

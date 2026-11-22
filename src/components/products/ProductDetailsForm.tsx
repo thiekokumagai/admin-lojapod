@@ -17,16 +17,19 @@ export type ProductDetailsFormValues = {
   price?: number;
   promotionalPrice?: number;
   costPrice?: number;
+  servesCount?: number | null;
 };
 
 type ProductDetailsFormProps = {
   form: UseFormReturn<ProductDetailsFormValues>;
   categories: CategoryList[];
+  showServesCount?: boolean;
 };
 
 export function ProductDetailsForm({
   form,
   categories,
+  showServesCount = false,
 }: ProductDetailsFormProps) {
   const watchPrice = form.watch("price");
   const watchCostPrice = form.watch("costPrice");
@@ -236,6 +239,42 @@ export function ProductDetailsForm({
                 </div>
               )}
             </div>
+            {showServesCount && (
+              <FormField
+                control={form.control}
+                name="servesCount"
+                render={({ field }) => (
+                  <FormItem className="max-w-xs">
+                    <FormLabel>Serve quantas pessoas (opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={99}
+                        step={1}
+                        className="h-12 rounded-2xl bg-background"
+                        placeholder="Ex: 1, 2..."
+                        value={field.value ?? ""}
+                        onChange={(event) => {
+                          const raw = event.target.value.trim();
+                          if (!raw) {
+                            field.onChange(null);
+                            return;
+                          }
+                          const parsed = Number.parseInt(raw, 10);
+                          field.onChange(Number.isNaN(parsed) ? null : parsed);
+                        }}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Deixe em branco para não exibir na loja. Ex.: 1 = &quot;Serve 1 pessoa&quot;, 2 = &quot;Serve 2 pessoas&quot;.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
         </Form>
       </CardContent>

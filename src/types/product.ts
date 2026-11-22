@@ -55,6 +55,7 @@ export type ProductResponse = {
   status: "active" | "inactive";
   isFeatured?: boolean;
   isCustomizable?: boolean;
+  servesCount?: number | null;
   minStock?: number;
   dailyRunRate?: number;
   coverageDays?: number | null;
@@ -92,6 +93,7 @@ export type CreateProductPayload = {
   isVisible?: boolean;
   isFeatured?: boolean;
   isCustomizable?: boolean;
+  servesCount?: number | null;
 };
 
 export type CreateProductItemPayload = {

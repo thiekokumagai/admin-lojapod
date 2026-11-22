@@ -51,6 +51,7 @@ const productSchema = z.object({
   price: z.number().min(0, "O preço deve ser maior ou igual a zero.").optional(),
   promotionalPrice: z.number().min(0, "O preço promocional deve ser maior ou igual a zero.").optional(),
   costPrice: z.number().min(0, "O preço de custo deve ser maior ou igual a zero.").optional(),
+  servesCount: z.number().int().min(1, "Informe entre 1 e 99 pessoas.").max(99, "Informe entre 1 e 99 pessoas.").nullable().optional(),
 });
 
 type PendingImage = {
@@ -171,6 +172,7 @@ export default function ProductDetailsPage() {
       price: undefined,
       promotionalPrice: undefined,
       costPrice: undefined,
+      servesCount: null,
     },
   });
 
@@ -325,6 +327,7 @@ export default function ProductDetailsPage() {
         price: product.price,
         promotionalPrice: product.promotionalPrice,
         costPrice: product.costPrice,
+        servesCount: product.servesCount ?? null,
       });
     }
   }, [productQuery.data, productForm]);
@@ -694,6 +697,7 @@ export default function ProductDetailsPage() {
       isVisible,
       isFeatured,
       isCustomizable,
+      servesCount: supportsCompositions ? (rawValues.servesCount ?? null) : undefined,
       descriptionFormated: rawValues.description?.replace(/<[^>]*>/g, "").trim() ?? "",
     };
 
@@ -963,6 +967,7 @@ export default function ProductDetailsPage() {
         <ProductDetailsForm
           form={productForm}
           categories={categories}
+          showServesCount={supportsCompositions}
         />
         </TabsContent>
 

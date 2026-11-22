@@ -953,6 +953,12 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                               ))}
                             </div>
                           )}
+
+                          {item.observation && (
+                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/90 px-2.5 py-1.5 text-xs text-amber-900">
+                              <span className="font-bold text-amber-800">Obs:</span> {item.observation}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0 self-start pt-0.5">
                           <div className="hidden sm:block w-8 border-b border-dashed border-slate-200" />
