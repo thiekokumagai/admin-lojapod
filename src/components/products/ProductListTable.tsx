@@ -123,7 +123,7 @@ function InlinePriceInput({ value, onSave }: InlinePriceInputProps) {
 
   if (isSaving) {
     return (
-      <div className="flex items-center justify-start gap-1 h-8 w-28 text-muted-foreground text-sm font-medium">
+      <div className="flex items-center justify-start gap-1 h-8 w-28 text-muted-foreground text-sm font-medium whitespace-nowrap">
         <span className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
         <span>R$ ...</span>
       </div>
@@ -156,9 +156,9 @@ function InlinePriceInput({ value, onSave }: InlinePriceInputProps) {
         e.stopPropagation();
         setIsEditing(true);
       }}
-      className="group flex items-center justify-start gap-1.5 h-8 px-2 rounded hover:bg-muted border border-transparent hover:border-muted-foreground/20 cursor-text text-left select-none font-semibold"
+      className="group inline-flex items-center justify-start gap-1.5 h-8 px-2 rounded hover:bg-muted border border-transparent hover:border-muted-foreground/20 cursor-text text-left select-none font-semibold whitespace-nowrap"
     >
-      <span>{value !== undefined ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}` : "R$ —"}</span>
+      <span className="whitespace-nowrap tabular-nums">{value !== undefined ? `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}` : "R$ —"}</span>
       <span className="opacity-0 group-hover:opacity-100 text-muted-foreground/60 transition-opacity text-[10px]">
         ✏️
       </span>
@@ -560,7 +560,7 @@ export function ProductListTable({
                   <span className="text-[10px] text-muted-foreground font-semibold">Preço Venda</span>
                   <InlinePriceInput value={product.price} onSave={async (newPrice) => { if (onUpdateProduct) await onUpdateProduct(product.id, { price: newPrice }); }} />
                   {product.promotionalPrice !== undefined && product.promotionalPrice > 0 && (
-                    <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2 mt-0.5">
+                    <div className="flex items-center whitespace-nowrap text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2 mt-0.5">
                       <span className="shrink-0 mr-1">Promo:</span>
                       <InlinePriceInput
                         value={product.promotionalPrice}
@@ -578,7 +578,7 @@ export function ProductListTable({
                         <span className={`text-xs font-extrabold ${profitCalc.isNegative ? "text-rose-600" : "text-emerald-600"}`}>
                           {profitCalc.marginPercentage.toFixed(1)}%
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-medium truncate">
+                        <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap tabular-nums truncate">
                           {formatCurrency(profitCalc.profit)}
                         </span>
                       </div>
@@ -648,17 +648,17 @@ export function ProductListTable({
                   Nome <ArrowUpDown className="h-3.5 w-3.5" />
                 </button>
               </TableHead>
-              <TableHead>Custo</TableHead>
-              <TableHead>
+              <TableHead className="whitespace-nowrap">Custo</TableHead>
+              <TableHead className="whitespace-nowrap">
                 <button
                   type="button"
-                  className="flex items-center gap-1 hover:text-foreground"
+                  className="flex items-center gap-1 whitespace-nowrap hover:text-foreground"
                   onClick={() => toggleSort("price")}
                 >
-                  Preço <ArrowUpDown className="h-3.5 w-3.5" />
+                  Preço <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                 </button>
               </TableHead>
-              <TableHead>Lucro (%)</TableHead>
+              <TableHead className="whitespace-nowrap">Lucro (%)</TableHead>
               <TableHead>Categoria</TableHead>
 
               <TableHead>Estoque</TableHead>
@@ -690,7 +690,7 @@ export function ProductListTable({
                     data-state={selectedIds.includes(product.id) ? "selected" : undefined}
                     onClick={() => navigate(`/produtos/${product.id}`)}
                   >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         id={`select-${product.id}`}
                         className="rounded-none !rounded-none"
@@ -725,7 +725,7 @@ export function ProductListTable({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <InlinePriceInput
                         value={product.costPrice}
                         onSave={async (newCost) => {
@@ -735,7 +735,7 @@ export function ProductListTable({
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <div className="flex flex-col gap-0.5">
                         <InlinePriceInput
                           value={product.price}
@@ -746,7 +746,7 @@ export function ProductListTable({
                           }}
                         />
                         {product.promotionalPrice !== undefined && product.promotionalPrice > 0 && (
-                          <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2">
+                          <div className="flex items-center whitespace-nowrap text-xs text-emerald-600 dark:text-emerald-400 font-semibold px-2">
                             <span className="shrink-0 mr-1">Promo:</span>
                             <InlinePriceInput
                               value={product.promotionalPrice}
@@ -773,7 +773,7 @@ export function ProductListTable({
                           >
                             {profitCalc.marginPercentage.toFixed(1)}%
                           </Badge>
-                          <span className="text-[11px] text-muted-foreground mt-0.5 font-medium">
+                          <span className="text-[11px] text-muted-foreground mt-0.5 font-medium whitespace-nowrap tabular-nums">
                             {formatCurrency(profitCalc.profit)}
                           </span>
                         </div>
