@@ -23,7 +23,14 @@ vi.mock("@/services/order-bump.service", () => ({
 vi.mock("@/hooks/useProducts", () => ({
   useProducts: () => ({ data: { products: [] }, isLoading: false }),
 }));
-vi.mock("@/hooks/useCategories", () => ({ useCategories: () => ({ data: [] }) }));
+vi.mock("@/hooks/useCategories", () => ({
+  useCategories: () => ({
+    data: [
+      { id: "cat-1", title: "Bolos" },
+      { id: "cat-2", title: "Salgados" },
+    ],
+  }),
+}));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import OrderBumpsPage from "./OrderBumpsPage";
@@ -162,5 +169,35 @@ describe("OrderBumpsPage: onde mostrar a oferta (carrinho / tela do produto / os
     fireEvent.click(moveDownButtons[0]);
 
     await waitFor(() => expect(reorder).toHaveBeenCalledWith(["b2", "b1"]));
+  });
+
+  it("salva regra do tipo CATEGORY com múltiplas categorias sem ReferenceError e envia triggerCategoryIds", async () => {
+    list.mockResolvedValue([
+      {
+        ...bump("b-cat", "BOTH", "Bebida para Bolos e Salgados"),
+        triggerType: "CATEGORY",
+        triggerCategoryId: "cat-1",
+        triggerCategoryIds: ["cat-1"],
+        triggerCategory: { id: "cat-1", title: "Bolos" },
+        triggerCategories: [{ id: "cat-1", title: "Bolos" }],
+      },
+    ]);
+    renderPage();
+
+    fireEvent.click((await screen.findAllByText("Editar"))[0]);
+
+    expect(await screen.findByText("Selecione as Categorias Gatilho *")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Salgados/i }));
+    fireEvent.click(screen.getByText("Salvar Alterações"));
+
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    const [id, payload] = update.mock.calls[0] as [
+      string,
+      { triggerType: string; triggerCategoryId: string | null; triggerCategoryIds: string[] },
+    ];
+    expect(id).toBe("b-cat");
+    expect(payload.triggerType).toBe("CATEGORY");
+    expect(payload.triggerCategoryId).toBe("cat-1");
+    expect(payload.triggerCategoryIds).toEqual(["cat-1", "cat-2"]);
   });
 });

@@ -385,8 +385,8 @@ const selectedTriggerCategories = formTriggerCategoryIds
       return;
     }
 
-    if (formTriggerType === "CATEGORY" && !formTriggerCategoryId) {
-      toast.error("Selecione a categoria gatilho");
+    if (formTriggerType === "CATEGORY" && formTriggerCategoryIds.length === 0) {
+      toast.error("Selecione pelo menos uma categoria gatilho");
       return;
     }
 
