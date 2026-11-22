@@ -248,22 +248,22 @@ export function ProductDetailsForm({
                     <FormLabel>Serve quantas pessoas (opcional)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
-                        min={1}
-                        max={99}
-                        step={1}
+                        pattern="[0-9]*"
+                        maxLength={2}
+                        autoComplete="off"
                         className="h-12 rounded-2xl bg-background"
                         placeholder="Ex: 1, 2..."
-                        value={field.value ?? ""}
+                        value={field.value != null ? String(field.value) : ""}
                         onChange={(event) => {
-                          const raw = event.target.value.trim();
-                          if (!raw) {
+                          const digits = event.target.value.replace(/\D/g, "").slice(0, 2);
+                          if (!digits) {
                             field.onChange(null);
                             return;
                           }
-                          const parsed = Number.parseInt(raw, 10);
-                          field.onChange(Number.isNaN(parsed) ? null : parsed);
+                          const parsed = Number.parseInt(digits, 10);
+                          field.onChange(parsed >= 1 ? parsed : null);
                         }}
                       />
                     </FormControl>

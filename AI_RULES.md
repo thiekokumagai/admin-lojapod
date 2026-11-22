@@ -28,6 +28,7 @@
 - Use **Recharts** for charts and data visualizations; do not hand-roll chart components with raw SVG unless there is a specific need.
 - Use **date-fns** for date formatting, parsing, and date math instead of custom date utilities.
 - Use the existing **`cn` utility** patterns with `clsx`, `tailwind-merge`, and class-variance-authority when composing class names or component variants.
+- **Inputs numéricos (Mobile UX)**: Nunca use `type="number"` em inputs numéricos. Use sempre `type="text"` com `inputMode="numeric"` (e `pattern="[0-9]*"` para inteiros) ou `inputMode="decimal"` (para moeda/decimais), permitindo apagar o campo e deixá-lo vazio sem forçar `"0"`.
 
 ## Structure rules
 - Put reusable UI or feature components in `src/components/`.
