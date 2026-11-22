@@ -198,7 +198,7 @@ export function GeneralSettingsForm() {
       };
 
       setStoreName(cleanVal(settings.storeName, ["Minha Loja", "Loja Pod", "Podi Pedir"]));
-      setBusinessType(settings.businessType || "POD");
+      setBusinessType(settings.businessType === "FOOD" || settings.businessType === "ACAI" ? "FOOD" : "POD");
       setTemplateId((settings as any).templateId || "classic");
       setDefaultProductSort((settings as any).defaultProductSort || "newest");
       setPrimaryColor((settings as any).primaryColor || "#dc2626");
@@ -630,13 +630,12 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="POD">Vape Shop</SelectItem>
-                <SelectItem value="FOOD">Restaurante</SelectItem>
-                <SelectItem value="ACAI">Açaiteria</SelectItem>
+                <SelectItem value="FOOD">Delivery / Alimentação</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            Define se a loja exibe recursos de montagem por etapas (Restaurante e Açaiteria) ou opera no modo padrão Vape Shop.
+            Define se a loja exibe recursos de montagem por etapas (Delivery / Alimentação) ou opera no modo padrão Vape Shop.
           </p>
         </div>
 

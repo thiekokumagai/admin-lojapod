@@ -111,4 +111,17 @@ describe("GeneralSettingsForm — Segmento da loja (businessType)", () => {
       }),
     );
   });
+
+  it("mapeia loja legada ACAI para FOOD (Delivery / Alimentação) no seletor de segmento", async () => {
+    mockIsSuperAdmin.mockReturnValue(true);
+    mockSettingsData.mockReturnValue({
+      storeName: "Açaí Legado",
+      businessType: "ACAI",
+    });
+
+    render(<GeneralSettingsForm />);
+
+    const trigger = await screen.findByLabelText("Segmento da loja");
+    expect(trigger).toHaveTextContent("Delivery / Alimentação");
+  });
 });

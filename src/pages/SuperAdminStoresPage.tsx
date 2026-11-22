@@ -22,12 +22,12 @@ const BUSINESS_TYPE_META: Record<
     badgeClass: 'bg-slate-100 text-slate-700',
   },
   FOOD: {
-    label: 'Restaurante',
+    label: 'Delivery / Alimentação',
     badgeClass: 'bg-amber-100 text-amber-800',
   },
   ACAI: {
-    label: 'Açaiteria',
-    badgeClass: 'bg-purple-100 text-purple-800',
+    label: 'Delivery / Alimentação',
+    badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200',
   },
 };
 
@@ -287,7 +287,7 @@ export default function SuperAdminStoresPage() {
                         subdomain: store.subdomain,
                         adminEmail: store.adminEmail,
                         password: '',
-                        businessType: store.businessType ?? 'POD',
+                        businessType: store.businessType === 'FOOD' || store.businessType === 'ACAI' ? 'FOOD' : 'POD',
                       });
                       setShowEditModal(true);
                     }}
@@ -396,8 +396,7 @@ export default function SuperAdminStoresPage() {
                   className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="POD">Vape Shop</option>
-                  <option value="FOOD">Restaurante</option>
-                  <option value="ACAI">Açaiteria</option>
+                  <option value="FOOD">Delivery / Alimentação</option>
                 </select>
               </div>
 
@@ -503,8 +502,7 @@ export default function SuperAdminStoresPage() {
                   className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 >
                   <option value="POD">Vape Shop</option>
-                  <option value="FOOD">Restaurante</option>
-                  <option value="ACAI">Açaiteria</option>
+                  <option value="FOOD">Delivery / Alimentação</option>
                 </select>
               </div>
 

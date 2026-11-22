@@ -301,7 +301,11 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
       const qty = Number(item.quantity) || 1;
       const originalPriceSum = (Number(item.price) || 0) * qty;
       const effectiveRevenue = originalPriceSum * adjustmentFactor;
-      const unitCost = Number(item.product?.costPrice ?? item.costPrice ?? 0);
+      const customExtraCost = Number((item as { customizationSnapshot?: { totalCost?: number } }).customizationSnapshot?.totalCost ?? 0);
+      const unitCost =
+        item.costPrice !== undefined && item.costPrice !== null
+          ? Number(item.costPrice) || 0
+          : (Number(item.product?.costPrice ?? 0) || 0) + (Number.isFinite(customExtraCost) && customExtraCost > 0 ? customExtraCost : 0);
 
       categoryStatsMap[categoryName].totalRevenue += effectiveRevenue;
       categoryStatsMap[categoryName].totalCost += unitCost * qty;

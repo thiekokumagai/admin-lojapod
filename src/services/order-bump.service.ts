@@ -9,6 +9,7 @@ export interface OrderBumpItem {
   priority: number;
   triggerType: "ALL" | "CATEGORY" | "PRODUCT";
   triggerProductId?: string | null;
+  triggerProductIds?: string[];
   triggerCategoryId?: string | null;
   suggestedProductId: string;
   customPrice?: number | null;
@@ -26,6 +27,12 @@ export interface OrderBumpItem {
     price?: number | null;
     images?: { url: string }[];
   } | null;
+  triggerProducts?: {
+    id: string;
+    title: string;
+    price?: number | null;
+    images?: { url: string }[];
+  }[];
   triggerCategory?: {
     id: string;
     title: string;
@@ -50,6 +57,7 @@ export interface CreateOrderBumpPayload {
   priority?: number;
   triggerType: "ALL" | "CATEGORY" | "PRODUCT";
   triggerProductId?: string | null;
+  triggerProductIds?: string[];
   triggerCategoryId?: string | null;
   suggestedProductId: string;
   customPrice?: number | null;
@@ -57,7 +65,7 @@ export interface CreateOrderBumpPayload {
   displayLocation?: OrderBumpDisplayLocation;
 }
 
-export interface UpdateOrderBumpPayload extends Partial<CreateOrderBumpPayload> {}
+export type UpdateOrderBumpPayload = Partial<CreateOrderBumpPayload>;
 
 export const orderBumpService = {
   async list(): Promise<OrderBumpItem[]> {

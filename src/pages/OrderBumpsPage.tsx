@@ -84,7 +84,7 @@ export default function OrderBumpsPage() {
   // Form State
   const [formTitle, setFormTitle] = useState("Peça também");
   const [formTriggerType, setFormTriggerType] = useState<"ALL" | "CATEGORY" | "PRODUCT">("ALL");
-  const [formTriggerProductId, setFormTriggerProductId] = useState("");
+  const [formTriggerProductIds, setFormTriggerProductIds] = useState<string[]>([]);
   const [formTriggerCategoryId, setFormTriggerCategoryId] = useState("");
   const [formSuggestedProductId, setFormSuggestedProductId] = useState("");
   const [formPricingType, setFormPricingType] = useState<"ORIGINAL" | "CUSTOM" | "PERCENT">("ORIGINAL");
@@ -119,14 +119,35 @@ export default function OrderBumpsPage() {
   const activeProducts = products.filter((p) => p.status === "active");
 
   const selectedSuggestedProduct = activeProducts.find((p) => p.id === formSuggestedProductId);
-  const selectedTriggerProduct = activeProducts.find((p) => p.id === formTriggerProductId);
+  const selectedTriggerProducts = formTriggerProductIds
+    .map((id) => activeProducts.find((p) => p.id === id) || editingItem?.triggerProducts?.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
+  const getBumpTriggerTitles = (bump: OrderBumpItem): string[] => {
+    if (Array.isArray(bump.triggerProducts) && bump.triggerProducts.length > 0) {
+      return bump.triggerProducts.map((p) => p.title);
+    }
+    if (bump.triggerProduct?.title) {
+      return [bump.triggerProduct.title];
+    }
+    return [];
+  };
+
+  const formatTriggerProductsLabel = (bump: OrderBumpItem): string => {
+    const titles = getBumpTriggerTitles(bump);
+    if (titles.length === 0) return "Produto";
+    if (titles.length === 1) return titles[0];
+    return `${titles[0]} +${titles.length - 1}`;
+  };
 
   const filteredSuggested = activeProducts.filter((p) =>
     p.title.toLowerCase().includes(suggestedSearch.toLowerCase())
   );
 
-  const filteredTrigger = activeProducts.filter((p) =>
-    p.title.toLowerCase().includes(triggerSearch.toLowerCase())
+  const filteredTrigger = activeProducts.filter(
+    (p) =>
+      !formTriggerProductIds.includes(p.id) &&
+      p.title.toLowerCase().includes(triggerSearch.toLowerCase())
   );
 
   const { data: categories = [] } = useCategories();
@@ -248,7 +269,7 @@ export default function OrderBumpsPage() {
     setEditingItem(null);
     setFormTitle("Peça também");
     setFormTriggerType("ALL");
-    setFormTriggerProductId("");
+    setFormTriggerProductIds([]);
     setFormTriggerCategoryId("");
     setFormSuggestedProductId("");
     setSuggestedSearch("");
@@ -266,7 +287,13 @@ export default function OrderBumpsPage() {
     setEditingItem(item);
     setFormTitle(item.title || "Peça também");
     setFormTriggerType(item.triggerType);
-    setFormTriggerProductId(item.triggerProductId || "");
+    const initialTriggerIds =
+      Array.isArray(item.triggerProductIds) && item.triggerProductIds.length > 0
+        ? item.triggerProductIds
+        : item.triggerProductId
+          ? [item.triggerProductId]
+          : [];
+    setFormTriggerProductIds(initialTriggerIds);
     setFormTriggerCategoryId(item.triggerCategoryId || "");
     setFormSuggestedProductId(item.suggestedProductId);
     setSuggestedSearch("");
@@ -304,8 +331,8 @@ export default function OrderBumpsPage() {
       return;
     }
 
-    if (formTriggerType === "PRODUCT" && !formTriggerProductId) {
-      toast.error("Selecione o produto gatilho");
+    if (formTriggerType === "PRODUCT" && formTriggerProductIds.length === 0) {
+      toast.error("Selecione pelo menos um produto gatilho");
       return;
     }
 
@@ -322,7 +349,8 @@ export default function OrderBumpsPage() {
     const payload: CreateOrderBumpPayload = {
       title: formTitle.trim() || "Peça também",
       triggerType: formTriggerType,
-      triggerProductId: formTriggerType === "PRODUCT" ? formTriggerProductId : null,
+      triggerProductId: formTriggerType === "PRODUCT" ? (formTriggerProductIds[0] ?? null) : null,
+      triggerProductIds: formTriggerType === "PRODUCT" ? formTriggerProductIds : [],
       triggerCategoryId: formTriggerType === "CATEGORY" ? formTriggerCategoryId : null,
       suggestedProductId: formSuggestedProductId,
       ...(editingItem ? { priority: Number(formPriority) || 0 } : {}),
@@ -354,7 +382,7 @@ export default function OrderBumpsPage() {
       !q ||
       item.title.toLowerCase().includes(q) ||
       (item.suggestedProduct?.title || "").toLowerCase().includes(q) ||
-      (item.triggerProduct?.title || "").toLowerCase().includes(q) ||
+      getBumpTriggerTitles(item).some((t) => t.toLowerCase().includes(q)) ||
       (item.triggerCategory?.title || "").toLowerCase().includes(q);
 
     return matchesStatus && matchesSearch;
@@ -577,7 +605,7 @@ export default function OrderBumpsPage() {
                     )}
                     {bump.triggerType === "PRODUCT" && (
                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-semibold text-[11px]">
-                        Produto: {bump.triggerProduct?.title || "Produto"}
+                        {getBumpTriggerTitles(bump).length > 1 ? "Produtos" : "Produto"}: {formatTriggerProductsLabel(bump)}
                       </Badge>
                     )}
                   </div>
@@ -752,7 +780,7 @@ export default function OrderBumpsPage() {
                         )}
                         {bump.triggerType === "PRODUCT" && (
                           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                            Produto: {bump.triggerProduct?.title || "Produto"}
+                            {getBumpTriggerTitles(bump).length > 1 ? "Produtos" : "Produto"}: {formatTriggerProductsLabel(bump)}
                           </Badge>
                         )}
                       </TableCell>
@@ -928,121 +956,150 @@ export default function OrderBumpsPage() {
               </div>
             )}
 
-            {/* Seletor de Produto Gatilho Estilo Combo */}
+            {/* Seletor de Produtos Gatilho Estilo Combo (múltiplos — regra OU) */}
             {formTriggerType === "PRODUCT" && (
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">Selecione o Produto Gatilho *</Label>
-                {selectedTriggerProduct ? (
-                  <div className="p-3 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-lg bg-white overflow-hidden shrink-0 border border-indigo-100 flex items-center justify-center">
-                        {selectedTriggerProduct.images?.[0]?.url ? (
-                          <img
-                            src={buildImageUrl(selectedTriggerProduct.images[0].url)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Package className="w-5 h-5 text-indigo-400" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[11px] sm:text-xs text-indigo-600 font-semibold uppercase tracking-wider">
-                          Gatilho Selecionado
-                        </p>
-                        <p className="text-sm font-bold text-slate-900 truncate">
-                          {selectedTriggerProduct.title}
-                        </p>
-                        <p className="text-xs font-semibold text-slate-600">
-                          R$ {getEffectiveProductPrice(selectedTriggerProduct).toFixed(2).replace(".", ",")}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setFormTriggerProductId("");
-                        setTriggerSearch("");
-                      }}
-                      className="text-xs font-semibold border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 text-indigo-700 h-8 px-3 shrink-0 rounded-lg"
-                    >
-                      Trocar
-                    </Button>
-                  </div>
-                ) : (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs font-semibold">Selecione os Produtos Gatilho *</Label>
+                  {formTriggerProductIds.length > 0 && (
+                    <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
+                      {formTriggerProductIds.length}{" "}
+                      {formTriggerProductIds.length === 1 ? "selecionado" : "selecionados"}
+                    </span>
+                  )}
+                </div>
+
+                {selectedTriggerProducts.length > 0 && (
                   <div className="space-y-1.5">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Digite o nome do produto gatilho para buscar..."
-                        value={triggerSearch}
-                        onChange={(e) => setTriggerSearch(e.target.value)}
-                        className="pl-9 pr-8 h-10 rounded-xl"
-                      />
-                      {triggerSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setTriggerSearch("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-full"
+                    {selectedTriggerProducts.map((prod) => {
+                      const img = prod.images?.[0]?.url;
+                      const prodPrice = "promotionalPrice" in prod ? getEffectiveProductPrice(prod) : Number(prod.price) || 0;
+                      return (
+                        <div
+                          key={prod.id}
+                          className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/40"
                         >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    {triggerSearch.trim().length > 0 && (
-                      <div className="max-h-52 overflow-y-auto border rounded-xl divide-y bg-white shadow-sm">
-                        {isLoadingProducts ? (
-                          <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                            Carregando produtos...
-                          </div>
-                        ) : filteredTrigger.length === 0 ? (
-                          <div className="p-4 text-center text-xs text-muted-foreground">
-                            Nenhum produto ativo encontrado com "{triggerSearch}".
-                          </div>
-                        ) : (
-                          filteredTrigger.slice(0, 20).map((prod) => {
-                            const pPrice = getEffectiveProductPrice(prod);
-                            const img = prod.images?.[0]?.url;
-
-                            return (
-                              <div
-                                key={prod.id}
-                                onClick={() => {
-                                  setFormTriggerProductId(prod.id);
-                                  setTriggerSearch("");
-                                }}
-                                className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-indigo-50/70 transition-colors text-left"
-                              >
-                                <div className="flex items-center gap-3 min-w-0 pr-2">
-                                  <div className="w-9 h-9 rounded-md bg-muted overflow-hidden shrink-0 border">
-                                    {img ? (
-                                      <img src={buildImageUrl(img)} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                        <Package className="w-4 h-4" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium text-slate-800 truncate">{prod.title}</p>
-                                    <p className="text-xs text-muted-foreground">Estoque: {prod.totalStock ?? 0}</p>
-                                  </div>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-white overflow-hidden shrink-0 border border-indigo-100">
+                              {img ? (
+                                <img
+                                  src={buildImageUrl(img)}
+                                  alt={prod.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                  <Package className="w-4 h-4" />
                                 </div>
-                                <span className="text-xs font-semibold text-emerald-600 shrink-0">
-                                  R$ {pPrice.toFixed(2).replace(".", ",")}
-                                </span>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-800 truncate">{prod.title}</p>
+                              {prodPrice > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  R$ {prodPrice.toFixed(2).replace(".", ",")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Remover gatilho ${prod.title}`}
+                            onClick={() =>
+                              setFormTriggerProductIds((prev) => prev.filter((id) => id !== prod.id))
+                            }
+                            className="h-8 px-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0 rounded-lg"
+                          >
+                            <X className="w-3.5 h-3.5 mr-1" />
+                            Remover
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
+
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder={
+                        formTriggerProductIds.length > 0
+                          ? "Buscar outro produto gatilho para adicionar..."
+                          : "Digite o nome do produto gatilho para buscar..."
+                      }
+                      value={triggerSearch}
+                      onChange={(e) => setTriggerSearch(e.target.value)}
+                      className="pl-9 pr-8 h-10 rounded-xl"
+                    />
+                    {triggerSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setTriggerSearch("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-full"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {triggerSearch.trim().length > 0 && (
+                    <div className="max-h-52 overflow-y-auto border rounded-xl divide-y bg-white shadow-sm">
+                      {isLoadingProducts ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                          Carregando produtos...
+                        </div>
+                      ) : filteredTrigger.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground">
+                          Nenhum produto ativo encontrado com "{triggerSearch}".
+                        </div>
+                      ) : (
+                        filteredTrigger.slice(0, 20).map((prod) => {
+                          const pPrice = getEffectiveProductPrice(prod);
+                          const img = prod.images?.[0]?.url;
+
+                          return (
+                            <div
+                              key={prod.id}
+                              onClick={() => {
+                                setFormTriggerProductIds((prev) =>
+                                  prev.includes(prod.id) ? prev : [...prev, prod.id]
+                                );
+                                setTriggerSearch("");
+                              }}
+                              className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-indigo-50/70 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-3 min-w-0 pr-2">
+                                <div className="w-9 h-9 rounded-md bg-muted overflow-hidden shrink-0 border">
+                                  {img ? (
+                                    <img src={buildImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                      <Package className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-800 truncate">{prod.title}</p>
+                                  <p className="text-xs text-muted-foreground">Estoque: {prod.totalStock ?? 0}</p>
+                                </div>
+                              </div>
+                              <span className="text-xs font-semibold text-emerald-600 shrink-0">
+                                R$ {pPrice.toFixed(2).replace(".", ",")}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    A oferta aparece quando o carrinho ou a tela atual tiver qualquer um dos produtos escolhidos.
+                  </p>
+                </div>
               </div>
             )}
 

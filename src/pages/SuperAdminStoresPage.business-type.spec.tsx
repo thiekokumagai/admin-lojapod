@@ -47,7 +47,7 @@ describe("SuperAdminStoresPage — Segmento da loja (businessType)", () => {
 
     render(<SuperAdminStoresPage />);
 
-    expect(await screen.findByText("Restaurante")).toBeInTheDocument();
+    expect(await screen.findByText("Delivery / Alimentação")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle("Editar Loja"));
 
@@ -75,5 +75,30 @@ describe("SuperAdminStoresPage — Segmento da loja (businessType)", () => {
         forceDisableCustomizations: true,
       }),
     ]);
+  });
+
+  it("trata loja legada com businessType ACAI exibindo Delivery / Alimentação e mapeando para FOOD na edição", async () => {
+    mockGetStores.mockResolvedValue([
+      {
+        id: "store-acai",
+        title: "Açaí do Bairro",
+        subdomain: "acaibairro",
+        adminEmail: "dono@acai.com",
+        businessType: "ACAI",
+        isActive: true,
+        createdAt: "2026-11-20T00:00:00.000Z",
+        _count: { products: 4, orders: 1, customers: 2 },
+      },
+    ]);
+
+    render(<SuperAdminStoresPage />);
+
+    expect(await screen.findByText("Delivery / Alimentação")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Editar/i }));
+
+    const select = (await screen.findByLabelText("Segmento da loja")) as HTMLSelectElement;
+    expect(select.value).toBe("FOOD");
+    expect(select.options).toHaveLength(2);
   });
 });

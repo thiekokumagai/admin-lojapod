@@ -64,11 +64,13 @@ export default function CompositionsPage() {
     name: "",
     description: "",
     price: 0,
+    costPrice: 0,
     maxQuantityPerItem: 1,
     sortOrder: 0,
     isActive: true,
   });
   const [optionPriceInput, setOptionPriceInput] = useState("");
+  const [optionCostInput, setOptionCostInput] = useState("");
   const [optionMaxInput, setOptionMaxInput] = useState("1");
 
   const { data: groups = [], isLoading } = useQuery({
@@ -82,6 +84,9 @@ export default function CompositionsPage() {
       const minQty = groupMinInput.trim() === "" ? 0 : Math.max(0, parseInt(groupMinInput, 10) || 0);
       const maxQty = groupMaxInput.trim() === "" ? 1 : Math.max(1, parseInt(groupMaxInput, 10) || 1);
       const freeQty = groupFreeInput.trim() === "" ? 0 : Math.max(0, parseInt(groupFreeInput, 10) || 0);
+      if (minQty > maxQty) {
+        throw new Error("A quantidade mínima não pode ser maior que a quantidade máxima.");
+      }
       const payload: CreateCompositionGroupPayload = {
         ...groupForm,
         minQuantity: minQty,
@@ -122,6 +127,7 @@ export default function CompositionsPage() {
       const payload: CreateCompositionOptionPayload = {
         ...optionForm,
         price: Number(optionForm.price) || 0,
+        costPrice: Math.max(0, Number(optionForm.costPrice) || 0),
         maxQuantityPerItem: maxPerItem,
       };
       if (editingOption) {
@@ -193,23 +199,27 @@ export default function CompositionsPage() {
       name: "",
       description: "",
       price: 0,
+      costPrice: 0,
       maxQuantityPerItem: 1,
       sortOrder: optionsCount,
       isActive: true,
     });
     setOptionPriceInput("");
+    setOptionCostInput("");
     setOptionMaxInput("1");
     setIsOptionDialogOpen(true);
   };
 
   const openEditOption = (option: CompositionOption) => {
     const numericPrice = Number(option.price) || 0;
+    const numericCost = Number(option.costPrice) || 0;
     setEditingOption(option);
     setTargetGroupId(option.groupId);
     setOptionForm({
       name: option.name,
       description: option.description || "",
       price: numericPrice,
+      costPrice: numericCost,
       maxQuantityPerItem: option.maxQuantityPerItem,
       sortOrder: option.sortOrder,
       isActive: option.isActive,
@@ -220,6 +230,14 @@ export default function CompositionsPage() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           }).format(numericPrice)
+        : "",
+    );
+    setOptionCostInput(
+      numericCost > 0
+        ? new Intl.NumberFormat("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(numericCost)
         : "",
     );
     setOptionMaxInput(String(option.maxQuantityPerItem ?? 1));
@@ -379,6 +397,9 @@ export default function CompositionsPage() {
                                     ? `+${formatCurrency(Number(opt.price))}`
                                     : "Sem custo extra"}
                                 </span>
+                                {Number(opt.costPrice) > 0 && (
+                                  <span>• Custo: {formatCurrency(Number(opt.costPrice))}</span>
+                                )}
                                 {opt.maxQuantityPerItem > 1 && <span>(Máx: {opt.maxQuantityPerItem})</span>}
                               </div>
                             </div>
@@ -589,9 +610,9 @@ export default function CompositionsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 items-end gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="option-price">Preço Adicional (R$)</Label>
+                <Label htmlFor="option-price" className="whitespace-nowrap">Preço (R$)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                     R$
@@ -625,7 +646,41 @@ export default function CompositionsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="option-max">Máx por Pedido</Label>
+                <Label htmlFor="option-cost" className="whitespace-nowrap">Custo (R$)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    R$
+                  </span>
+                  <Input
+                    id="option-cost"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="0,00"
+                    value={optionCostInput}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      if (!digits) {
+                        setOptionCostInput("");
+                        setOptionForm({ ...optionForm, costPrice: 0 });
+                      } else {
+                        const numeric = Number(digits) / 100;
+                        setOptionCostInput(
+                          new Intl.NumberFormat("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(numeric),
+                        );
+                        setOptionForm({ ...optionForm, costPrice: numeric });
+                      }
+                    }}
+                    className="h-11 rounded-2xl pl-9"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="option-max" className="whitespace-nowrap">Máx. por Pedido</Label>
                 <Input
                   id="option-max"
                   type="text"

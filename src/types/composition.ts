@@ -4,6 +4,7 @@ export interface CompositionOption {
   name: string;
   description?: string | null;
   price: number | string;
+  costPrice?: number | string | null;
   maxQuantityPerItem: number;
   sortOrder: number;
   isActive: boolean;
@@ -57,6 +58,7 @@ export interface CreateCompositionOptionPayload {
   name: string;
   description?: string;
   price?: number;
+  costPrice?: number;
   maxQuantityPerItem?: number;
   sortOrder?: number;
   isActive?: boolean;

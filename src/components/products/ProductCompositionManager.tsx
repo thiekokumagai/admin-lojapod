@@ -125,6 +125,20 @@ export function ProductCompositionManager({ productId }: ProductCompositionManag
       return true;
     });
 
+    for (const item of uniqueAttached) {
+      const group = allGroups.find((g) => g.id === item.groupId);
+      const effectiveMin = item.customMinQuantity ?? group?.minQuantity ?? 0;
+      const effectiveMax = item.customMaxQuantity ?? group?.maxQuantity ?? 1;
+      if (effectiveMin > effectiveMax) {
+        toast({
+          variant: "destructive",
+          title: "Limites inválidos",
+          description: `No grupo "${group?.name || "Montagem"}", a quantidade mínima (${effectiveMin}) não pode ser maior que a máxima (${effectiveMax}).`,
+        });
+        return;
+      }
+    }
+
     const payload: AttachProductCompositionItem[] = uniqueAttached.map((item, idx) => ({
       groupId: item.groupId,
       sortOrder: idx,
