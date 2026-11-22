@@ -11,6 +11,7 @@ export interface OrderBumpItem {
   triggerProductId?: string | null;
   triggerProductIds?: string[];
   triggerCategoryId?: string | null;
+  triggerCategoryIds?: string[];
   suggestedProductId: string;
   customPrice?: number | null;
   discountPercent?: number | null;
@@ -37,6 +38,10 @@ export interface OrderBumpItem {
     id: string;
     title: string;
   } | null;
+  triggerCategories?: {
+    id: string;
+    title: string;
+  }[];
   suggestedProduct?: {
     id: string;
     title: string;
@@ -59,6 +64,7 @@ export interface CreateOrderBumpPayload {
   triggerProductId?: string | null;
   triggerProductIds?: string[];
   triggerCategoryId?: string | null;
+  triggerCategoryIds?: string[];
   suggestedProductId: string;
   customPrice?: number | null;
   discountPercent?: number | null;

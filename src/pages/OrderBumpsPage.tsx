@@ -85,7 +85,8 @@ export default function OrderBumpsPage() {
   const [formTitle, setFormTitle] = useState("Peça também");
   const [formTriggerType, setFormTriggerType] = useState<"ALL" | "CATEGORY" | "PRODUCT">("ALL");
   const [formTriggerProductIds, setFormTriggerProductIds] = useState<string[]>([]);
-  const [formTriggerCategoryId, setFormTriggerCategoryId] = useState("");
+  const [formTriggerCategoryIds, setFormTriggerCategoryIds] = useState<string[]>([]);
+  const [categorySearch, setCategorySearch] = useState("");
   const [formSuggestedProductId, setFormSuggestedProductId] = useState("");
   const [formPricingType, setFormPricingType] = useState<"ORIGINAL" | "CUSTOM" | "PERCENT">("ORIGINAL");
   const [formCustomPrice, setFormCustomPrice] = useState("");
@@ -139,6 +140,29 @@ export default function OrderBumpsPage() {
     if (titles.length === 1) return titles[0];
     return `${titles[0]} +${titles.length - 1}`;
   };
+  const getBumpTriggerCategoryTitles = (bump: OrderBumpItem): string[] => {
+    if (Array.isArray(bump.triggerCategories) && bump.triggerCategories.length > 0) {
+      return bump.triggerCategories.map((c) => c.title);
+    }
+    if (bump.triggerCategory?.title) {
+      return [bump.triggerCategory.title];
+    }
+    if (Array.isArray(bump.triggerCategoryIds) && bump.triggerCategoryIds.length > 0) {
+      return bump.triggerCategoryIds.map(
+        (id) => categories.find((c) => c.id === id)?.title || "Categoria",
+      );
+    }
+    return [];
+  };
+
+  const formatTriggerCategoriesLabel = (bump: OrderBumpItem): string => {
+    const titles = getBumpTriggerCategoryTitles(bump);
+    if (titles.length === 0) return "Categoria";
+    if (titles.length === 1) return titles[0];
+    return `${titles[0]} +${titles.length - 1}`;
+  };
+
+
 
   const filteredSuggested = activeProducts.filter((p) =>
     p.title.toLowerCase().includes(suggestedSearch.toLowerCase())
@@ -151,6 +175,23 @@ export default function OrderBumpsPage() {
   );
 
   const { data: categories = [] } = useCategories();
+const selectedTriggerCategories = formTriggerCategoryIds
+    .map((id) => {
+      const fromList = categories.find((c) => c.id === id);
+      if (fromList) return fromList;
+      const fromEditing = editingItem?.triggerCategories?.find((c) => c.id === id);
+      if (fromEditing) return fromEditing;
+      if (editingItem?.triggerCategory?.id === id) return editingItem.triggerCategory;
+      return null;
+    })
+    .filter((c): c is NonNullable<typeof c> => Boolean(c));
+
+  const filteredTriggerCategories = categories.filter(
+    (c) =>
+      !formTriggerCategoryIds.includes(c.id) &&
+      c.title.toLowerCase().includes(categorySearch.trim().toLowerCase()),
+  );
+
 
   // Mutations
   const createMutation = useMutation({
@@ -270,7 +311,8 @@ export default function OrderBumpsPage() {
     setFormTitle("Peça também");
     setFormTriggerType("ALL");
     setFormTriggerProductIds([]);
-    setFormTriggerCategoryId("");
+    setFormTriggerCategoryIds([]);
+    setCategorySearch("");
     setFormSuggestedProductId("");
     setSuggestedSearch("");
     setTriggerSearch("");
@@ -294,7 +336,14 @@ export default function OrderBumpsPage() {
           ? [item.triggerProductId]
           : [];
     setFormTriggerProductIds(initialTriggerIds);
-    setFormTriggerCategoryId(item.triggerCategoryId || "");
+    const initialTriggerCatIds =
+      Array.isArray(item.triggerCategoryIds) && item.triggerCategoryIds.length > 0
+        ? item.triggerCategoryIds
+        : item.triggerCategoryId
+          ? [item.triggerCategoryId]
+          : [];
+    setFormTriggerCategoryIds(initialTriggerCatIds);
+    setCategorySearch("");
     setFormSuggestedProductId(item.suggestedProductId);
     setSuggestedSearch("");
     setTriggerSearch("");
@@ -351,7 +400,8 @@ export default function OrderBumpsPage() {
       triggerType: formTriggerType,
       triggerProductId: formTriggerType === "PRODUCT" ? (formTriggerProductIds[0] ?? null) : null,
       triggerProductIds: formTriggerType === "PRODUCT" ? formTriggerProductIds : [],
-      triggerCategoryId: formTriggerType === "CATEGORY" ? formTriggerCategoryId : null,
+      triggerCategoryId: formTriggerType === "CATEGORY" ? (formTriggerCategoryIds[0] ?? null) : null,
+      triggerCategoryIds: formTriggerType === "CATEGORY" ? formTriggerCategoryIds : [],
       suggestedProductId: formSuggestedProductId,
       ...(editingItem ? { priority: Number(formPriority) || 0 } : {}),
       isActive: formIsActive,
@@ -383,7 +433,7 @@ export default function OrderBumpsPage() {
       item.title.toLowerCase().includes(q) ||
       (item.suggestedProduct?.title || "").toLowerCase().includes(q) ||
       getBumpTriggerTitles(item).some((t) => t.toLowerCase().includes(q)) ||
-      (item.triggerCategory?.title || "").toLowerCase().includes(q);
+      getBumpTriggerCategoryTitles(item).some((t) => t.toLowerCase().includes(q));
 
     return matchesStatus && matchesSearch;
   });
@@ -600,7 +650,7 @@ export default function OrderBumpsPage() {
                     )}
                     {bump.triggerType === "CATEGORY" && (
                       <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-semibold text-[11px]">
-                        Categoria: {bump.triggerCategory?.title || "Categoria"}
+                        {getBumpTriggerCategoryTitles(bump).length > 1 ? "Categorias" : "Categoria"}: {formatTriggerCategoriesLabel(bump)}
                       </Badge>
                     )}
                     {bump.triggerType === "PRODUCT" && (
@@ -775,7 +825,7 @@ export default function OrderBumpsPage() {
                         )}
                         {bump.triggerType === "CATEGORY" && (
                           <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                            Categoria: {bump.triggerCategory?.title || "Categoria"}
+                            {getBumpTriggerCategoryTitles(bump).length > 1 ? "Categorias" : "Categoria"}: {formatTriggerCategoriesLabel(bump)}
                           </Badge>
                         )}
                         {bump.triggerType === "PRODUCT" && (
@@ -928,31 +978,90 @@ export default function OrderBumpsPage() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
                   <SelectItem value="ALL" className="font-medium">Em qualquer pedido (Geral)</SelectItem>
-                  <SelectItem value="CATEGORY" className="font-medium">Quando o carrinho tiver itens de uma Categoria</SelectItem>
+                  <SelectItem value="CATEGORY" className="font-medium">Quando o carrinho tiver itens de Categorias específicas</SelectItem>
                   <SelectItem value="PRODUCT" className="font-medium">Quando o carrinho tiver um Produto Específico</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Seletor de Categoria Gatilho */}
+            {/* Seletor de Categorias Gatilho (múltiplas — regra OU) */}
             {formTriggerType === "CATEGORY" && (
-              <div>
-                <Label className="text-xs font-semibold">Selecione a Categoria Gatilho</Label>
-                <Select
-                  value={formTriggerCategoryId}
-                  onValueChange={setFormTriggerCategoryId}
-                >
-                  <SelectTrigger className="mt-1 h-10 rounded-xl">
-                    <SelectValue placeholder="Selecione a categoria..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl max-h-56">
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.title}
-                      </SelectItem>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs font-semibold">Selecione as Categorias Gatilho *</Label>
+                  {formTriggerCategoryIds.length > 0 && (
+                    <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
+                      {formTriggerCategoryIds.length}{" "}
+                      {formTriggerCategoryIds.length === 1 ? "selecionada" : "selecionadas"}
+                    </span>
+                  )}
+                </div>
+
+                {selectedTriggerCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedTriggerCategories.map((cat) => (
+                      <span
+                        key={cat.id}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-800"
+                      >
+                        <span>{cat.title}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormTriggerCategoryIds((prev) => prev.filter((id) => id !== cat.id))
+                          }
+                          aria-label={`Remover categoria ${cat.title}`}
+                          className="rounded-full p-0.5 text-purple-600 hover:bg-purple-200/60 hover:text-purple-900 transition"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
+
+                <Input
+                  type="text"
+                  placeholder={
+                    formTriggerCategoryIds.length > 0
+                      ? "Adicionar outra categoria gatilho..."
+                      : "Buscar categoria gatilho..."
+                  }
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                  className="h-10 rounded-xl text-sm"
+                />
+
+                <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+                  {filteredTriggerCategories.length === 0 ? (
+                    <p className="p-3 text-xs text-muted-foreground text-center">
+                      {categories.length === formTriggerCategoryIds.length
+                        ? "Todas as categorias já foram selecionadas."
+                        : "Nenhuma categoria encontrada."}
+                    </p>
+                  ) : (
+                    filteredTriggerCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setFormTriggerCategoryIds((prev) =>
+                            prev.includes(cat.id) ? prev : [...prev, cat.id],
+                          );
+                          setCategorySearch("");
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-purple-50/70 transition"
+                      >
+                        <span className="font-medium text-slate-700">{cat.title}</span>
+                        <span className="text-xs font-semibold text-purple-600">+ Adicionar</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                <p className="text-[11px] text-muted-foreground">
+                  A sugestão aparece se o carrinho tiver qualquer produto de qualquer uma das categorias marcadas (regra OU).
+                </p>
               </div>
             )}
 
