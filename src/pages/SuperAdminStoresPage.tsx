@@ -44,7 +44,7 @@ const BUSINESS_TYPE_META: Record<
   { label: string; badgeClass: string; avatarClass: string }
 > = {
   POD: {
-    label: 'Vape Shop',
+    label: 'Varejo / Loja Geral',
     badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200/80',
     avatarClass: 'bg-indigo-50 text-indigo-700 border-indigo-100',
   },
@@ -435,7 +435,7 @@ export default function SuperAdminStoresPage() {
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
-                Vape: {stats.vape}
+                Varejo: {stats.vape}
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
                 Delivery: {stats.food}
@@ -533,7 +533,7 @@ export default function SuperAdminStoresPage() {
                 {(
                   [
                     { key: 'ALL', label: 'Todos os nichos' },
-                    { key: 'POD', label: 'Vape' },
+                    { key: 'POD', label: 'Varejo' },
                     { key: 'FOOD', label: 'Alimentação' },
                   ] as const
                 ).map((item) => (
@@ -877,7 +877,7 @@ export default function SuperAdminStoresPage() {
                       }
                       className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition"
                     >
-                      <option value="POD">Vape Shop</option>
+                      <option value="POD">Varejo / Loja Geral</option>
                       <option value="FOOD">Delivery / Alimentação</option>
                     </select>
                   </div>
@@ -1080,7 +1080,7 @@ export default function SuperAdminStoresPage() {
                       }
                       className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 outline-none transition"
                     >
-                      <option value="POD">Vape Shop</option>
+                      <option value="POD">Varejo / Loja Geral</option>
                       <option value="FOOD">Delivery / Alimentação</option>
                     </select>
                   </div>
@@ -1278,13 +1278,13 @@ export default function SuperAdminStoresPage() {
             <AlertDialogDescription>
               Existem {podConfirmCount} produto(s) personalizável(is). Deseja
               desmarcar &apos;Personalizável&apos; em todos eles e trocar para
-              Vape? Grupos e pedidos antigos não serão apagados.
+              Varejo / Loja Geral? Grupos e pedidos antigos não serão apagados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => void submitEditStore(true)}>
-              Desmarcar e trocar para Vape
+              Desmarcar e trocar para Varejo / Loja Geral
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

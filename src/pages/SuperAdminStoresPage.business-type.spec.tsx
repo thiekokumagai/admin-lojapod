@@ -62,7 +62,7 @@ describe("SuperAdminStoresPage — Segmento da loja (businessType)", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Desmarcar e trocar para Vape/i }),
+      screen.getByRole("button", { name: /Desmarcar e trocar para Varejo \/ Loja Geral/i }),
     );
 
     await waitFor(() => {

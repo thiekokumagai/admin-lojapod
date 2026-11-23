@@ -137,7 +137,7 @@ describe("SuperAdminStoresPage — Senha, anti-autofill e layout com filtros", (
     expect(await screen.findByText("Vem di Pod")).toBeInTheDocument();
     expect(screen.getByText("Sabor Express")).toBeInTheDocument();
     expect(screen.getByText("Total de Lojas")).toBeInTheDocument();
-    expect(screen.getByText("Vape: 1")).toBeInTheDocument();
+    expect(screen.getByText("Varejo: 1")).toBeInTheDocument();
     expect(screen.getByText("Delivery: 1")).toBeInTheDocument();
 
     // Filtro por status: Inativas
@@ -150,12 +150,12 @@ describe("SuperAdminStoresPage — Senha, anti-autofill e layout com filtros", (
     expect(screen.getByText("Vem di Pod")).toBeInTheDocument();
     expect(screen.getByText("Sabor Express")).toBeInTheDocument();
 
-    // Filtro por segmento: Vape
-    fireEvent.click(screen.getByRole("button", { name: /^Vape$/i }));
+    // Filtro por segmento: Varejo
+    fireEvent.click(screen.getByRole("button", { name: /^Varejo$/i }));
     expect(screen.getByText("Vem di Pod")).toBeInTheDocument();
     expect(screen.queryByText("Sabor Express")).not.toBeInTheDocument();
 
-    // Busca por e-mail sem resultado com filtro Vape ativo
+    // Busca por e-mail sem resultado com filtro Varejo ativo
     const searchInput = screen.getByLabelText("Buscar lojas");
     fireEvent.change(searchInput, { target: { value: "saborexpress" } });
     expect(screen.getByText("Nenhuma loja encontrada")).toBeInTheDocument();

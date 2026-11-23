@@ -629,13 +629,13 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
                 <SelectValue placeholder="Selecione o segmento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="POD">Vape Shop</SelectItem>
+                <SelectItem value="POD">Varejo / Loja Geral</SelectItem>
                 <SelectItem value="FOOD">Delivery / Alimentação</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            Define se a loja exibe recursos de montagem por etapas (Delivery / Alimentação) ou opera no modo padrão Vape Shop.
+            Define se a loja exibe recursos de montagem por etapas (Delivery / Alimentação) ou opera no modo padrão Varejo / Loja Geral.
           </p>
         </div>
 
@@ -1247,13 +1247,13 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
             <AlertDialogDescription>
               Existem {podConfirmCount} produto(s) personalizável(is). Deseja
               desmarcar &apos;Personalizável&apos; em todos eles e trocar para
-              Vape? Grupos e pedidos antigos não serão apagados.
+              Varejo / Loja Geral? Grupos e pedidos antigos não serão apagados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => void handleSave(true)}>
-              Desmarcar e trocar para Vape
+              Desmarcar e trocar para Varejo / Loja Geral
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
