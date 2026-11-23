@@ -57,6 +57,8 @@ export interface Order {
   appliedCouponRule?: any;
   paymentType: string;
   paymentMethod: string;
+  onlineGateway?: string | null;
+  gatewayCheckoutUrl?: string | null;
   deliveryModality?: string;
   uberDeliveryId?: string | null;
   uberTrackingUrl?: string | null;

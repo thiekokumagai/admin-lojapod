@@ -163,4 +163,30 @@ describe("OrderDetailDrawer", () => {
       expect(formaDePagamento().textContent).not.toContain("gift_card");
     });
   });
+
+  describe("tipo de pagamento online pendente (antes do pagamento)", () => {
+    it.each([
+      ["INFINITEPAY", "Online (InfinitePay)"],
+      ["MERCADOPAGO", "Online (Mercado Pago)"],
+      [null, "Online"],
+    ])("cartão online pendente com gateway %s exibe %s e não 'Na Entrega'", (gateway, expectedLabel) => {
+      vi.mocked(useOrderDetails).mockReturnValue({
+        data: {
+          ...mockOrder,
+          paymentType: "online",
+          paymentMethod: "credit",
+          paymentStatus: "PENDING",
+          onlineGateway: gateway,
+        } as never,
+        isLoading: false,
+      });
+      vi.mocked(useSettings).mockReturnValue({ data: mockSettings as never });
+
+      renderWithClient(<OrderDetailDrawer orderId="order-1" isOpen={true} onClose={() => {}} />);
+
+      const pagamentoRow = screen.getByText("Pagamento").parentElement as HTMLElement;
+      expect(pagamentoRow.textContent).toContain(expectedLabel);
+      expect(pagamentoRow.textContent).not.toContain("Na Entrega");
+    });
+  });
 });

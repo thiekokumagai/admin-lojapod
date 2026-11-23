@@ -406,7 +406,10 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
   const handleReceiveOrder = async () => {
     if (!orderId) return;
     try {
-      const derivedPaymentType = (paymentMethod === "pix" || paymentMethod === "PIX") ? "online" : "entrega";
+      const keepsOnlineCard =
+        order?.paymentType?.toLowerCase() === "online" &&
+        (paymentMethod === "credit" || paymentMethod === "credito" || paymentMethod === "Cartão de Crédito" || paymentMethod === "Cartão de Crédito Online");
+      const derivedPaymentType = (paymentMethod === "pix" || paymentMethod === "PIX" || keepsOnlineCard) ? "online" : "entrega";
 
       await receiveMutation.mutateAsync({
         id: orderId,
@@ -1192,9 +1195,13 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                 <div className="flex justify-between text-slate-500">
                   <span>Pagamento</span>
                   <span className="text-slate-800 font-bold">
-                    {isPaid 
-                      ? (order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega") 
-                      : (paymentMethod === "pix" && order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega")}
+                    {order.paymentType?.toLowerCase() === "online"
+                      ? order.onlineGateway?.toUpperCase() === "INFINITEPAY"
+                        ? "Online (InfinitePay)"
+                        : order.onlineGateway?.toUpperCase() === "MERCADOPAGO" || order.onlineGateway?.toUpperCase() === "MERCADO_PAGO"
+                          ? "Online (Mercado Pago)"
+                          : "Online"
+                      : "Na Entrega"}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-500 items-center">

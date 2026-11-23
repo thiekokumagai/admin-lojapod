@@ -470,9 +470,13 @@ export default function OrderDetailsPage() {
                 <div className="flex justify-between text-slate-500">
                   <span>Pagamento</span>
                   <span className="text-slate-800 font-bold">
-                    {order.paymentStatus === "PAID" 
-                      ? (order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega") 
-                      : (order.paymentMethod?.toLowerCase() === "pix" && order.paymentType?.toLowerCase() === "online" ? "Online" : "Na Entrega")}
+                    {order.paymentType?.toLowerCase() === "online"
+                      ? order.onlineGateway?.toUpperCase() === "INFINITEPAY"
+                        ? "Online (InfinitePay)"
+                        : order.onlineGateway?.toUpperCase() === "MERCADOPAGO" || order.onlineGateway?.toUpperCase() === "MERCADO_PAGO"
+                          ? "Online (Mercado Pago)"
+                          : "Online"
+                      : "Na Entrega"}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-500 items-center">
