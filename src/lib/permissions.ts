@@ -37,7 +37,7 @@ export const SCREEN_PERMISSIONS = [
     key: "settings",
     label: "Configurações",
     group: "Configuração",
-    paths: ["/configuracoes", "/dominio", "/importacao", "/entregas", "/pagamentos"],
+    paths: ["/configuracoes", "/apps", "/dominio", "/importacao", "/entregas", "/pagamentos"],
   },
 ] as const;
 

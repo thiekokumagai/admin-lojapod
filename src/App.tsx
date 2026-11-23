@@ -54,6 +54,7 @@ const ProductDetailsPage = lazyWithRetry(() => import("@/pages/ProductDetailsPag
 const CategoriesPage = lazyWithRetry(() => import("@/pages/CategoriesPage"));
 const CouponsPage = lazyWithRetry(() => import("@/pages/CouponsPage"));
 const SettingsPage = lazyWithRetry(() => import("@/pages/SettingsPage"));
+const AppsPage = lazyWithRetry(() => import("@/pages/AppsPage"));
 const LinksManagerPage = lazyWithRetry(() => import("@/pages/LinksManagerPage"));
 const CashRegistersPage = lazyWithRetry(() => import("@/pages/CashRegistersPage"));
 const CashRegisterDetailsPage = lazyWithRetry(() => import("@/pages/CashRegisterDetailsPage"));
@@ -158,6 +159,7 @@ const App = () => (
                     <Route path="/entregas" element={<Navigate to="/configuracoes" replace />} />
                     <Route path="/pagamentos" element={<Navigate to="/configuracoes" replace />} />
                     <Route path="/configuracoes" element={<SettingsPage />} />
+                    <Route path="/apps" element={<AppsPage />} />
                     <Route path="/minha-assinatura" element={<BillingPage />} />
                     <Route path="/marketing/links" element={<LinksManagerPage />} />
                     <Route path="/caixa" element={<CashRegistersPage />} />

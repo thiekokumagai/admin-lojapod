@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
-import { LogOut, Menu, Printer, Bell, Store, ExternalLink, AlertTriangle } from "lucide-react";
+import { LogOut, Menu, Bell, Store, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { logout } from "@/services/auth.service";
@@ -165,15 +165,6 @@ export function AdminLayout() {
                       <ExternalLink className="h-3 w-3 opacity-75" />
                     </a>
                   )}
-                  <a
-                    href="https://github.com/thiekokumagai/print-lojapod/releases/latest/download/print-agent-setup.exe"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hidden text-sm font-medium text-blue-500 hover:text-blue-600 sm:flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-md transition-colors"
-                    title="Baixar Agente de Impressão"
-                  >
-                    <Printer className="h-4 w-4" />
-                  </a>
                   <Button variant="outline" size="icon" onClick={handleTestPush} title="Testar notificação" className="h-8 w-8 shrink-0">
                     <Bell className="h-4 w-4" />
                   </Button>

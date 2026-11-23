@@ -23,6 +23,7 @@ import {
   UserCog,
   ShoppingCart,
   BarChart3,
+  AppWindow,
 } from "lucide-react";
 
 export const superAdminNavItems = [
@@ -110,6 +111,7 @@ export const navSections = [
     label: "Configuração",
     items: [
       { title: "Configurações", url: "/configuracoes", icon: Settings },
+      { title: "Apps", url: "/apps", icon: AppWindow },
       { title: "Usuários", url: "/usuarios", icon: UserCog },
     ],
   },

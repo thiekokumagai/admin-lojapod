@@ -160,8 +160,6 @@ export function GeneralSettingsForm() {
   const [facebookPixelEnabled, setFacebookPixelEnabled] = useState(false);
   const [facebookConversionsToken, setFacebookConversionsToken] = useState("");
   const [facebookConversionsApiEnabled, setFacebookConversionsApiEnabled] = useState(false);
-  const [printToken, setPrintToken] = useState("");
-  const [copiedToken, setCopiedToken] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
@@ -226,13 +224,6 @@ export function GeneralSettingsForm() {
               if (storeData.subdomain) setSubdomain(storeData.subdomain);
               if (storeData.customDomain) setCustomDomain(storeData.customDomain);
             }
-          })
-          .catch(() => {});
-
-        apiFetch(`/stores/${storeId}/print-token`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data?.printToken) setPrintToken(data.printToken);
           })
           .catch(() => {});
       }
@@ -1010,43 +1001,6 @@ const cropImageTo1800x745 = (file: File): Promise<File> => {
               </div>
             </div>
           </div>
-
-          {/* Token da Impressora */}
-          {printToken && (
-            <div className="p-4 bg-slate-50 border rounded-xl space-y-2 mt-4">
-              <div className="flex items-center gap-2 text-indigo-700 font-semibold text-sm">
-                <Printer className="h-4 w-4" />
-                <span>Impressora Térmica (Token de Ativação)</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Insira este token no aplicativo da impressora (<strong>print-agent-setup.exe</strong>) instalado no computador da sua loja para conectar o balcão ao sistema.
-              </p>
-              <div className="flex items-center gap-2 max-w-md pt-1">
-                <div className="relative flex-1">
-                  <Key className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    readOnly
-                    value={printToken}
-                    className="pl-9 font-mono text-sm bg-white font-bold text-slate-800"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    navigator.clipboard.writeText(printToken);
-                    setCopiedToken(true);
-                    toast({ title: "Token copiado!", description: "Cole o token no aplicativo de impressão do computador." });
-                    setTimeout(() => setCopiedToken(false), 2000);
-                  }}
-                  className="flex items-center gap-2 shrink-0 bg-white"
-                >
-                  {copiedToken ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                  {copiedToken ? "Copiado!" : "Copiar Token"}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
 
 
