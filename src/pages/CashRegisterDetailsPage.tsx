@@ -5,7 +5,7 @@ import { ArrowLeft, Landmark, Plus, ArrowUpRight, ArrowDownRight, Trash2, Shoppi
 import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { io } from "socket.io-client";
+import { createStoreSocket } from "@/services/socket";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateCashRegisterPDF } from "@/utils/cash-register-pdf";
@@ -138,8 +138,7 @@ export default function CashRegisterDetailsPage({ currentId }: { currentId?: str
   // Escutar eventos de novos pedidos e atualizações de produtos/pedidos
   useEffect(() => {
     if (!id) return;
-    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
-    const socket = io(socketUrl);
+    const socket = createStoreSocket();
 
     socket.on('connect', () => {
       console.log('Connected to websocket server for cash register updates');

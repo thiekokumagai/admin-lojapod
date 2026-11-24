@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { io } from "socket.io-client";
+import { createStoreSocket } from "@/services/socket";
 import {
   Award,
   Search,
@@ -144,8 +144,7 @@ export default function LoyaltyPage() {
   const [adjustReason, setAdjustReason] = useState("");
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, "") || "http://localhost:3000";
-    const socket = io(socketUrl);
+    const socket = createStoreSocket();
 
     const refreshLoyalty = () => {
       queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });

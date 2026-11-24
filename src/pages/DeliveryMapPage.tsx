@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { buildImageUrl } from "@/utils/image-url";
-import { io } from "socket.io-client";
+import { createStoreSocket } from "@/services/socket";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Courier, couriersService } from "@/services/couriers.service";
 import { affectsCourierRoutes, analyzeRoute, shouldShowCancelledOnlyRoute } from "@/utils/courier-route";
@@ -182,8 +182,7 @@ export default function DeliveryMapPage() {
 
   // Socket.io for Real-time Orders Update
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
-    const socket = io(socketUrl);
+    const socket = createStoreSocket();
 
     // Rede de segurança 1: o socket só avisa do que acontece enquanto está conectado. Ao RECONECTAR (queda de rede,
     // computador que dormiu) rebusca pedidos e rotas, senão um cancelamento perdido no meio nunca chegaria ao mapa.

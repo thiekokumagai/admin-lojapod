@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { duplicateWeighedLine } from "@/lib/weight";
 import { useOrderDetails, useCancelOrder, useReprintOrder } from "@/hooks/useOrders";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { formatWhatsAppNumber } from "@/utils/whatsapp";
 import { buildImageUrl } from "@/utils/image-url";
 import { formatPaymentMethod } from "@/utils/payment-method";
 
+import { WeighedItemLine } from "@/components/orders/WeighedItemLine";
 const statusConfig: Record<OrderStatus, { label: string; bg: string; text: string }> = {
   PENDING: { label: "Pendente", bg: "bg-amber-100", text: "text-amber-700" },
   CONFIRMED: { label: "Confirmado", bg: "bg-blue-100", text: "text-blue-700" },
@@ -119,6 +121,12 @@ export default function OrderDetailsPage() {
         const product = products[index];
         if (!product || product.status === "inactive") {
           hasOutOfStock = true;
+          return;
+        }
+
+        // Pesagem: copia o peso com o preço/kg atual (não depende de estoque em unidades)
+        if (product.isSoldByWeight && item.weightKg) {
+          validItems.push(duplicateWeighedLine({ ...item, weightKg: Number(item.weightKg) }, product));
           return;
         }
         
@@ -365,6 +373,7 @@ export default function OrderDetailsPage() {
                           ({item.variation})
                         </span>
                       )}
+                      <WeighedItemLine item={item} />
                       {item.observation && (
                         <div className="mt-1.5 rounded-lg border border-amber-200 bg-amber-50/90 px-2.5 py-1 text-xs text-amber-900 break-words">
                           <span className="font-bold text-amber-800">Obs:</span> {item.observation}

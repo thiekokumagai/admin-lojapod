@@ -19,6 +19,10 @@ export interface OrderItem {
   isCombo?: boolean;
   isOrderBump?: boolean;
   orderBumpId?: string | null;
+  /** Venda por peso: peso líquido (kg), preço/kg usado e origem do peso. */
+  weightKg?: number | null;
+  unitPricePerKg?: number | null;
+  weightSource?: "SCALE" | "MANUAL" | null;
   comboSnapshot?: {
     comboId: string;
     comboName: string;

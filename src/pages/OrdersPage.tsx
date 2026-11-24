@@ -28,7 +28,7 @@ import OrderDetailDrawer from "@/components/OrderDetailDrawer";
 import { OrderKanbanBoard } from "@/components/orders/kanban/OrderKanbanBoard";
 import { OrderStatus, PaymentStatus } from "@/types/order";
 import { getStoreTimezone, getTodayRangeUtc } from "@/utils/date-timezone";
-import { io } from "socket.io-client";
+import { createStoreSocket } from "@/services/socket";
 import { dispatchSingleOrderUber, dispatchUberBatchedRoutes } from "@/services/uber.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -106,8 +106,7 @@ export default function OrdersPage() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
-    const socket = io(socketUrl);
+    const socket = createStoreSocket();
 
     socket.on('connect', () => {
       console.log('Connected to websocket server for order updates');

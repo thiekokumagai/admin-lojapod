@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { formatPaymentMethod } from "@/utils/payment-method";
 
+import { formatWeighedLine } from "@/lib/weight";
 export default function OrderPrintPage() {
   const { id } = useParams();
   const { data: order, isLoading } = useOrderDetails(id ?? "");
@@ -106,6 +107,11 @@ export default function OrderPrintPage() {
               <span className="grow border-b border-dotted border-black relative top-[-4px] mx-1"></span>
               <span className="shrink-0">{formatCurrency(item.price * item.quantity)}</span>
             </div>
+            {Number(item.weightKg) > 0 && Number(item.unitPricePerKg) > 0 && (
+              <div className="pl-4 text-[11px] text-gray-700">
+                {formatWeighedLine(Number(item.weightKg), Number(item.unitPricePerKg))}
+              </div>
+            )}
             {item.isCombo && item.comboSnapshot?.items && (
               <div className="pl-4 text-[11px] text-gray-700 space-y-0.5">
                 {item.comboSnapshot.items.map((comp: any, cIdx: number) => (

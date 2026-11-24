@@ -18,19 +18,25 @@ export type ProductDetailsFormValues = {
   promotionalPrice?: number;
   costPrice?: number;
   servesCount?: number | null;
+  /** Tara padrão do recipiente (g), só para produto vendido por peso. */
+  tareWeightGrams?: number | null;
 };
 
 type ProductDetailsFormProps = {
   form: UseFormReturn<ProductDetailsFormValues>;
   categories: CategoryList[];
   showServesCount?: boolean;
+  /** Vendido por peso: os preços passam a ser por kg e aparece o campo de tara. */
+  soldByWeight?: boolean;
 };
 
 export function ProductDetailsForm({
   form,
   categories,
   showServesCount = false,
+  soldByWeight = false,
 }: ProductDetailsFormProps) {
+  const perKg = soldByWeight ? " por kg" : "";
   const watchPrice = form.watch("price");
   const watchCostPrice = form.watch("costPrice");
 
@@ -111,7 +117,7 @@ export function ProductDetailsForm({
                 name="costPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço de Custo</FormLabel>
+                    <FormLabel>Preço de Custo{perKg}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
@@ -138,7 +144,7 @@ export function ProductDetailsForm({
                 name="promotionalPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço Promocional</FormLabel>
+                    <FormLabel>Preço Promocional{perKg}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
@@ -165,7 +171,7 @@ export function ProductDetailsForm({
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço (Venda)</FormLabel>
+                    <FormLabel>Preço (Venda){perKg}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
@@ -239,7 +245,38 @@ export function ProductDetailsForm({
                 </div>
               )}
             </div>
-            {showServesCount && (
+            {soldByWeight && (
+              <FormField
+                control={form.control}
+                name="tareWeightGrams"
+                render={({ field }) => (
+                  <FormItem className="max-w-xs">
+                    <FormLabel>Tara do recipiente (g)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
+                        autoComplete="off"
+                        className="h-12 rounded-2xl bg-background"
+                        placeholder="Ex: 50"
+                        value={field.value != null ? String(field.value) : ""}
+                        onChange={(event) => {
+                          const digits = event.target.value.replace(/\D/g, "").slice(0, 4);
+                          field.onChange(digits ? Number.parseInt(digits, 10) : null);
+                        }}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Peso do prato ou pote vazio. É descontado na pesagem; dá para mudar na hora de pesar.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {showServesCount && !soldByWeight && (
               <FormField
                 control={form.control}
                 name="servesCount"

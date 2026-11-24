@@ -27,7 +27,10 @@ export function ProductSearch({ onSelectProduct, onSelectCombo }: ProductSearchP
   }, [searchTerm]);
 
   const { data, isLoading: isLoadingProducts } = useProducts(debouncedTerm ? { search: debouncedTerm, limit: 50 } : undefined);
-  const products = (data?.products || []).filter(p => p.status === 'active' && p.totalStock > 0);
+  // Produto por peso não tem estoque em unidades: aparece mesmo com estoque zero
+  const products = (data?.products || []).filter(
+    (p) => p.status === 'active' && (p.isSoldByWeight || p.totalStock > 0),
+  );
 
   useEffect(() => {
     if (!debouncedTerm.trim()) {
@@ -176,13 +179,23 @@ export function ProductSearch({ onSelectProduct, onSelectCombo }: ProductSearchP
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-slate-800 text-sm truncate">{product.title}</div>
-                          <div className="text-xs text-slate-500">Estoque: {product.totalStock}</div>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-semibold text-slate-800 text-sm truncate">{product.title}</span>
+                            {product.isSoldByWeight && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded shrink-0">
+                                Por kg
+                              </span>
+                            )}
+                          </div>
+                          {!product.isSoldByWeight && (
+                            <div className="text-xs text-slate-500">Estoque: {product.totalStock}</div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="font-bold text-slate-700 text-sm">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.promotionalPrice || product.price || 0)}
+                          {product.isSoldByWeight && <span className="font-medium text-slate-500">/kg</span>}
                         </span>
                         <Button size="icon" variant="ghost" className="h-8 w-8 text-violet-600 hover:bg-violet-50 hover:text-violet-700">
                           <Plus className="h-4 w-4" />

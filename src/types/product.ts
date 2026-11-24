@@ -56,6 +56,10 @@ export type ProductResponse = {
   isFeatured?: boolean;
   isCustomizable?: boolean;
   servesCount?: number | null;
+  /** Vendido por peso: price/costPrice/promotionalPrice são por kg. */
+  isSoldByWeight?: boolean;
+  /** Tara padrão do recipiente, em gramas. */
+  tareWeightGrams?: number | null;
   minStock?: number;
   dailyRunRate?: number;
   coverageDays?: number | null;
@@ -94,6 +98,10 @@ export type CreateProductPayload = {
   isFeatured?: boolean;
   isCustomizable?: boolean;
   servesCount?: number | null;
+  /** Vendido por peso: price/costPrice/promotionalPrice são por kg. */
+  isSoldByWeight?: boolean;
+  /** Tara padrão do recipiente, em gramas. */
+  tareWeightGrams?: number | null;
 };
 
 export type CreateProductItemPayload = {

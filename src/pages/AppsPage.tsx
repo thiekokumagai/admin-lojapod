@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
+import { ScaleAgentCard } from "@/components/apps/ScaleAgentCard";
 import {
   Printer,
   Download,
@@ -31,6 +32,8 @@ export function AppsSection() {
   const [copiedToken, setCopiedToken] = useState(false);
 
   const storeId = (settings as { storeId?: string } | undefined)?.storeId;
+  // Balança só para lojas que vendem por peso (comida e açaí)
+  const sellsByWeight = settings?.businessType === "FOOD" || settings?.businessType === "ACAI";
 
   useEffect(() => {
     if (!storeId) return;
@@ -284,6 +287,8 @@ export function AppsSection() {
           </div>
         </CardContent>
       </Card>
+
+      {sellsByWeight && <ScaleAgentCard />}
     </div>
   );
 }

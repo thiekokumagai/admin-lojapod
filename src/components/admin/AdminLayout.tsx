@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { logout } from "@/services/auth.service";
 import { isSuperAdmin } from "@/lib/auth";
-import { apiFetch, getApiBaseUrl } from "@/services/api";
+import { apiFetch } from "@/services/api";
 import { useSettings } from "@/hooks/useSettings";
 import { getStoreUrl } from "@/utils/store-url";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { createStoreSocket } from "@/services/socket";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
@@ -68,9 +68,7 @@ export function AdminLayout() {
         })
         .catch(() => {});
     }
-
-    const socketUrl = getApiBaseUrl().replace(/\/api$/, '') || 'http://localhost:3000';
-    const socket = io(socketUrl);
+    const socket = createStoreSocket();
 
     socket.on('order.new', () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });

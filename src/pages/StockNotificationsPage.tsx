@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { io } from "socket.io-client";
+import { createStoreSocket } from "@/services/socket";
 import {
   getStockNotifications,
   markStockNotificationAsNotified,
@@ -59,8 +59,7 @@ export default function StockNotificationsPage() {
   });
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_ADMIN_API?.replace(/\/api$/, '') || 'http://localhost:3000';
-    const socket = io(socketUrl);
+    const socket = createStoreSocket();
 
     socket.on('stock_notification.new', () => {
       refetch();

@@ -52,7 +52,7 @@ if (typeof window !== "undefined") {
   });
 }
 
-async function refreshAccessToken(staleAccessToken: string | null) {
+export async function refreshAccessToken(staleAccessToken: string | null) {
   if (!refreshPromise) {
     refreshPromise = refreshTokens(staleAccessToken)
       .then((session) => session.accessToken)

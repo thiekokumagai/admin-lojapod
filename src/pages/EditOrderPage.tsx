@@ -21,6 +21,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SimpleAddressForm } from "@/components/orders/SimpleAddressForm";
 import type { Combo } from "@/services/combo.service";
+import { WeighingDialog, type WeighingResult } from "@/components/orders/WeighingDialog";
+import { formatWeighedLine, weighedPrice, type WeightSource } from "@/lib/weight";
 
 interface OrderItem {
   productId?: string;
@@ -35,7 +37,16 @@ interface OrderItem {
   maxStock?: number;
   isPromo?: boolean;
   oldPrice?: number;
+  /** Venda por peso: cada pesagem é uma linha (quantidade 1) com id próprio. */
+  weighingId?: string;
+  weightKg?: number;
+  weightSource?: WeightSource;
+  pricePerKg?: number;
+  promoPricePerKg?: number;
+  unitPricePerKg?: number;
 }
+
+const newWeighingId = () => `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export default function EditOrderPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,6 +73,7 @@ export default function EditOrderPage() {
   const [orderNote, setOrderNote] = useState("");
   
   const [productForVariation, setProductForVariation] = useState<ProductResponse | null>(null);
+  const [productToWeigh, setProductToWeigh] = useState<ProductResponse | null>(null);
 
   const { data: storeSettings } = useSettings();
   const { calculate, loading: isCalculatingFreight } = useFreight();
@@ -86,6 +98,16 @@ export default function EditOrderPage() {
         maxStock: undefined, 
         isPromo: false, // will be updated below
         oldPrice: item.price,
+        // Pesagem já gravada: mantém o peso; o preço/kg é atualizado com o cadastro logo abaixo
+        ...(item.weightKg
+          ? {
+              weighingId: newWeighingId(),
+              weightKg: Number(item.weightKg),
+              weightSource: item.weightSource ?? "MANUAL",
+              pricePerKg: Number(item.unitPricePerKg) || item.price,
+              unitPricePerKg: Number(item.unitPricePerKg) || item.price,
+            }
+          : {}),
       }));
       setOrderItems(initialItems);
 
@@ -98,6 +120,9 @@ export default function EditOrderPage() {
               }
               try {
                 const product = await getProductById(item.productId);
+                if (product && item.weightKg) {
+                  return { ...item, pricePerKg: product.price ?? item.pricePerKg, promoPricePerKg: product.promotionalPrice };
+                }
                 if (product) {
                   return {
                     ...item,
@@ -206,8 +231,19 @@ export default function EditOrderPage() {
       setDeliveryModality(order.deliveryModality === "STORE_PICKUP" ? "STORE_PICKUP" : "DELIVERY");
     }
   }, [order]);
+  const promoAllowedNow = isPromoAllowed(paymentMethod, storeSettings?.promoPaymentMethods);
   const effectiveItems = orderItems.map(item => {
-    if (!isPromoAllowed(paymentMethod, storeSettings?.promoPaymentMethods) && item.isPromo && item.oldPrice) {
+    // Por peso: o preço/kg (regular ou promocional) acompanha a forma de pagamento, como nos outros itens
+    if (item.weightKg) {
+      const priced = weighedPrice({
+        weightKg: item.weightKg,
+        pricePerKg: item.pricePerKg ?? item.price,
+        promoPricePerKg: item.promoPricePerKg,
+        promoAllowed: promoAllowedNow,
+      });
+      return { ...item, price: priced.price, unitPricePerKg: priced.unitPricePerKg, isPromo: false };
+    }
+    if (!promoAllowedNow && item.isPromo && item.oldPrice) {
       return { ...item, price: item.oldPrice };
     }
     return item;
@@ -444,7 +480,10 @@ export default function EditOrderPage() {
           productName: item.title,
           quantity: item.quantity,
           price: item.price,
-          variation: item.variation || ""
+          variation: item.variation || "",
+          ...(item.weightKg
+            ? { weightKg: item.weightKg, unitPricePerKg: item.unitPricePerKg, weightSource: item.weightSource }
+            : {}),
         }))
       };
 
@@ -496,7 +535,35 @@ export default function EditOrderPage() {
     });
   };
 
+  const handleAddWeighing = (product: ProductResponse, result: WeighingResult) => {
+    setOrderItems((prev) => [
+      ...prev,
+      {
+        productId: product.id,
+        productItemId: product.items?.[0]?.id,
+        title: product.title,
+        price: result.price,
+        quantity: 1,
+        imageUrl: product.images?.[0]?.url,
+        weighingId: newWeighingId(),
+        weightKg: result.weightKg,
+        weightSource: result.weightSource,
+        pricePerKg: product.price ?? 0,
+        promoPricePerKg: product.promotionalPrice,
+        unitPricePerKg: result.unitPricePerKg,
+      },
+    ]);
+  };
+
+  const handleRemoveWeighing = (weighingId: string) => {
+    setOrderItems((prev) => prev.filter((item) => item.weighingId !== weighingId));
+  };
+
   const handleAddProduct = (product: ProductResponse) => {
+    if (product.isSoldByWeight) {
+      setProductToWeigh(product);
+      return;
+    }
     if (product.variations && product.variations.length > 0 && product.items && product.items.length > 0) {
       setProductForVariation(product);
       return;
@@ -626,7 +693,7 @@ export default function EditOrderPage() {
             {orderItems.length > 0 && (
               <div className="mt-6 space-y-3">
                 {effectiveItems.map((item, index) => (
-                  <div key={`${item.productId || item.comboId}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 border border-slate-100 rounded-xl bg-slate-50">
+                  <div key={item.weighingId ?? `${item.productId || item.comboId}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 border border-slate-100 rounded-xl bg-slate-50">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {item.imageUrl ? (
                         <img src={buildImageUrl(item.imageUrl)} alt={item.title} className="w-10 h-10 shrink-0 rounded-md object-cover" />
@@ -645,6 +712,12 @@ export default function EditOrderPage() {
                           )}
                         </div>
                         {item.variation && <div className="text-xs text-slate-500 mt-0.5">{item.variation}</div>}
+                        {item.weightKg && item.unitPricePerKg && (
+                          <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                            {formatWeighedLine(item.weightKg, item.unitPricePerKg)}
+                            {item.weightSource === "MANUAL" && " · digitado"}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
@@ -661,6 +734,17 @@ export default function EditOrderPage() {
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
                         </span>
                       </div>
+                      {item.weighingId ? (
+                        <Button 
+                          variant="ghost"
+                          size="icon" 
+                          aria-label="Remover pesagem"
+                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md shrink-0 ml-1 sm:ml-2"
+                          onClick={() => handleRemoveWeighing(item.weighingId!)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : (
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <Button 
                           variant="outline" 
@@ -689,6 +773,7 @@ export default function EditOrderPage() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -873,6 +958,17 @@ export default function EditOrderPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <WeighingDialog
+        open={!!productToWeigh}
+        onOpenChange={(open) => !open && setProductToWeigh(null)}
+        product={productToWeigh}
+        promoAllowed={promoAllowedNow}
+        onConfirm={(result, keepOpen) => {
+          if (!productToWeigh) return;
+          handleAddWeighing(productToWeigh, result);
+          if (!keepOpen) setProductToWeigh(null);
+        }}
+      />
     </div>
   );
 }

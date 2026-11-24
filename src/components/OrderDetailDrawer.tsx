@@ -1,4 +1,5 @@
 import { useOrderDetails, useCancelOrder, useReceiveOrder, useRevertReceiveOrder, useUpdateOrderStatus, useReprintOrder } from "@/hooks/useOrders";
+import { duplicateWeighedLine } from "@/lib/weight";
 import { useSettings } from "@/hooks/useSettings";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -45,6 +46,7 @@ import { formatPhone } from "@/utils/formatters";
 import { formatWhatsAppNumber } from "@/utils/whatsapp";
 import { formatPaymentMethod } from "@/utils/payment-method";
 
+import { WeighedItemLine } from "@/components/orders/WeighedItemLine";
 interface OrderDetailDrawerProps {
   orderId: string | null;
   isOpen: boolean;
@@ -565,6 +567,12 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
           hasOutOfStock = true;
           return;
         }
+
+        // Pesagem: copia o peso com o preço/kg atual (não depende de estoque em unidades)
+        if (product.isSoldByWeight && item.weightKg) {
+          validItems.push(duplicateWeighedLine({ ...item, weightKg: Number(item.weightKg) }, product));
+          return;
+        }
         
         let availableStock = 0;
         if (item.productItemId) {
@@ -913,6 +921,7 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose, readOnly =
                               ({item.variation})
                             </span>
                           )}
+                          <WeighedItemLine item={item} />
 
                           {/* Se for combo, detalha os componentes sem alterar o total */}
                           {item.isCombo && item.comboSnapshot?.items && (

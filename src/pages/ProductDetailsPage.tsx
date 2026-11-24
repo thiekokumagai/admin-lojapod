@@ -52,6 +52,7 @@ const productSchema = z.object({
   promotionalPrice: z.number().min(0, "O preço promocional deve ser maior ou igual a zero.").optional(),
   costPrice: z.number().min(0, "O preço de custo deve ser maior ou igual a zero.").optional(),
   servesCount: z.number().int().min(1, "Informe entre 1 e 99 pessoas.").max(99, "Informe entre 1 e 99 pessoas.").nullable().optional(),
+  tareWeightGrams: z.number().int().min(0, "A tara vai de 0 a 5000 g.").max(5000, "A tara vai de 0 a 5000 g.").nullable().optional(),
 });
 
 type PendingImage = {
@@ -160,6 +161,12 @@ export default function ProductDetailsPage() {
     storeSettings?.businessType === "FOOD" ||
     storeSettings?.businessType === "ACAI";
   const [isCustomizable, setIsCustomizable] = useState(false);
+  // Vendido por peso e montagem por etapas são exclusivos (regra da API)
+  const [isSoldByWeight, setIsSoldByWeight] = useState(false);
+  const handleSoldByWeightChange = (checked: boolean) => {
+    setIsSoldByWeight(checked);
+    if (checked) setIsCustomizable(false);
+  };
   const [savingStep, setSavingStep] = useState<string | null>(null);
 
   const productForm = useForm<ProductDetailsFormValues>({
@@ -173,6 +180,7 @@ export default function ProductDetailsPage() {
       promotionalPrice: undefined,
       costPrice: undefined,
       servesCount: null,
+      tareWeightGrams: null,
     },
   });
 
@@ -298,6 +306,7 @@ export default function ProductDetailsPage() {
       setIsVisible(product.status === "active");
       setIsFeatured(Boolean(product.isFeatured));
       setIsCustomizable(Boolean(product.isCustomizable));
+      setIsSoldByWeight(Boolean(product.isSoldByWeight));
       navigate(`/produtos/${product.id}`, { replace: true });
       toast({ title: "Produto criado" });
     },
@@ -318,6 +327,7 @@ export default function ProductDetailsPage() {
       setIsVisible(productQuery.data.status === "active");
       setIsFeatured(Boolean(productQuery.data.isFeatured));
       setIsCustomizable(Boolean(productQuery.data.isCustomizable));
+      setIsSoldByWeight(Boolean(productQuery.data.isSoldByWeight));
       setHasVariations((product.variationIds?.length ?? 0) > 0);
       productForm.reset({
         title: product.title,
@@ -328,6 +338,7 @@ export default function ProductDetailsPage() {
         promotionalPrice: product.promotionalPrice,
         costPrice: product.costPrice,
         servesCount: product.servesCount ?? null,
+        tareWeightGrams: product.tareWeightGrams ?? null,
       });
     }
   }, [productQuery.data, productForm]);
@@ -696,8 +707,11 @@ export default function ProductDetailsPage() {
       ...rawValues,
       isVisible,
       isFeatured,
-      isCustomizable,
+      isCustomizable: isSoldByWeight ? false : isCustomizable,
       servesCount: supportsCompositions ? (rawValues.servesCount ?? null) : undefined,
+      // Só lojas de comida/açaí vendem por peso; nas outras o campo nem vai
+      isSoldByWeight: supportsCompositions ? isSoldByWeight : undefined,
+      tareWeightGrams: supportsCompositions && isSoldByWeight ? (rawValues.tareWeightGrams ?? null) : undefined,
       descriptionFormated: rawValues.description?.replace(/<[^>]*>/g, "").trim() ?? "",
     };
 
@@ -862,6 +876,18 @@ export default function ProductDetailsPage() {
             {supportsCompositions && (
               <div className="flex items-center space-x-2">
                 <Switch
+                  id="product-sold-by-weight"
+                  checked={isSoldByWeight}
+                  onCheckedChange={handleSoldByWeightChange}
+                />
+                <Label htmlFor="product-sold-by-weight" className="cursor-pointer font-semibold flex items-center gap-1">
+                  Vendido por peso
+                </Label>
+              </div>
+            )}
+            {supportsCompositions && !isSoldByWeight && (
+              <div className="flex items-center space-x-2">
+                <Switch
                   id="product-customizable"
                   checked={isCustomizable}
                   onCheckedChange={setIsCustomizable}
@@ -924,7 +950,7 @@ export default function ProductDetailsPage() {
           </TabsList>
           
           <TabsContent value="produto" className="space-y-8 outline-none">
-            {currentProduct && currentProduct.totalStock === 0 && (
+            {currentProduct && currentProduct.totalStock === 0 && !isSoldByWeight && (
               <Alert variant="destructive" className="border-red-500/50 bg-red-500/10 text-red-600">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Produto sem estoque!</AlertTitle>
@@ -968,6 +994,7 @@ export default function ProductDetailsPage() {
           form={productForm}
           categories={categories}
           showServesCount={supportsCompositions}
+          soldByWeight={supportsCompositions && isSoldByWeight}
         />
         </TabsContent>
 
