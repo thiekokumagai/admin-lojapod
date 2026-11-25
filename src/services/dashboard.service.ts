@@ -42,6 +42,13 @@ export interface DashboardChartItem {
   vendasAnterior?: number;
 }
 
+export interface BestSellerVariation {
+  /** Texto da variação gravado no pedido (ex.: "P / Azul") ou "Sem variação". */
+  label: string;
+  quantity: number;
+  totalRevenue: number;
+}
+
 export interface BestSellerItem {
   id: string;
   title: string;
@@ -55,6 +62,8 @@ export interface BestSellerItem {
   lucro: number | null;
   margem: number | null;
   semCusto: boolean;
+  /** Vendas por variação (só quando o produto vendeu com variação); soma = quantity/totalRevenue. */
+  variacoes?: BestSellerVariation[];
 }
 
 /**
