@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Package } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import { ChevronRight, Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BestSellerItem, BestSellerSort, DashboardKPIs, DashboardMissingCost } from "@/services/dashboard.service";
@@ -37,6 +37,24 @@ function ProductThumb({ item }: { item: BestSellerItem }) {
   );
 }
 
+/** Botão que abre/fecha as variações vendidas de um produto. */
+function VariationsToggle({ item, open, onToggle }: { item: BestSellerItem; open: boolean; onToggle: () => void }) {
+  const count = item.variacoes?.length ?? 0;
+  if (count === 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-label={`${open ? "Esconder" : "Ver"} variações de ${item.title}`}
+      className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
+    >
+      <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} aria-hidden="true" />
+      {count} {count === 1 ? "variação" : "variações"}
+    </button>
+  );
+}
+
 const SORT_COLUMN_LABEL: Record<BestSellerSort, string> = {
   quantity: "Qtd.",
   revenue: "Faturamento",
@@ -56,6 +74,14 @@ interface ProductsTabProps {
 /** Todos os produtos vendidos no período: ordenável por 4 critérios e com curva ABC. */
 export function ProductsTab({ range, stats, missingCost, categories, categoryId, onCategoryChange }: ProductsTabProps) {
   const [sort, setSort] = useState<BestSellerSort>("revenue");
+  const [openVariations, setOpenVariations] = useState<Set<string>>(() => new Set());
+  const toggleVariations = (id: string) =>
+    setOpenVariations((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const query = useDashboardProducts(range, categoryId === "all" ? undefined : categoryId, true);
 
   const rows = useMemo(() => query.data ?? [], [query.data]);
@@ -153,7 +179,8 @@ export function ProductsTab({ range, stats, missingCost, categories, categoryId,
                   </TableHeader>
                   <TableBody>
                     {sorted.map((item, idx) => (
-                      <TableRow key={item.id}>
+                      <Fragment key={item.id}>
+                      <TableRow>
                         <TableCell className="text-muted-foreground tabular-nums">{idx + 1}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3 min-w-0">
@@ -161,6 +188,11 @@ export function ProductsTab({ range, stats, missingCost, categories, categoryId,
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-foreground truncate max-w-[280px]">{item.title}</p>
                               <p className="text-[11px] text-muted-foreground truncate">{item.categoryTitle}</p>
+                              <VariationsToggle
+                                item={item}
+                                open={openVariations.has(item.id)}
+                                onToggle={() => toggleVariations(item.id)}
+                              />
                             </div>
                           </div>
                         </TableCell>
@@ -188,6 +220,19 @@ export function ProductsTab({ range, stats, missingCost, categories, categoryId,
                           <AbcBadge abc={abc.get(item.id)} />
                         </TableCell>
                       </TableRow>
+                      {openVariations.has(item.id) &&
+                        item.variacoes?.map((v) => (
+                          <TableRow key={`${item.id}::${v.label}`} className="bg-muted/30 hover:bg-muted/40" data-testid="variation-row">
+                            <TableCell />
+                            <TableCell className="py-2 pl-14">
+                              <span className="text-xs text-foreground">↳ {v.label}</span>
+                            </TableCell>
+                            <TableCell className="py-2 text-right text-xs tabular-nums">{formatInt(v.quantity)}</TableCell>
+                            <TableCell className="py-2 text-right text-xs tabular-nums">{formatBRL(v.totalRevenue)}</TableCell>
+                            <TableCell colSpan={3} />
+                          </TableRow>
+                        ))}
+                      </Fragment>
                     ))}
                   </TableBody>
                 </Table>
@@ -204,6 +249,23 @@ export function ProductsTab({ range, stats, missingCost, categories, categoryId,
                       <p className="text-[11px] text-muted-foreground">
                         {formatInt(item.quantity)} un. · {formatBRL(item.totalRevenue)}
                       </p>
+                      <VariationsToggle
+                        item={item}
+                        open={openVariations.has(item.id)}
+                        onToggle={() => toggleVariations(item.id)}
+                      />
+                      {openVariations.has(item.id) && item.variacoes && (
+                        <ul className="mt-1 space-y-1 rounded-lg bg-muted/40 p-2" data-testid="variation-list">
+                          {item.variacoes.map((v) => (
+                            <li key={v.label} className="flex items-baseline justify-between gap-2 text-[11px]">
+                              <span className="min-w-0 truncate text-foreground">{v.label}</span>
+                              <span className="shrink-0 tabular-nums text-muted-foreground">
+                                {formatInt(v.quantity)} un. · {formatBRL(v.totalRevenue)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       {item.lucro !== null ? (
                         <p className="text-[11px] font-semibold text-emerald-700">
                           Lucro {formatBRL(item.lucro)}
