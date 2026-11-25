@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => ({
       filename: 'sw.js',
       registerType: 'prompt',
       devOptions: { enabled: false },
+      // O manifest é o arquivo estático public/manifest.webmanifest. O plugin não o gera
+      // porque injetaria o <link rel="manifest"> em todas as páginas, inclusive no /login;
+      // quem adiciona o link é o AuthGatedManifestLink, só com o usuário logado.
       manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']

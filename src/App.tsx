@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import GoogleMapsLoader from "@/components/GoogleMapsLoader";
 import { DynamicFavicon } from "@/components/DynamicFavicon";
 import { AuthGatedPWAUpdatePrompt } from "@/components/auth/AuthGatedPWAUpdatePrompt";
+import { AuthGatedManifestLink } from "@/components/auth/AuthGatedManifestLink";
 
 function lazyWithRetry<T extends React.ComponentType<any>>(
   factory: () => Promise<{ default: T }>
@@ -111,6 +112,8 @@ const App = () => (
         <BrowserRouter>
           {/* Montado uma vez só, só com login: aparece em qualquer tela logada (inclusive impressão e super-admin) sem duplicar */}
           <AuthGatedPWAUpdatePrompt />
+          {/* "Instalar app" do navegador só depois do login */}
+          <AuthGatedManifestLink />
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
