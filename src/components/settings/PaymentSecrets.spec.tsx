@@ -170,3 +170,27 @@ describe("InfinitePay: olho e chave salva", () => {
     expect(screen.queryByRole("button", { name: "Remover a chave salva" })).toBeNull();
   });
 });
+
+describe("Credenciais de pagamento sem preenchimento automático do navegador", () => {
+  // "off" é ignorado pelo Chrome em campo de senha; "one-time-code" impede senha/usuário salvos.
+  const expectNoAutofill = (el: HTMLElement) => {
+    expect(el).toHaveAttribute("autocomplete", "one-time-code");
+    expect(el).toHaveAttribute("data-1p-ignore", "true");
+    expect(el).toHaveAttribute("data-lpignore", "true");
+    expect(el).toHaveAttribute("data-bwignore", "true");
+    expect(el).toHaveAttribute("data-form-type", "other");
+  };
+
+  it("InfinitePay: InfiniteTag e API Key", () => {
+    render(<PaymentGatewaysSettingsForm />);
+    expectNoAutofill(screen.getByPlaceholderText("Ex: minha_loja"));
+    expectNoAutofill(screen.getByLabelText(/^API Key \/ Access Token/));
+  });
+
+  it("Mercado Pago: Public Key, Access Token e chave secreta do webhook", () => {
+    render(<MercadoPagoSettingsForm />);
+    expectNoAutofill(screen.getByLabelText(/Public Key/));
+    expectNoAutofill(screen.getByLabelText(/^Access Token/));
+    expectNoAutofill(screen.getByLabelText(/^Chave secreta do webhook/));
+  });
+});

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
+import { noAutofillProps } from "@/lib/no-autofill";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -211,10 +212,12 @@ export function PaymentGatewaysSettingsForm() {
                   InfiniteTag / Handle da Loja <span className="text-destructive">*</span>
                 </Label>
                 <Input
+                  name="infinitepay-handle"
                   value={infinitePayHandle}
                   onChange={(e) => setInfinitePayHandle(e.target.value)}
                   placeholder="Ex: minha_loja"
                   className="h-9"
+                  {...noAutofillProps}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   Sua tag cadastrada no app da InfinitePay (sem o @).
@@ -234,9 +237,10 @@ export function PaymentGatewaysSettingsForm() {
                     setInfinitePayApiKey(e.target.value);
                     if (removeSavedApiKey) setRemoveSavedApiKey(false);
                   }}
+                  name="infinitepay-api-key"
                   placeholder="inchk_..."
                   className="h-9"
-                  autoComplete="off"
+                  {...noAutofillProps}
                 />
                 <p className="text-[11px] text-muted-foreground" data-testid="ip-api-key-hint">
                   {removeSavedApiKey

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
+import { noAutofillProps } from "@/lib/no-autofill";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -250,9 +251,10 @@ export function MercadoPagoSettingsForm() {
                   id="mp-public-key"
                   value={publicKey}
                   onChange={(e) => setPublicKey(e.target.value)}
+                  name="mp-public-key"
                   placeholder="APP_USR-... ou TEST-..."
                   className="h-9"
-                  autoComplete="off"
+                  {...noAutofillProps}
                 />
                 <p className="text-[11px] text-muted-foreground">Pode aparecer no site: serve só para criptografar o cartão.</p>
               </div>
@@ -269,9 +271,10 @@ export function MercadoPagoSettingsForm() {
                     setAccessToken(e.target.value);
                     if (removeAccessToken) setRemoveAccessToken(false);
                   }}
+                  name="mp-access-token"
                   placeholder="APP_USR-... ou TEST-..."
                   className="h-9"
-                  autoComplete="off"
+                  {...noAutofillProps}
                 />
                 <p className="text-[11px] text-muted-foreground" data-testid="mp-access-token-hint">
                   {removeAccessToken
@@ -301,9 +304,10 @@ export function MercadoPagoSettingsForm() {
                     setWebhookSecret(e.target.value);
                     if (removeWebhookSecret) setRemoveWebhookSecret(false);
                   }}
+                  name="mp-webhook-secret"
                   placeholder="Gerada ao criar o webhook"
                   className="h-9"
-                  autoComplete="off"
+                  {...noAutofillProps}
                 />
                 <p className="text-[11px] text-muted-foreground" data-testid="mp-webhook-secret-hint">
                   {removeWebhookSecret
