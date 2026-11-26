@@ -142,3 +142,9 @@
     }
   }
 }
+
+/* Segredo que não é login (token, chave de API): texto mascarado sem type=password,
+   para o gerenciador de senhas do navegador não preencher. Ver lib/no-autofill.ts / SecretInput. */
+input[data-secret-mask="true"] {
+  -webkit-text-security: disc;
+}

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MercadoPagoSettingsForm } from "./MercadoPagoSettingsForm";
 import { PaymentGatewaysSettingsForm } from "./PaymentGatewaysSettingsForm";
@@ -192,5 +192,35 @@ describe("Credenciais de pagamento sem preenchimento automático do navegador", 
     expectNoAutofill(screen.getByLabelText(/Public Key/));
     expectNoAutofill(screen.getByLabelText(/^Access Token/));
     expectNoAutofill(screen.getByLabelText(/^Chave secreta do webhook/));
+  });
+
+  describe("navegador com máscara CSS (Chrome, Edge, Safari)", () => {
+    // O Chrome só oferece senha/usuário salvos quando há type="password" na página.
+    beforeEach(() => {
+      vi.stubGlobal("CSS", { supports: () => true });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("Mercado Pago: nenhum campo de senha; segredos mascarados por CSS e o olho ainda funciona", () => {
+      const { container } = render(<MercadoPagoSettingsForm />);
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      const token = screen.getByLabelText(/^Access Token/) as HTMLInputElement;
+      expect(token.type).toBe("text");
+      expect(token).toHaveAttribute("data-secret-mask", "true");
+      fireEvent.click(screen.getByRole("button", { name: "Mostrar Access Token" }));
+      expect(token).not.toHaveAttribute("data-secret-mask");
+      expect(token.type).toBe("text");
+      expect(token.value).toBe("APP_USR-9876");
+    });
+
+    it("InfinitePay: API Key sem type=password e mascarada", () => {
+      const { container } = render(<PaymentGatewaysSettingsForm />);
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      const key = screen.getByLabelText(/^API Key \/ Access Token/) as HTMLInputElement;
+      expect(key.type).toBe("text");
+      expect(key).toHaveAttribute("data-secret-mask", "true");
+    });
   });
 });

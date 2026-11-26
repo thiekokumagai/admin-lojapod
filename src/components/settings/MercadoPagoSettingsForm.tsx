@@ -264,6 +264,7 @@ export function MercadoPagoSettingsForm() {
                   Access Token <span className="text-destructive">*</span>
                 </Label>
                 <SecretInput
+                  notLogin
                   id="mp-access-token"
                   toggleName="Access Token"
                   value={accessToken}
@@ -297,6 +298,7 @@ export function MercadoPagoSettingsForm() {
                   Chave secreta do webhook <span className="text-destructive">*</span>
                 </Label>
                 <SecretInput
+                  notLogin
                   id="mp-webhook-secret"
                   toggleName="chave secreta do webhook"
                   value={webhookSecret}

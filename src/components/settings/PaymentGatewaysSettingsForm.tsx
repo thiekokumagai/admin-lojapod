@@ -230,6 +230,7 @@ export function PaymentGatewaysSettingsForm() {
                   <span className="text-xs text-muted-foreground font-normal">(Opcional)</span>
                 </Label>
                 <SecretInput
+                  notLogin
                   id="ip-api-key"
                   toggleName="API Key da InfinitePay"
                   value={infinitePayApiKey}
