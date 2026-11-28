@@ -909,16 +909,16 @@ export default function DeliveryMapPage() {
                               const change = o.changeAmount || (o as any).changeAmount;
                               const amountProvided = o.amountProvided || (o as any).amountProvided;
                               if ((o.paymentMethod?.toLowerCase() === 'cash' || o.paymentMethod?.toLowerCase() === 'dinheiro') && change > 0) {
-                                wppText += `  ⚠️ *Levar troco:* R$ ${Number(change).toFixed(2).replace('.', ',')} (Cliente dará R$ ${Number(amountProvided).toFixed(2).replace('.', ',')})\n`;
+                                wppText += `  *Levar troco:* R$ ${Number(change).toFixed(2).replace('.', ',')} (Cliente dará R$ ${Number(amountProvided).toFixed(2).replace('.', ',')})\n`;
                               }
                             }
-                            wppText += `📍 GPS Maps: ${buildSingleStopMapsUrl(o.lat, o.lng)}\n`;
-                            wppText += `📍 GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
+                            wppText += `- GPS Maps: ${buildSingleStopMapsUrl(o.lat, o.lng)}\n`;
+                            wppText += `- GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
                           });
 
                           const assignedHasCollection = sortedOrders.some((o: any) => !isOrderPaid(o));
                           const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, sortedOrders, assignedHasCollection);
-                          wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
+                          wppText += `*LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
                           openWhatsApp(courier.phone, wppText);
                         }}>
@@ -1255,15 +1255,15 @@ export default function DeliveryMapPage() {
                     const change = (o as any).changeAmount;
                     const amountProvided = (o as any).amountProvided;
                     if ((o.paymentMethod?.toLowerCase() === 'cash' || o.paymentMethod?.toLowerCase() === 'dinheiro') && change > 0) {
-                      wppText += `  ⚠️ *Levar troco:* R$ ${Number(change).toFixed(2).replace('.', ',')} (Cliente dará R$ ${Number(amountProvided).toFixed(2).replace('.', ',')})\n`;
+                      wppText += `  *Levar troco:* R$ ${Number(change).toFixed(2).replace('.', ',')} (Cliente dará R$ ${Number(amountProvided).toFixed(2).replace('.', ',')})\n`;
                     }
                   }
-                  wppText += `📍 GPS Maps: ${buildSingleStopMapsUrl(o.lat, o.lng)}\n`;
-                  wppText += `📍 GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
+                  wppText += `- GPS Maps: ${buildSingleStopMapsUrl(o.lat, o.lng)}\n`;
+                  wppText += `- GPS Waze: ${buildSingleStopWazeUrl(o.lat, o.lng)}\n\n`;
                 });
 
                 const mapsUrl = buildGoogleMapsRouteUrl(storeLocation, route.optimizedOrders, route.returnToStore ?? false);
-                wppText += `🗺️ *LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
+                wppText += `*LINK DA ROTA COMPLETA NO MAPS:*\n${mapsUrl}\n`;
 
                 openWhatsApp(courier.phone, wppText);
 
